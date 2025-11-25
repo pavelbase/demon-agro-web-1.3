@@ -6,6 +6,7 @@ import { Product, PageKey, ImageUrls } from "@/lib/types";
 import { getProducts, saveProducts, resetProducts, defaultProducts } from "@/lib/products";
 import { getPageContent, savePageContent, resetPageContent, defaultContent } from "@/lib/content";
 import { getImages, saveImages, resetImages, defaultImages } from "@/lib/images";
+import ImageUpload from "@/components/ImageUpload";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -372,10 +373,10 @@ export default function AdminPage() {
             {/* Image URL Modal */}
             {selectedImageKey && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
+                <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-bold text-gray-900">
-                      Změnit URL obrázku
+                      Změnit obrázek
                     </h3>
                     <button
                       onClick={() => setSelectedImageKey(null)}
@@ -385,7 +386,36 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    {/* Upload Component */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">
+                        Nahrát nový obrázek
+                      </h4>
+                      <ImageUpload
+                        currentUrl={tempImageUrl}
+                        onUploadSuccess={(url) => {
+                          setTempImageUrl(url);
+                          const updatedImages = { ...images, [selectedImageKey]: url };
+                          setImages(updatedImages);
+                          saveImages(updatedImages);
+                          setSelectedImageKey(null);
+                          showSaveMessage("Obrázek nahrán");
+                        }}
+                      />
+                    </div>
+
+                    {/* Divider */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">nebo zadejte URL</span>
+                      </div>
+                    </div>
+
+                    {/* URL Input */}
                     <div>
                       <label className="block font-semibold text-gray-900 mb-2">
                         URL obrázku
@@ -422,7 +452,7 @@ export default function AdminPage() {
                         onClick={handleUpdateImage}
                         className="flex-1 bg-[#4A7C59] hover:bg-[#3d6449] text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
                       >
-                        Uložit
+                        Uložit URL
                       </button>
                       <button
                         onClick={() => setSelectedImageKey(null)}
