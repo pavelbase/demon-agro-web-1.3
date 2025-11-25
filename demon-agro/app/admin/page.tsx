@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [tempImageUrl, setTempImageUrl] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [imageFilter, setImageFilter] = useState<string>("all");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -111,6 +112,16 @@ export default function AdminPage() {
       saveImages(updatedImages);
       showSaveMessage("Obrázek obnoven");
     }
+  };
+
+  const handleUpdateProductImage = (productId: string, newUrl: string) => {
+    const updatedProducts = products.map((p) =>
+      p.id === productId ? { ...p, fotka_url: newUrl } : p
+    );
+    setProducts(updatedProducts);
+    saveProducts(updatedProducts);
+    setSelectedProduct(null);
+    showSaveMessage("Obrázek produktu aktualizován");
   };
 
   const showSaveMessage = (message: string) => {
@@ -342,6 +353,7 @@ export default function AdminPage() {
               <div className="flex flex-wrap gap-2">
                 {[
                   { value: "all", label: "Vše" },
+                  { value: "products", label: "Produkty" },
                   { value: "home", label: "Domů" },
                   { value: "ph", label: "pH půdy" },
                   { value: "sira", label: "Síra" },
@@ -367,62 +379,120 @@ export default function AdminPage() {
 
             {/* Images Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(images)
-                .filter(([key]) => {
-                  if (imageFilter === "all") return true;
-                  return key.startsWith(imageFilter + "_");
-                })
-                .map(([key, url]) => {
-                  // Get category and type labels
-                  const parts = key.split("_");
-                  const category = parts[0];
-                  const type = parts.slice(1).join(" ");
-                  
+              {/* Page Images */}
+              {(imageFilter === "all" || imageFilter !== "products") &&
+                Object.entries(images)
+                  .filter(([key]) => {
+                    if (imageFilter === "all") return true;
+                    if (imageFilter === "products") return false;
+                    return key.startsWith(imageFilter + "_");
+                  })
+                  .map(([key, url]) => {
+                    // Get category and type labels
+                    const parts = key.split("_");
+                    const category = parts[0];
+                    const type = parts.slice(1).join(" ");
+                    
+                    const categoryLabels: Record<string, string> = {
+                      home: "Domů",
+                      ph: "pH půdy",
+                      sira: "Síra",
+                      k: "Draslík",
+                      mg: "Hořčík",
+                      analyza: "Analýza",
+                      onas: "O nás",
+                    };
+
+                    return (
+                      <div key={key} className="bg-gray-50 rounded-lg p-4 shadow-sm">
+                        <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden mb-3">
+                          <img
+                            src={url}
+                            alt={key}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80";
+                            }}
+                          />
+                        </div>
+                        <div className="mb-2">
+                          <span className="inline-block bg-[#4A7C59] text-white text-xs font-semibold px-2 py-1 rounded">
+                            {categoryLabels[category] || category}
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mb-2 capitalize">
+                          {type.replace(/_/g, " ")}
+                        </h3>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setSelectedImageKey(key as keyof ImageUrls);
+                              setTempImageUrl(url);
+                            }}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+                          >
+                            Změnit
+                          </button>
+                          <button
+                            onClick={() => handleResetImage(key as keyof ImageUrls)}
+                            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+                          >
+                            Obnovit
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+              {/* Product Images */}
+              {(imageFilter === "all" || imageFilter === "products") &&
+                products.map((product) => {
                   const categoryLabels: Record<string, string> = {
-                    home: "Domů",
-                    ph: "pH půdy",
+                    ph: "pH",
                     sira: "Síra",
                     k: "Draslík",
                     mg: "Hořčík",
                     analyza: "Analýza",
-                    onas: "O nás",
                   };
 
                   return (
-                    <div key={key} className="bg-gray-50 rounded-lg p-4 shadow-sm">
+                    <div key={product.id} className="bg-gray-50 rounded-lg p-4 shadow-sm">
                       <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden mb-3">
                         <img
-                          src={url}
-                          alt={key}
+                          src={product.fotka_url}
+                          alt={product.nazev}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80";
                           }}
                         />
                       </div>
-                      <div className="mb-2">
-                        <span className="inline-block bg-[#4A7C59] text-white text-xs font-semibold px-2 py-1 rounded">
-                          {categoryLabels[category] || category}
+                      <div className="mb-2 flex items-center space-x-2">
+                        <span className="inline-block bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded">
+                          Produkt
+                        </span>
+                        <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                          {categoryLabels[product.kategorie] || product.kategorie}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-gray-900 mb-2 capitalize">
-                        {type.replace(/_/g, " ")}
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        {product.nazev}
                       </h3>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => {
-                            setSelectedImageKey(key as keyof ImageUrls);
-                            setTempImageUrl(url);
+                            setSelectedProduct(product);
+                            setTempImageUrl(product.fotka_url);
                           }}
                           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
                         >
                           Změnit
                         </button>
                         <button
-                          onClick={() => handleResetImage(key as keyof ImageUrls)}
+                          onClick={() => setEditingProduct(product)}
                           className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
                         >
-                          Obnovit
+                          Upravit
                         </button>
                       </div>
                     </div>
@@ -431,10 +501,9 @@ export default function AdminPage() {
             </div>
 
             {/* Empty State */}
-            {Object.entries(images).filter(([key]) => {
-              if (imageFilter === "all") return true;
-              return key.startsWith(imageFilter + "_");
-            }).length === 0 && (
+            {imageFilter !== "all" && 
+             imageFilter !== "products" && 
+             Object.entries(images).filter(([key]) => key.startsWith(imageFilter + "_")).length === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg">
                   Žádné obrázky v této kategorii
@@ -528,6 +597,98 @@ export default function AdminPage() {
                       </button>
                       <button
                         onClick={() => setSelectedImageKey(null)}
+                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
+                      >
+                        Zrušit
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Product Image Modal */}
+            {selectedProduct && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      Změnit obrázek produktu: {selectedProduct.nazev}
+                    </h3>
+                    <button
+                      onClick={() => setSelectedProduct(null)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Upload Component */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">
+                        Nahrát nový obrázek
+                      </h4>
+                      <ImageUpload
+                        currentUrl={tempImageUrl}
+                        productName={selectedProduct.nazev}
+                        onUploadSuccess={(url) => {
+                          handleUpdateProductImage(selectedProduct.id, url);
+                        }}
+                      />
+                    </div>
+
+                    {/* Divider */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">nebo zadejte URL</span>
+                      </div>
+                    </div>
+
+                    {/* URL Input */}
+                    <div>
+                      <label className="block font-semibold text-gray-900 mb-2">
+                        URL obrázku
+                      </label>
+                      <input
+                        type="url"
+                        value={tempImageUrl}
+                        onChange={(e) => setTempImageUrl(e.target.value)}
+                        className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+
+                    {tempImageUrl && (
+                      <div>
+                        <label className="block font-semibold text-gray-900 mb-2">
+                          Náhled
+                        </label>
+                        <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
+                          <img
+                            src={tempImageUrl}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80";
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={() => handleUpdateProductImage(selectedProduct.id, tempImageUrl)}
+                        className="flex-1 bg-[#4A7C59] hover:bg-[#3d6449] text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
+                      >
+                        Uložit URL
+                      </button>
+                      <button
+                        onClick={() => setSelectedProduct(null)}
                         className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
                       >
                         Zrušit
