@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [selectedImageKey, setSelectedImageKey] = useState<keyof ImageUrls | null>(null);
   const [tempImageUrl, setTempImageUrl] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [imageFilter, setImageFilter] = useState<string>("all");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -333,42 +334,113 @@ export default function AdminPage() {
           <div className="bg-white shadow-lg rounded-xl p-6">
             <h2 className="text-2xl font-bold mb-6">Správa obrázků</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(images).map(([key, url]) => (
-                <div key={key} className="bg-gray-50 rounded-lg p-4 shadow-sm">
-                  <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden mb-3">
-                    <img
-                      src={url}
-                      alt={key}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80";
-                      }}
-                    />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    {key.replace(/_/g, " ")}
-                  </h3>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedImageKey(key as keyof ImageUrls);
-                        setTempImageUrl(url);
-                      }}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
-                    >
-                      Změnit URL
-                    </button>
-                    <button
-                      onClick={() => handleResetImage(key as keyof ImageUrls)}
-                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
-                    >
-                      Obnovit
-                    </button>
-                  </div>
-                </div>
-              ))}
+            {/* Category Filters */}
+            <div className="mb-6">
+              <label className="block font-semibold text-gray-900 mb-3">
+                Filtrovat podle kategorie:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: "all", label: "Vše" },
+                  { value: "home", label: "Domů" },
+                  { value: "ph", label: "pH půdy" },
+                  { value: "sira", label: "Síra" },
+                  { value: "k", label: "Draslík" },
+                  { value: "mg", label: "Hořčík" },
+                  { value: "analyza", label: "Analýza" },
+                  { value: "onas", label: "O nás" },
+                ].map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() => setImageFilter(filter.value)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                      imageFilter === filter.value
+                        ? "bg-[#4A7C59] text-white shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Images Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.entries(images)
+                .filter(([key]) => {
+                  if (imageFilter === "all") return true;
+                  return key.startsWith(imageFilter + "_");
+                })
+                .map(([key, url]) => {
+                  // Get category and type labels
+                  const parts = key.split("_");
+                  const category = parts[0];
+                  const type = parts.slice(1).join(" ");
+                  
+                  const categoryLabels: Record<string, string> = {
+                    home: "Domů",
+                    ph: "pH půdy",
+                    sira: "Síra",
+                    k: "Draslík",
+                    mg: "Hořčík",
+                    analyza: "Analýza",
+                    onas: "O nás",
+                  };
+
+                  return (
+                    <div key={key} className="bg-gray-50 rounded-lg p-4 shadow-sm">
+                      <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden mb-3">
+                        <img
+                          src={url}
+                          alt={key}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80";
+                          }}
+                        />
+                      </div>
+                      <div className="mb-2">
+                        <span className="inline-block bg-[#4A7C59] text-white text-xs font-semibold px-2 py-1 rounded">
+                          {categoryLabels[category] || category}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-2 capitalize">
+                        {type.replace(/_/g, " ")}
+                      </h3>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedImageKey(key as keyof ImageUrls);
+                            setTempImageUrl(url);
+                          }}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+                        >
+                          Změnit
+                        </button>
+                        <button
+                          onClick={() => handleResetImage(key as keyof ImageUrls)}
+                          className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+                        >
+                          Obnovit
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Empty State */}
+            {Object.entries(images).filter(([key]) => {
+              if (imageFilter === "all") return true;
+              return key.startsWith(imageFilter + "_");
+            }).length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">
+                  Žádné obrázky v této kategorii
+                </p>
+              </div>
+            )}
 
             {/* Image URL Modal */}
             {selectedImageKey && (
@@ -567,12 +639,33 @@ function ProductFormModal({
           </div>
 
           <div>
-            <label className="block font-semibold text-gray-900 mb-2">URL fotky</label>
+            <label className="block font-semibold text-gray-900 mb-4">Fotka produktu</label>
+            
+            {/* Upload Component */}
+            <ImageUpload
+              currentUrl={formData.fotka_url}
+              onUploadSuccess={(url) => {
+                setFormData({ ...formData, fotka_url: url });
+              }}
+            />
+            
+            {/* Divider */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">nebo zadejte URL</span>
+              </div>
+            </div>
+            
+            {/* URL Input */}
             <input
               type="url"
               value={formData.fotka_url}
               onChange={(e) => setFormData({ ...formData, fotka_url: e.target.value })}
               className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+              placeholder="https://example.com/image.jpg"
             />
           </div>
 
