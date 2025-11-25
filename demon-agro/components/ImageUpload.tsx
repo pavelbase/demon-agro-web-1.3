@@ -6,9 +6,10 @@ import { Upload, X, Check, AlertCircle } from "lucide-react";
 interface ImageUploadProps {
   onUploadSuccess: (url: string) => void;
   currentUrl?: string;
+  productName?: string; // Název produktu pro pojmenování souboru
 }
 
-export default function ImageUpload({ onUploadSuccess, currentUrl }: ImageUploadProps) {
+export default function ImageUpload({ onUploadSuccess, currentUrl, productName }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
@@ -69,6 +70,11 @@ export default function ImageUpload({ onUploadSuccess, currentUrl }: ImageUpload
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Přidat název produktu, pokud existuje
+    if (productName) {
+      formData.append('productName', productName);
+    }
 
     try {
       const response = await fetch('/api/upload', {

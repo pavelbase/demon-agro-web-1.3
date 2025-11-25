@@ -644,6 +644,7 @@ function ProductFormModal({
             {/* Upload Component */}
             <ImageUpload
               currentUrl={formData.fotka_url}
+              productName={formData.nazev}
               onUploadSuccess={(url) => {
                 setFormData({ ...formData, fotka_url: url });
               }}
