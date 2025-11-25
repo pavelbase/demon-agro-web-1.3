@@ -5,9 +5,9 @@ import Link from "next/link";
 import ProblemIcon from "./ProblemIcon";
 import ProductCard from "./ProductCard";
 import { PageContent, PageKey } from "@/lib/types";
-import { getPageContent } from "@/lib/content";
-import { getProductsByCategory } from "@/lib/products";
-import { getImageUrl } from "@/lib/images";
+import { getPageContent, defaultContent } from "@/lib/content";
+import { getProductsByCategory, defaultProducts } from "@/lib/products";
+import { getImageUrl, defaultImages } from "@/lib/images";
 import { Product } from "@/lib/types";
 
 interface ProblemPageTemplateProps {
@@ -23,19 +23,27 @@ export default function ProblemPageTemplate({
   productCategory,
   imagePrefix,
 }: ProblemPageTemplateProps) {
-  const [content, setContent] = useState<PageContent>(getPageContent(pageKey));
-  const [products, setProducts] = useState<Product[]>([]);
-  const [heroImage, setHeroImage] = useState("");
-  const [problemImage, setProblemImage] = useState("");
-  const [dopadBgImage, setDopadBgImage] = useState("");
+  const [content, setContent] = useState<PageContent>(defaultContent[pageKey]);
+  const [products, setProducts] = useState<Product[]>(
+    defaultProducts.filter(p => p.kategorie === productCategory && p.dostupnost)
+  );
+  const [heroImage, setHeroImage] = useState((defaultImages as any)[`${imagePrefix}_hero`] || "");
+  const [problemImage, setProblemImage] = useState((defaultImages as any)[`${imagePrefix}_problem_img`] || "");
+  const [dopadBgImage, setDopadBgImage] = useState((defaultImages as any)[`${imagePrefix}_dopad_bg`] || "");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setContent(getPageContent(pageKey));
     setProducts(getProductsByCategory(productCategory));
     setHeroImage(getImageUrl(`${imagePrefix}_hero` as any));
     setProblemImage(getImageUrl(`${imagePrefix}_problem_img` as any));
     setDopadBgImage(getImageUrl(`${imagePrefix}_dopad_bg` as any));
   }, [pageKey, productCategory, imagePrefix]);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <>

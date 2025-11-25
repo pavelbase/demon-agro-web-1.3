@@ -2,19 +2,25 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPageContent } from "@/lib/content";
-import { getImageUrl } from "@/lib/images";
+import { getPageContent, defaultContent } from "@/lib/content";
+import { getImageUrl, defaultImages } from "@/lib/images";
 
 export default function ONasPage() {
-  const [content, setContent] = useState(getPageContent("onas"));
-  const [heroImage, setHeroImage] = useState("");
-  const [kdoJsmeImage, setKdoJsmeImage] = useState("");
+  const [content, setContent] = useState(defaultContent.onas);
+  const [heroImage, setHeroImage] = useState(defaultImages.onas_hero);
+  const [kdoJsmeImage, setKdoJsmeImage] = useState(defaultImages.onas_kdo_jsme_img);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setContent(getPageContent("onas"));
     setHeroImage(getImageUrl("onas_hero"));
     setKdoJsmeImage(getImageUrl("onas_kdo_jsme_img"));
   }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <>

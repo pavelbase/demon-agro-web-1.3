@@ -6,19 +6,25 @@ import { ChevronDown, Satellite, Target, MapPin, HeartHandshake, GraduationCap }
 import ProblemCard from "@/components/ProblemCard";
 import FeatureCard from "@/components/FeatureCard";
 import StepNumber from "@/components/StepNumber";
-import { getPageContent } from "@/lib/content";
-import { getImageUrl } from "@/lib/images";
+import { getPageContent, defaultContent } from "@/lib/content";
+import { getImageUrl, defaultImages } from "@/lib/images";
 
 export default function HomePage() {
-  const [content, setContent] = useState(getPageContent("home"));
-  const [heroImage, setHeroImage] = useState("");
-  const [krokyBgImage, setKrokyBgImage] = useState("");
+  const [content, setContent] = useState(defaultContent.home);
+  const [heroImage, setHeroImage] = useState(defaultImages.home_hero);
+  const [krokyBgImage, setKrokyBgImage] = useState(defaultImages.home_kroky_bg);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setContent(getPageContent("home"));
     setHeroImage(getImageUrl("home_hero"));
     setKrokyBgImage(getImageUrl("home_kroky_bg"));
   }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <>
