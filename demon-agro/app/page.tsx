@@ -13,6 +13,7 @@ export default function HomePage() {
   const [content, setContent] = useState(defaultContent.home);
   const [heroImage, setHeroImage] = useState(defaultImages.home_hero);
   const [krokyBgImage, setKrokyBgImage] = useState(defaultImages.home_kroky_bg);
+  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -20,6 +21,10 @@ export default function HomePage() {
     setContent(getPageContent("home"));
     setHeroImage(getImageUrl("home_hero"));
     setKrokyBgImage(getImageUrl("home_kroky_bg"));
+    const savedLogo = localStorage.getItem('logo_url');
+    if (savedLogo) {
+      setLogoUrl(savedLogo);
+    }
   }, []);
 
   if (!mounted) {
@@ -37,7 +42,7 @@ export default function HomePage() {
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
           <div className="mb-8">
             <img
-              src="/logo.jpg"
+              src={logoUrl}
               alt="Démon agro"
               className="mx-auto h-24 w-auto mb-8"
             />

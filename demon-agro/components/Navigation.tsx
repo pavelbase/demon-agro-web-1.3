@@ -9,6 +9,7 @@ export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReseniaOpen, setIsReseniaOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +18,14 @@ export default function Navigation() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Load logo from localStorage
+    const savedLogo = localStorage.getItem('logo_url');
+    if (savedLogo) {
+      setLogoUrl(savedLogo);
+    }
   }, []);
 
   const scrollToContact = () => {
@@ -39,11 +48,9 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image
-              src="/logo.jpg"
+            <img
+              src={logoUrl}
               alt="Démon agro"
-              width={56}
-              height={56}
               className="h-12 w-auto sm:h-14"
             />
           </Link>

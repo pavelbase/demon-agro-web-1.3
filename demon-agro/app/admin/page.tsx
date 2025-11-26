@@ -23,6 +23,8 @@ export default function AdminPage() {
   const [saveMessage, setSaveMessage] = useState("");
   const [imageFilter, setImageFilter] = useState<string>("all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -344,6 +346,69 @@ export default function AdminPage() {
         {activeTab === "images" && (
           <div className="bg-white shadow-lg rounded-xl p-6">
             <h2 className="text-2xl font-bold mb-6">Správa obrázků</h2>
+            
+            {/* Logo Section */}
+            <div className="mb-8 bg-gradient-to-r from-[#4A7C59] to-[#3d6449] rounded-xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold text-white">Logo společnosti</h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  Speciální
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Logo Preview */}
+                <div className="bg-white rounded-lg p-4">
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center mb-3">
+                    <img
+                      src={logoUrl}
+                      alt="Logo"
+                      className="max-w-full max-h-full object-contain p-4"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/logo.jpg";
+                      }}
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600 text-center">
+                    Aktuální logo (zobrazuje se v navigaci, na domovské stránce a ve footeru)
+                  </p>
+                </div>
+
+                {/* Logo Upload */}
+                <div className="bg-white rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">Nahrát nové logo</h4>
+                  <ImageUpload
+                    currentUrl={logoUrl}
+                    productName="logo"
+                    onUploadSuccess={(url) => {
+                      setLogoUrl(url);
+                      // Uložit do localStorage
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('logo_url', url);
+                      }
+                      showSaveMessage("Logo aktualizováno - obnovte stránku pro zobrazení změn");
+                    }}
+                  />
+                  <div className="mt-4 bg-yellow-50 p-3 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      💡 <strong>Tip:</strong> Po nahrání loga obnovte stránku (F5) pro zobrazení změn v navigaci.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t-2 border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-600 font-semibold">
+                  Obrázky stránek a produktů
+                </span>
+              </div>
+            </div>
             
             {/* Category Filters */}
             <div className="mb-6">
