@@ -13,7 +13,6 @@ export default function HomePage() {
   const [content, setContent] = useState(defaultContent.home);
   const [heroImage, setHeroImage] = useState(defaultImages.home_hero);
   const [krokyBgImage, setKrokyBgImage] = useState(defaultImages.home_kroky_bg);
-  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -21,10 +20,6 @@ export default function HomePage() {
     setContent(getPageContent("home"));
     setHeroImage(getImageUrl("home_hero"));
     setKrokyBgImage(getImageUrl("home_kroky_bg"));
-    const savedLogo = localStorage.getItem('logo_url');
-    if (savedLogo) {
-      setLogoUrl(savedLogo);
-    }
   }, []);
 
   if (!mounted) {
@@ -40,13 +35,6 @@ export default function HomePage() {
       >
         <div className="absolute inset-0 bg-black/50"></div>
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <div className="mb-8">
-            <img
-              src={logoUrl}
-              alt="Démon agro"
-              className="mx-auto h-24 w-auto mb-8"
-            />
-          </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
             {content.hero_nadpis}
           </h1>
