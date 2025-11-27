@@ -23,7 +23,7 @@ export default function Footer() {
             <img
               src={logoUrl}
               alt="Démon agro"
-              className="h-10 w-auto mb-4"
+              className="max-h-10 w-auto max-w-[150px] object-contain mb-4"
             />
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">
