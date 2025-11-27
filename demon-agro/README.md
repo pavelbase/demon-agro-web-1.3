@@ -6,9 +6,10 @@ Komplexní webová aplikace pro zemědělce v severních a západních Čechách
 
 - **Home**: Hero sekce, 5 hlavních problémů, jak to funguje, proč my
 - **Řešení**: pH půdy, Nedostatek síry, Nedostatek draslíku, Nedostatek hořčíku, Analýza půdy
+- **Vzdělávání/Blog**: Články o pH, vápnění, živinách - Markdown editor, kategorie, SEO
 - **Produktový systém**: Správa produktů s localStorage
 - **Kontaktní formulář**: Integrace s EmailJS
-- **Admin panel**: Správa produktů, textů stránek a obrázků
+- **Admin panel**: Správa produktů, textů stránek, obrázků a článků
 - **Responzivní design**: Optimalizováno pro mobil, tablet i desktop
 
 ## Technologie
@@ -19,6 +20,7 @@ Komplexní webová aplikace pro zemědělce v severních a západních Čechách
 - EmailJS
 - lucide-react (ikony)
 - localStorage (databáze)
+- react-markdown + remark-gfm (Markdown rendering)
 
 ## Instalace
 
@@ -52,10 +54,11 @@ Aplikace poběží na [http://localhost:3000](http://localhost:3000)
 Přístup: `/admin`  
 Heslo: `demonagro2024`
 
-Tři záložky:
+Čtyři záložky:
 1. **Produkty**: Správa produktů (CRUD operace)
 2. **Obsah stránek**: Editace textů všech stránek
-3. **Správa obrázků**: Změna URL obrázků
+3. **Správa obrázků**: Změna URL obrázků + upload souborů
+4. **Vzdělávací články**: Správa blogových článků (Markdown editor)
 
 ## Struktura Projektu
 
@@ -69,24 +72,40 @@ demon-agro/
 │   ├── k/
 │   ├── mg/
 │   ├── analyza/
+│   ├── vzdelavani/        ⭐ NOVÉ
+│   │   ├── page.tsx       (Seznam článků)
+│   │   └── [slug]/
+│   │       └── page.tsx   (Detail článku)
 │   ├── kalkulacka/
 │   ├── o-nas/
 │   ├── kontakt/
-│   └── admin/
+│   ├── admin/
+│   └── api/
+│       └── upload/        (Upload API pro obrázky)
 ├── components/
 │   ├── Navigation.tsx
 │   ├── Footer.tsx
 │   ├── Hero.tsx
 │   ├── ProductCard.tsx
+│   ├── ImageUpload.tsx    ⭐ NOVÉ
 │   └── ...
 ├── lib/
 │   ├── products.ts
 │   ├── content.ts
-│   └── images.ts
+│   ├── images.ts
+│   ├── articles.ts        ⭐ NOVÉ
+│   └── types.ts
 └── public/
     ├── logo.jpg
     └── images/
+        └── uploads/       (Nahrané obrázky)
 ```
+
+## Dokumentace
+
+- `OBRAZKY_NAVOD.md` - Návod na správu obrázků
+- `POJMENOVANI_OBRAZKU.md` - Automatické pojmenování produktových obrázků
+- `VZDELAVANI_NAVOD.md` - Kompletní návod pro vzdělávací sekci/blog ⭐ NOVÉ
 
 ## Kontakt
 
