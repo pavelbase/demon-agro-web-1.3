@@ -70,42 +70,44 @@ export default function Navigation() {
               onMouseEnter={() => setIsReseniaOpen(true)}
               onMouseLeave={() => setIsReseniaOpen(false)}
             >
-              <button className="flex items-center text-gray-700 hover:text-primary-green transition-colors font-medium">
+              <button className="flex items-center text-gray-700 hover:text-primary-green transition-colors font-medium py-2">
                 Řešení
                 <ChevronDown className="ml-1 h-4 w-4" />
               </button>
               {isReseniaOpen && (
-                <div className="absolute left-0 mt-2 w-56 bg-white shadow-lg rounded-lg py-2">
-                  <Link
-                    href="/ph-pudy"
-                    className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
-                  >
-                    pH půdy a vápnění
-                  </Link>
-                  <Link
-                    href="/sira"
-                    className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
-                  >
-                    Nedostatek síry
-                  </Link>
-                  <Link
-                    href="/k"
-                    className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
-                  >
-                    Nedostatek draslíku
-                  </Link>
-                  <Link
-                    href="/mg"
-                    className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
-                  >
-                    Nedostatek hořčíku
-                  </Link>
-                  <Link
-                    href="/analyza"
-                    className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
-                  >
-                    Analýza půdy
-                  </Link>
+                <div className="absolute left-0 top-full pt-2 w-56">
+                  <div className="bg-white shadow-lg rounded-lg py-2">
+                    <Link
+                      href="/ph-pudy"
+                      className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
+                    >
+                      pH půdy a vápnění
+                    </Link>
+                    <Link
+                      href="/sira"
+                      className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
+                    >
+                      Nedostatek síry
+                    </Link>
+                    <Link
+                      href="/k"
+                      className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
+                    >
+                      Nedostatek draslíku
+                    </Link>
+                    <Link
+                      href="/mg"
+                      className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
+                    >
+                      Nedostatek hořčíku
+                    </Link>
+                    <Link
+                      href="/analyza"
+                      className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
+                    >
+                      Analýza půdy
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
