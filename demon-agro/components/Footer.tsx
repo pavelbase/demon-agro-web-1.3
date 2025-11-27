@@ -87,7 +87,7 @@ export default function Footer() {
                   href="/vzdelavani"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
-                  Vzdělávání
+                  Rádce
                 </Link>
               </li>
             </ul>

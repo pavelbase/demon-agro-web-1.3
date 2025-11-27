@@ -116,7 +116,7 @@ export default function Navigation() {
               href="/vzdelavani"
               className="text-gray-700 hover:text-primary-green transition-colors font-medium"
             >
-              Vzdělávání
+              Rádce
             </Link>
             <Link
               href="/kalkulacka"
@@ -218,7 +218,7 @@ export default function Navigation() {
                 className="text-gray-700 hover:text-primary-green transition-colors font-medium"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Vzdělávání
+                Rádce
               </Link>
               <Link
                 href="/kalkulacka"

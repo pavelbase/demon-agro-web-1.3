@@ -70,7 +70,7 @@ export default function ArticleDetailPage() {
             href="/vzdelavani"
             className="inline-block bg-[#4A7C59] hover:bg-[#3d6449] text-white px-8 py-3 rounded-full font-semibold transition-all shadow-md"
           >
-            Zpět na články
+            Zpět do rádce
           </Link>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function ArticleDetailPage() {
             </Link>
             <span>›</span>
             <Link href="/vzdelavani" className="hover:text-white transition-colors">
-              Vzdělávání
+              Rádce
             </Link>
             <span>›</span>
             <span className="text-white">{article.nadpis}</span>

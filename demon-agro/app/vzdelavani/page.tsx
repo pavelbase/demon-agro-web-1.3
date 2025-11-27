@@ -55,7 +55,7 @@ export default function VzdelavaniPage() {
       <section className="relative pt-32 pb-16 bg-gradient-to-br from-[#4A7C59] to-[#3d6449]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Vzdělávací centrum
+            Rádce
           </h1>
           <p className="text-xl text-white/90 max-w-3xl mx-auto">
             Odborné informace o pH půdy, vápnění a výživě rostlin
