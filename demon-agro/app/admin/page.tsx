@@ -7,12 +7,13 @@ import { getProducts, saveProducts, resetProducts, defaultProducts } from "@/lib
 import { getPageContent, savePageContent, resetPageContent, defaultContent } from "@/lib/content";
 import { getImages, saveImages, resetImages, defaultImages } from "@/lib/images";
 import { getArticles, saveArticles, resetArticles, generateSlug } from "@/lib/articles";
+import { getKalkulace, updateKalkulace, deleteKalkulace, UlozenaKalkulace } from "@/lib/kalkulace";
 import ImageUpload from "@/components/ImageUpload";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [activeTab, setActiveTab] = useState<"products" | "content" | "images" | "articles">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "content" | "images" | "articles" | "kalkulace">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -29,12 +30,15 @@ export default function AdminPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [isAddingArticle, setIsAddingArticle] = useState(false);
+  const [kalkulace, setKalkulace] = useState<UlozenaKalkulace[]>([]);
+  const [selectedKalkulace, setSelectedKalkulace] = useState<UlozenaKalkulace | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
       setProducts(getProducts());
       setImages(getImages());
       setArticles(getArticles());
+      setKalkulace(getKalkulace());
     }
   }, [isAuthenticated]);
 
@@ -263,6 +267,16 @@ export default function AdminPage() {
             }`}
           >
             Vzdělávací články
+          </button>
+          <button
+            onClick={() => setActiveTab("kalkulace")}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === "kalkulace"
+                ? "bg-[#4A7C59] text-white shadow-md"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Kalkulace
           </button>
         </div>
 
@@ -901,6 +915,255 @@ export default function AdminPage() {
                   setIsAddingArticle(false);
                 }}
               />
+            )}
+          </div>
+        )}
+
+        {/* Kalkulace Tab */}
+        {activeTab === "kalkulace" && (
+          <div className="bg-white shadow-lg rounded-xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Kalkulace hnojení</h2>
+              <div className="text-sm text-gray-600">
+                Celkem: {kalkulace.length}
+              </div>
+            </div>
+
+            {kalkulace.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-xl text-gray-500">
+                  Zatím nejsou žádné kalkulace.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Datum</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Jméno / Firma</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Kontakt</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Plocha</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">pH</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Kontaktován</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-900">Akce</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {kalkulace.map((kal) => (
+                      <tr key={kal.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          {new Date(kal.datum).toLocaleDateString('cs-CZ')}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold">{kal.jmeno}</div>
+                          {kal.firma && <div className="text-sm text-gray-600">{kal.firma}</div>}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div>{kal.email}</div>
+                          <div className="text-gray-600">{kal.telefon}</div>
+                        </td>
+                        <td className="px-4 py-3">{kal.plocha} ha</td>
+                        <td className="px-4 py-3">{kal.vysledek.vstup.pH}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => {
+                              updateKalkulace(kal.id, { kontaktovan: !kal.kontaktovan });
+                              setKalkulace(getKalkulace());
+                            }}
+                            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              kal.kontaktovan
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {kal.kontaktovan ? "Kontaktován" : "Nekontaktován"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-right space-x-2">
+                          <button
+                            onClick={() => setSelectedKalkulace(kal)}
+                            className="text-blue-600 hover:text-blue-800 inline-flex items-center"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm("Opravdu chcete smazat tuto kalkulaci?")) {
+                                deleteKalkulace(kal.id);
+                                setKalkulace(getKalkulace());
+                                showSaveMessage("Kalkulace smazána");
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-800 inline-flex items-center"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Detail Modal */}
+            {selectedKalkulace && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      Detail kalkulace
+                    </h3>
+                    <button
+                      onClick={() => setSelectedKalkulace(null)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Kontaktní údaje */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-900 mb-3">Kontaktní údaje</h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-600">Jméno:</span>
+                          <span className="ml-2 font-semibold">{selectedKalkulace.jmeno}</span>
+                        </div>
+                        {selectedKalkulace.firma && (
+                          <div>
+                            <span className="text-gray-600">Firma:</span>
+                            <span className="ml-2 font-semibold">{selectedKalkulace.firma}</span>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-gray-600">Email:</span>
+                          <span className="ml-2">{selectedKalkulace.email}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Telefon:</span>
+                          <span className="ml-2">{selectedKalkulace.telefon}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Datum:</span>
+                          <span className="ml-2">{new Date(selectedKalkulace.datum).toLocaleString('cs-CZ')}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Základní údaje */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Základní údaje</h4>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-600">Plocha:</span>
+                          <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vstup.plocha} ha</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Typ půdy:</span>
+                          <span className="ml-2 capitalize">{selectedKalkulace.vysledek.vstup.typPudy}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Cílové pH:</span>
+                          <span className="ml-2">{selectedKalkulace.vysledek.vstup.cilovePH === 'optimalni' ? '6.5' : '6.2'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Vápnění */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Potřeba vápnění</h4>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-gray-600">Aktuální pH:</span>
+                            <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vstup.pH} ({selectedKalkulace.vysledek.hodnotenipH})</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Potřeba:</span>
+                            <span className="ml-2 font-semibold text-green-700">{selectedKalkulace.vysledek.potrebaVapneniTha} t CaO/ha</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-gray-600">Celkem:</span>
+                            <span className="ml-2 font-bold text-green-700">{selectedKalkulace.vysledek.potrebaVapneniCelkem} t CaO</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Živiny */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Stav živin</h4>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="px-3 py-2 text-left">Živina</th>
+                            <th className="px-3 py-2 text-left">Hodnocení</th>
+                            <th className="px-3 py-2 text-right">Aktuální</th>
+                            <th className="px-3 py-2 text-right">Optimum</th>
+                            <th className="px-3 py-2 text-right">Deficit/ha</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(selectedKalkulace.vysledek.ziviny).map(([key, data]) => (
+                            <tr key={key} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 font-semibold">{key}</td>
+                              <td className="px-3 py-2">{data.hodnoceniText}</td>
+                              <td className="px-3 py-2 text-right">{data.aktualni}</td>
+                              <td className="px-3 py-2 text-right">{data.optimum}</td>
+                              <td className="px-3 py-2 text-right font-semibold">
+                                {data.deficit > 0 ? `${data.deficit} kg` : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Poznámka */}
+                    <div>
+                      <label className="block font-semibold text-gray-900 mb-2">
+                        Poznámka
+                      </label>
+                      <textarea
+                        value={selectedKalkulace.poznamka || ''}
+                        onChange={(e) => {
+                          const updated = { ...selectedKalkulace, poznamka: e.target.value };
+                          setSelectedKalkulace(updated);
+                        }}
+                        rows={3}
+                        className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none resize-none"
+                        placeholder="Interní poznámka (jen pro administrátory)..."
+                      />
+                    </div>
+
+                    {/* Akce */}
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={() => {
+                          updateKalkulace(selectedKalkulace.id, { 
+                            poznamka: selectedKalkulace.poznamka 
+                          });
+                          setKalkulace(getKalkulace());
+                          showSaveMessage("Poznámka uložena");
+                          setSelectedKalkulace(null);
+                        }}
+                        className="flex-1 bg-[#4A7C59] hover:bg-[#3d6449] text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
+                      >
+                        Uložit
+                      </button>
+                      <button
+                        onClick={() => setSelectedKalkulace(null)}
+                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
+                      >
+                        Zavřít
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         )}
