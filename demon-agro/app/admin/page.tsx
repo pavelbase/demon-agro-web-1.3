@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { X, Check, Plus, Edit2, Trash2, AlertCircle, Image as ImageIcon } from "lucide-react";
-import { Product, PageKey, ImageUrls } from "@/lib/types";
+import { Product, PageKey, ImageUrls, Article } from "@/lib/types";
 import { getProducts, saveProducts, resetProducts, defaultProducts } from "@/lib/products";
 import { getPageContent, savePageContent, resetPageContent, defaultContent } from "@/lib/content";
 import { getImages, saveImages, resetImages, defaultImages } from "@/lib/images";
+import { getArticles, saveArticles, resetArticles, generateSlug } from "@/lib/articles";
 import ImageUpload from "@/components/ImageUpload";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [activeTab, setActiveTab] = useState<"products" | "content" | "images">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "content" | "images" | "articles">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -25,11 +26,15 @@ export default function AdminPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoUrl, setLogoUrl] = useState("/logo.jpg");
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [isAddingArticle, setIsAddingArticle] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
       setProducts(getProducts());
       setImages(getImages());
+      setArticles(getArticles());
     }
   }, [isAuthenticated]);
 
@@ -126,6 +131,43 @@ export default function AdminPage() {
     showSaveMessage("Obrázek produktu aktualizován");
   };
 
+  const handleSaveArticle = (article: Article) => {
+    const updatedArticles = editingArticle
+      ? articles.map((a) => (a.id === article.id ? article : a))
+      : [...articles, { ...article, id: `article-${Date.now()}` }];
+    
+    setArticles(updatedArticles);
+    saveArticles(updatedArticles);
+    setEditingArticle(null);
+    setIsAddingArticle(false);
+    showSaveMessage("Článek uložen");
+  };
+
+  const handleDeleteArticle = (id: string) => {
+    if (confirm("Opravdu chcete smazat tento článek?")) {
+      const updatedArticles = articles.filter((a) => a.id !== id);
+      setArticles(updatedArticles);
+      saveArticles(updatedArticles);
+      showSaveMessage("Článek smazán");
+    }
+  };
+
+  const handleTogglePublished = (id: string) => {
+    const updatedArticles = articles.map((a) =>
+      a.id === id ? { ...a, publikovano: !a.publikovano } : a
+    );
+    setArticles(updatedArticles);
+    saveArticles(updatedArticles);
+  };
+
+  const handleResetArticles = () => {
+    if (confirm("Opravdu chcete obnovit výchozí články? Všechny změny budou ztraceny.")) {
+      resetArticles();
+      setArticles(getArticles());
+      showSaveMessage("Články obnoveny");
+    }
+  };
+
   const showSaveMessage = (message: string) => {
     setSaveMessage(message);
     setTimeout(() => setSaveMessage(""), 3000);
@@ -181,7 +223,7 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        <div className="mb-8 flex space-x-4">
+        <div className="mb-8 flex flex-wrap gap-4">
           <button
             onClick={() => setActiveTab("products")}
             className={`px-6 py-3 rounded-lg font-semibold transition-all ${
@@ -211,6 +253,16 @@ export default function AdminPage() {
             }`}
           >
             Správa obrázků
+          </button>
+          <button
+            onClick={() => setActiveTab("articles")}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === "articles"
+                ? "bg-[#4A7C59] text-white shadow-md"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Vzdělávací články
           </button>
         </div>
 
@@ -765,6 +817,325 @@ export default function AdminPage() {
             )}
           </div>
         )}
+
+        {/* Articles Tab */}
+        {activeTab === "articles" && (
+          <div className="bg-white shadow-lg rounded-xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Vzdělávací články</h2>
+              <div className="space-x-4">
+                <button
+                  onClick={() => setIsAddingArticle(true)}
+                  className="bg-[#4A7C59] hover:bg-[#3d6449] text-white px-6 py-2 rounded-full font-semibold transition-all shadow-md inline-flex items-center"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Přidat článek
+                </button>
+                <button
+                  onClick={handleResetArticles}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-full font-semibold transition-all shadow-md"
+                >
+                  Obnovit výchozí
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Nadpis</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Kategorie</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Datum</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Publikováno</th>
+                    <th className="px-4 py-3 text-right font-semibold text-gray-900">Akce</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {articles.map((article) => (
+                    <tr key={article.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">{article.nadpis}</td>
+                      <td className="px-4 py-3 capitalize">{article.kategorie}</td>
+                      <td className="px-4 py-3">
+                        {new Date(article.datum_publikace).toLocaleDateString('cs-CZ')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleTogglePublished(article.id)}
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            article.publikovano
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {article.publikovano ? "Publikováno" : "Koncept"}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <button
+                          onClick={() => setEditingArticle(article)}
+                          className="text-blue-600 hover:text-blue-800 inline-flex items-center"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteArticle(article.id)}
+                          className="text-red-600 hover:text-red-800 inline-flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Article Form Modal */}
+            {(editingArticle || isAddingArticle) && (
+              <ArticleFormModal
+                article={editingArticle}
+                onSave={handleSaveArticle}
+                onClose={() => {
+                  setEditingArticle(null);
+                  setIsAddingArticle(false);
+                }}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Article Form Modal Component
+function ArticleFormModal({
+  article,
+  onSave,
+  onClose,
+}: {
+  article: Article | null;
+  onSave: (article: Article) => void;
+  onClose: () => void;
+}) {
+  const [formData, setFormData] = useState<Article>(
+    article || {
+      id: "",
+      slug: "",
+      nadpis: "",
+      kategorie: "ziviny",
+      perex: "",
+      obsah: "",
+      obrazek_url: "",
+      datum_publikace: new Date().toISOString(),
+      cas_cteni: 5,
+      publikovano: false,
+      autor: "Démon agro",
+      meta_description: "",
+    }
+  );
+
+  // Auto-generate slug from title
+  useEffect(() => {
+    if (!article && formData.nadpis) {
+      setFormData(prev => ({
+        ...prev,
+        slug: generateSlug(formData.nadpis)
+      }));
+    }
+  }, [formData.nadpis, article]);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">
+            {article ? "Upravit článek" : "Přidat článek"}
+          </h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">
+              Nadpis článku *
+            </label>
+            <input
+              type="text"
+              value={formData.nadpis}
+              onChange={(e) => setFormData({ ...formData, nadpis: e.target.value })}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+              placeholder="Optimální pH půdy pro dostupnost živin"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">
+              Slug (URL) *
+            </label>
+            <input
+              type="text"
+              value={formData.slug}
+              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+              placeholder="optimalni-ph-pudy-pro-dostupnost-zivin"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              URL článku: /vzdelavani/{formData.slug || "nazev-clanku"}
+            </p>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">Kategorie *</label>
+            <select
+              value={formData.kategorie}
+              onChange={(e) => setFormData({ ...formData, kategorie: e.target.value as any })}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+            >
+              <option value="ph">pH půdy</option>
+              <option value="vapneni">Vápnění</option>
+              <option value="ziviny">Živiny</option>
+              <option value="vyzkumy">Výzkumy</option>
+              <option value="tipy">Tipy pro zemědělce</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">
+              Perex / Úryvek (max 200 znaků) *
+            </label>
+            <textarea
+              value={formData.perex}
+              onChange={(e) => setFormData({ ...formData, perex: e.target.value.slice(0, 200) })}
+              maxLength={200}
+              rows={3}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none resize-none"
+              placeholder="Krátký úryvek, který se zobrazí na seznamu článků..."
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {formData.perex.length}/200
+            </p>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-900 mb-4">Obrázek článku</label>
+            <ImageUpload
+              currentUrl={formData.obrazek_url}
+              productName={formData.nadpis || "clanek"}
+              onUploadSuccess={(url) => {
+                setFormData({ ...formData, obrazek_url: url });
+              }}
+            />
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">nebo zadejte URL</span>
+              </div>
+            </div>
+            <input
+              type="url"
+              value={formData.obrazek_url}
+              onChange={(e) => setFormData({ ...formData, obrazek_url: e.target.value })}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">
+              Obsah článku (Markdown) *
+            </label>
+            <textarea
+              value={formData.obsah}
+              onChange={(e) => setFormData({ ...formData, obsah: e.target.value })}
+              rows={20}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none resize-none font-mono text-sm"
+              placeholder="## Nadpis&#10;&#10;Text článku...&#10;&#10;### Podnadpis&#10;&#10;- Seznam&#10;- položek"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Podporuje Markdown: ## Nadpis, **tučné**, *kurzíva*, tabulky, seznamy
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold text-gray-900 mb-2">
+                Datum publikace
+              </label>
+              <input
+                type="date"
+                value={formData.datum_publikace.split('T')[0]}
+                onChange={(e) => setFormData({ ...formData, datum_publikace: new Date(e.target.value).toISOString() })}
+                className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-gray-900 mb-2">
+                Čas čtení (minuty)
+              </label>
+              <input
+                type="number"
+                value={formData.cas_cteni}
+                onChange={(e) => setFormData({ ...formData, cas_cteni: parseInt(e.target.value) || 5 })}
+                className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+                placeholder="5"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">
+              Meta description (SEO, max 160 znaků)
+            </label>
+            <textarea
+              value={formData.meta_description}
+              onChange={(e) => setFormData({ ...formData, meta_description: e.target.value.slice(0, 160) })}
+              maxLength={160}
+              rows={2}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none resize-none"
+              placeholder="Krátký popis pro vyhledávače..."
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {formData.meta_description.length}/160
+            </p>
+          </div>
+
+          <div>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={formData.publikovano}
+                onChange={(e) => setFormData({ ...formData, publikovano: e.target.checked })}
+                className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59] rounded"
+              />
+              <span className="font-semibold text-gray-900">Publikovat článek</span>
+            </label>
+            <p className="text-sm text-gray-500 ml-6 mt-1">
+              Nepublikované články se ukládají jako koncepty
+            </p>
+          </div>
+
+          <div className="flex space-x-4 pt-4">
+            <button
+              onClick={() => onSave(formData)}
+              className="flex-1 bg-[#4A7C59] hover:bg-[#3d6449] text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
+            >
+              {formData.publikovano ? "Uložit a publikovat" : "Uložit koncept"}
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-md"
+            >
+              Zrušit
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

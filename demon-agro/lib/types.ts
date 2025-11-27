@@ -48,3 +48,18 @@ export interface ImageUrls {
 }
 
 export type PageKey = "home" | "ph" | "sira" | "k" | "mg" | "analyza" | "onas";
+
+export interface Article {
+  id: string;
+  slug: string;
+  nadpis: string;
+  kategorie: "ph" | "vapneni" | "ziviny" | "vyzkumy" | "tipy";
+  perex: string;
+  obsah: string; // Markdown format
+  obrazek_url: string;
+  datum_publikace: string; // ISO date string
+  cas_cteni: number; // minuty
+  publikovano: boolean;
+  autor: string;
+  meta_description: string;
+}

@@ -113,6 +113,12 @@ export default function Navigation() {
             </div>
 
             <Link
+              href="/vzdelavani"
+              className="text-gray-700 hover:text-primary-green transition-colors font-medium"
+            >
+              Vzdělávání
+            </Link>
+            <Link
               href="/kalkulacka"
               className="text-gray-700 hover:text-primary-green transition-colors font-medium"
             >
@@ -207,6 +213,13 @@ export default function Navigation() {
                 </div>
               </div>
 
+              <Link
+                href="/vzdelavani"
+                className="text-gray-700 hover:text-primary-green transition-colors font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Vzdělávání
+              </Link>
               <Link
                 href="/kalkulacka"
                 className="text-gray-700 hover:text-primary-green transition-colors font-medium"

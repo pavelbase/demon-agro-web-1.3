@@ -40,7 +40,7 @@ export default function Footer() {
 
           {/* Řešení */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Řešení</h3>
+            <h3 className="text-xl font-bold mb-4">Navigace</h3>
             <ul className="space-y-2">
               <li>
                 <Link
@@ -80,6 +80,14 @@ export default function Footer() {
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   Analýza půdy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/vzdelavani"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Vzdělávání
                 </Link>
               </li>
             </ul>
