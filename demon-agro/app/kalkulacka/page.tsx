@@ -1,10 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { KalkulackaInputs } from "@/lib/kalkulace-types";
-import { vypocetKalkulace, ulozitKalkulaci } from "@/lib/kalkulace";
+import { KalkulackaInputs, TypPudy } from "@/lib/kalkulace-types";
+import { vypocetKalkulace, ulozitKalkulaci, zkontrolujDuplicitniEmail } from "@/lib/kalkulace";
 import { VysledekKalkulace } from "@/lib/kalkulace-types";
-import { Calculator, CheckCircle, AlertCircle } from "lucide-react";
+import { Calculator, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
+
+const TYPYPUDY = {
+  'piscita': {
+    nazev: 'Písčitá (lehká)',
+    popis: 'Lehké půdy s nízkým obsahem jílu'
+  },
+  'hlinito_piscita': {
+    nazev: 'Hlinito-písčitá',
+    popis: 'Přechodné půdy mezi lehkými a středními'
+  },
+  'hlinita': {
+    nazev: 'Hlinitá (střední)',
+    popis: 'Střední půdy, nejběžnější typ v ČR'
+  },
+  'jilovita': {
+    nazev: 'Jílovitá (těžká)',
+    popis: 'Těžké půdy s vysokým obsahem jílu'
+  }
+};
 
 export default function KalkulackaPage() {
   const [krok, setKrok] = useState(1);
@@ -12,14 +31,12 @@ export default function KalkulackaPage() {
   const [odesila, setOdesila] = useState(false);
   
   const [formData, setFormData] = useState<KalkulackaInputs>({
-    plocha: 0,
-    typPudy: 'stredni',
-    cilovePH: 'optimalni',
+    typPudy: 'hlinita',
     pH: 0,
-    P2O5: 0,
-    K2O: 0,
-    CaO: 0,
-    MgO: 0,
+    P: 0,
+    K: 0,
+    Mg: 0,
+    Ca: 0,
     S: 0,
     jmeno: '',
     firma: '',
@@ -31,33 +48,27 @@ export default function KalkulackaPage() {
   const [chyby, setChyby] = useState<Record<string, string>>({});
 
   const validovatKrok1 = (): boolean => {
-    const novéChyby: Record<string, string> = {};
-    
-    if (formData.plocha <= 0 || formData.plocha > 10000) {
-      novéChyby.plocha = 'Zadejte plochu mezi 0.1 a 10000 ha';
-    }
-    
-    setChyby(novéChyby);
-    return Object.keys(novéChyby).length === 0;
+    // Typ půdy je vždy vybraný
+    return true;
   };
 
   const validovatKrok2 = (): boolean => {
     const novéChyby: Record<string, string> = {};
     
-    if (formData.pH < 3.5 || formData.pH > 9.0) {
-      novéChyby.pH = 'pH musí být mezi 3.5 a 9.0';
+    if (formData.pH < 3.0 || formData.pH > 8.5) {
+      novéChyby.pH = 'pH musí být mezi 3.0 a 8.5';
     }
-    if (formData.P2O5 < 0 || formData.P2O5 > 1000) {
-      novéChyby.P2O5 = 'Hodnota musí být mezi 0 a 1000 mg/kg';
+    if (formData.P < 0 || formData.P > 500) {
+      novéChyby.P = 'Hodnota musí být mezi 0 a 500 mg/kg';
     }
-    if (formData.K2O < 0 || formData.K2O > 2000) {
-      novéChyby.K2O = 'Hodnota musí být mezi 0 a 2000 mg/kg';
+    if (formData.K < 0 || formData.K > 1000) {
+      novéChyby.K = 'Hodnota musí být mezi 0 a 1000 mg/kg';
     }
-    if (formData.CaO < 0 || formData.CaO > 15000) {
-      novéChyby.CaO = 'Hodnota musí být mezi 0 a 15000 mg/kg';
+    if (formData.Mg < 0 || formData.Mg > 800) {
+      novéChyby.Mg = 'Hodnota musí být mezi 0 a 800 mg/kg';
     }
-    if (formData.MgO < 0 || formData.MgO > 1000) {
-      novéChyby.MgO = 'Hodnota musí být mezi 0 a 1000 mg/kg';
+    if (formData.Ca < 0 || formData.Ca > 15000) {
+      novéChyby.Ca = 'Hodnota musí být mezi 0 a 15000 mg/kg';
     }
     if (formData.S < 0 || formData.S > 100) {
       novéChyby.S = 'Hodnota musí být mezi 0 a 100 mg/kg';
@@ -81,6 +92,11 @@ export default function KalkulackaPage() {
     }
     if (!formData.souhlas) {
       novéChyby.souhlas = 'Musíte souhlasit se zpracováním osobních údajů';
+    }
+    
+    // Kontrola duplicitního emailu
+    if (formData.email && zkontrolujDuplicitniEmail(formData.email)) {
+      novéChyby.email = 'Na tento email již byl odeslán výsledek kalkulace. Pro další výpočty nás prosím kontaktujte přímo.';
     }
     
     setChyby(novéChyby);
@@ -117,14 +133,12 @@ export default function KalkulackaPage() {
     setKrok(1);
     setVysledek(null);
     setFormData({
-      plocha: 0,
-      typPudy: 'stredni',
-      cilovePH: 'optimalni',
+      typPudy: 'hlinita',
       pH: 0,
-      P2O5: 0,
-      K2O: 0,
-      CaO: 0,
-      MgO: 0,
+      P: 0,
+      K: 0,
+      Mg: 0,
+      Ca: 0,
       S: 0,
       jmeno: '',
       firma: '',
@@ -143,15 +157,18 @@ export default function KalkulackaPage() {
     <div className="min-h-screen bg-[#F5F1E8] pt-32 pb-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <Calculator className="w-16 h-16 text-[#4A7C59]" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Kalkulačka hnojení
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+            Kalkulačka vápnění
           </h1>
-          <p className="text-xl text-gray-600">
-            Zjistěte potřebu vápnění a živin pro vaše pole
+          <p className="text-lg text-gray-600 mb-1">
+            Metodika VDLUFA pro střední Evropu
+          </p>
+          <p className="text-sm text-gray-500">
+            Výpočet potřeby vápnění a živin na 1 hektar
           </p>
         </div>
 
@@ -162,7 +179,7 @@ export default function KalkulackaPage() {
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${krok >= 1 ? 'bg-[#4A7C59] text-white' : 'bg-gray-200'}`}>
                 1
               </div>
-              <span className="ml-2 hidden sm:inline">Základní údaje</span>
+              <span className="ml-2 hidden sm:inline">Typ půdy</span>
             </div>
             <div className="w-16 h-1 bg-gray-300"></div>
             <div className={`flex items-center ${krok >= 2 ? 'text-[#4A7C59]' : 'text-gray-400'}`}>
@@ -183,87 +200,41 @@ export default function KalkulackaPage() {
 
         {/* Formulář */}
         <div className="bg-white shadow-lg rounded-xl p-6 md:p-8">
-          {/* KROK 1 */}
+          {/* KROK 1 - TYP PŮDY */}
           {krok === 1 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                KROK 1: Základní údaje o pozemku
+                KROK 1: Typ půdy
               </h2>
 
-              <div>
-                <label className="block font-semibold text-gray-900 mb-2">
-                  Plocha pozemku (ha) *
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formData.plocha || ''}
-                  onChange={(e) => setFormData({ ...formData, plocha: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
-                  placeholder="např. 50"
-                />
-                {chyby.plocha && <p className="text-red-600 text-sm mt-1">{chyby.plocha}</p>}
+              <div className="space-y-4">
+                {Object.entries(TYPYPUDY).map(([key, data]) => (
+                  <label
+                    key={key}
+                    className={`flex items-start p-4 rounded-lg cursor-pointer transition-all ${
+                      formData.typPudy === key
+                        ? 'bg-green-50 ring-2 ring-[#4A7C59]'
+                        : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      checked={formData.typPudy === key}
+                      onChange={() => setFormData({ ...formData, typPudy: key as TypPudy })}
+                      className="w-5 h-5 text-[#4A7C59] focus:ring-[#4A7C59] mt-0.5"
+                    />
+                    <div className="ml-3">
+                      <div className="font-semibold text-gray-900">{data.nazev}</div>
+                      <div className="text-sm text-gray-600">{data.popis}</div>
+                    </div>
+                  </label>
+                ))}
               </div>
 
-              <div>
-                <label className="block font-semibold text-gray-900 mb-3">
-                  Typ půdy *
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={formData.typPudy === 'lehka'}
-                      onChange={() => setFormData({ ...formData, typPudy: 'lehka' })}
-                      className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59]"
-                    />
-                    <span className="ml-3">Lehká (písčitá)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={formData.typPudy === 'stredni'}
-                      onChange={() => setFormData({ ...formData, typPudy: 'stredni' })}
-                      className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59]"
-                    />
-                    <span className="ml-3">Střední (hlinitá)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={formData.typPudy === 'tezka'}
-                      onChange={() => setFormData({ ...formData, typPudy: 'tezka' })}
-                      className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59]"
-                    />
-                    <span className="ml-3">Těžká (jílovitá)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-gray-900 mb-3">
-                  Cílové pH *
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={formData.cilovePH === 'ekonomicke'}
-                      onChange={() => setFormData({ ...formData, cilovePH: 'ekonomicke' })}
-                      className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59]"
-                    />
-                    <span className="ml-3">Ekonomické (pH 6.2)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={formData.cilovePH === 'optimalni'}
-                      onChange={() => setFormData({ ...formData, cilovePH: 'optimalni' })}
-                      className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59]"
-                    />
-                    <span className="ml-3">Optimální (pH 6.5)</span>
-                  </label>
-                </div>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-900">
+                  💡 <strong>Tip:</strong> Typ půdy zjistíte z rozboru nebo orientačně podle zpracovatelnosti (lehká = sypká, těžká = lepivá)
+                </p>
               </div>
 
               <button
@@ -275,7 +246,7 @@ export default function KalkulackaPage() {
             </div>
           )}
 
-          {/* KROK 2 */}
+          {/* KROK 2 - ROZBOR PŮDY */}
           {krok === 2 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -284,14 +255,14 @@ export default function KalkulackaPage() {
 
               <div className="bg-blue-50 p-4 rounded-lg mb-6">
                 <p className="text-sm text-blue-900">
-                  💡 <strong>Tip:</strong> Hodnoty najdete ve výsledcích laboratorního rozboru půdy (metoda Mehlich III).
+                  💡 <strong>Tip:</strong> Hodnoty najdete ve výsledcích laboratorního rozboru půdy (AZZP nebo soukromá laboratoř, metoda Mehlich III).
                   Zadávejte hodnoty v <strong>mg/kg</strong>.
                 </p>
               </div>
 
               <div>
                 <label className="block font-semibold text-gray-900 mb-2">
-                  pH půdy *
+                  pH (CaCl₂) *
                 </label>
                 <input
                   type="number"
@@ -307,63 +278,63 @@ export default function KalkulackaPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-semibold text-gray-900 mb-2">
-                    P₂O₅ (fosfor) mg/kg *
+                    Fosfor (P) mg/kg *
                   </label>
                   <input
                     type="number"
-                    value={formData.P2O5 || ''}
-                    onChange={(e) => setFormData({ ...formData, P2O5: parseFloat(e.target.value) || 0 })}
+                    value={formData.P || ''}
+                    onChange={(e) => setFormData({ ...formData, P: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
-                    placeholder="např. 85"
+                    placeholder="např. 45"
                   />
-                  {chyby.P2O5 && <p className="text-red-600 text-sm mt-1">{chyby.P2O5}</p>}
+                  {chyby.P && <p className="text-red-600 text-sm mt-1">{chyby.P}</p>}
                 </div>
 
                 <div>
                   <label className="block font-semibold text-gray-900 mb-2">
-                    K₂O (draslík) mg/kg *
+                    Draslík (K) mg/kg *
                   </label>
                   <input
                     type="number"
-                    value={formData.K2O || ''}
-                    onChange={(e) => setFormData({ ...formData, K2O: parseFloat(e.target.value) || 0 })}
+                    value={formData.K || ''}
+                    onChange={(e) => setFormData({ ...formData, K: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
                     placeholder="např. 180"
                   />
-                  {chyby.K2O && <p className="text-red-600 text-sm mt-1">{chyby.K2O}</p>}
+                  {chyby.K && <p className="text-red-600 text-sm mt-1">{chyby.K}</p>}
                 </div>
 
                 <div>
                   <label className="block font-semibold text-gray-900 mb-2">
-                    CaO (vápník) mg/kg *
+                    Hořčík (Mg) mg/kg *
                   </label>
                   <input
                     type="number"
-                    value={formData.CaO || ''}
-                    onChange={(e) => setFormData({ ...formData, CaO: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
-                    placeholder="např. 2500"
-                  />
-                  {chyby.CaO && <p className="text-red-600 text-sm mt-1">{chyby.CaO}</p>}
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-gray-900 mb-2">
-                    MgO (hořčík) mg/kg *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.MgO || ''}
-                    onChange={(e) => setFormData({ ...formData, MgO: parseFloat(e.target.value) || 0 })}
+                    value={formData.Mg || ''}
+                    onChange={(e) => setFormData({ ...formData, Mg: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
                     placeholder="např. 150"
                   />
-                  {chyby.MgO && <p className="text-red-600 text-sm mt-1">{chyby.MgO}</p>}
+                  {chyby.Mg && <p className="text-red-600 text-sm mt-1">{chyby.Mg}</p>}
                 </div>
 
                 <div>
                   <label className="block font-semibold text-gray-900 mb-2">
-                    S (síra) mg/kg *
+                    Vápník (Ca) mg/kg *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.Ca || ''}
+                    onChange={(e) => setFormData({ ...formData, Ca: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+                    placeholder="např. 2500"
+                  />
+                  {chyby.Ca && <p className="text-red-600 text-sm mt-1">{chyby.Ca}</p>}
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-900 mb-2">
+                    Síra (S) mg/kg *
                   </label>
                   <input
                     type="number"
@@ -393,7 +364,7 @@ export default function KalkulackaPage() {
             </div>
           )}
 
-          {/* KROK 3 */}
+          {/* KROK 3 - KONTAKT */}
           {krok === 3 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -487,7 +458,7 @@ export default function KalkulackaPage() {
                   disabled={odesila}
                   className="flex-1 bg-[#4A7C59] hover:bg-[#3d6449] text-white px-8 py-4 rounded-full font-semibold transition-all shadow-md text-lg disabled:opacity-50"
                 >
-                  {odesila ? 'Zpracovávám...' : 'Vypočítat a odeslat →'}
+                  {odesila ? 'Zpracovávám...' : 'Vypočítat →'}
                 </button>
               </div>
             </div>
@@ -500,16 +471,12 @@ export default function KalkulackaPage() {
 
 // Komponenta pro zobrazení výsledků
 function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNova: () => void }) {
-  const getHodnoceniColor = (hodnoceni: string) => {
-    if (hodnoceni === 'nizky' || hodnoceni === 'vyhovujici') return 'text-orange-600';
-    if (hodnoceni === 'dobry') return 'text-green-600';
-    return 'text-blue-600';
-  };
-
-  const getHodnoceniIcon = (hodnoceni: string) => {
-    if (hodnoceni === 'nizky' || hodnoceni === 'vyhovujici') return '⚠️';
-    if (hodnoceni === 'dobry') return '✅';
-    return '📊';
+  const getIconForTrida = (trida: string) => {
+    if (trida === 'A') return '🔴';
+    if (trida === 'B') return '⚠️';
+    if (trida === 'C') return '✅';
+    if (trida === 'D') return '📊';
+    return '📈';
   };
 
   return (
@@ -522,51 +489,72 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
             Výsledek kalkulace
           </h1>
           <p className="text-lg text-gray-600">
-            📧 Kompletní výsledek byl odeslán na váš email.<br />
-            Pro detailní plán hnojení vás bude kontaktovat náš obchodní zástupce.
+            📧 Výsledek byl odeslán na váš email.
           </p>
         </div>
 
         {/* Vápnění */}
         <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            📊 POTŘEBA VÁPNĚNÍ
+            📊 POTŘEBA VÁPNĚNÍ (na 1 hektar)
           </h2>
           
-          <div className="space-y-3">
+          <div className="space-y-3 mb-4">
+            <div className="flex justify-between">
+              <span className="text-gray-700">pH třída:</span>
+              <span className="font-semibold">
+                {vysledek.vapneni.phTrida} ({vysledek.vapneni.phTridaNazev})
+              </span>
+            </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Aktuální pH:</span>
-              <span className="font-semibold">
-                {vysledek.vstup.pH} ({vysledek.hodnotenipH})
-              </span>
+              <span className="font-semibold">{vysledek.vstup.pH}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Cílové pH:</span>
-              <span className="font-semibold">
-                {vysledek.vstup.cilovePH === 'optimalni' ? '6.5 (optimální)' : '6.2 (ekonomické)'}
-              </span>
-            </div>
-            <hr className="my-3" />
-            <div className="flex justify-between text-lg">
-              <span className="text-gray-700">Potřeba vápna:</span>
-              <span className="font-bold text-[#4A7C59]">
-                {vysledek.potrebaVapneniTha} t CaO/ha
-              </span>
-            </div>
-            <div className="flex justify-between text-lg">
-              <span className="text-gray-700">Celkem:</span>
-              <span className="font-bold text-[#4A7C59]">
-                {vysledek.potrebaVapneniCelkem} t CaO (pro {vysledek.vstup.plocha} ha)
-              </span>
+              <span className="text-gray-700">Popis:</span>
+              <span className="text-sm text-gray-600">{vysledek.vapneni.phTridaPopis}</span>
             </div>
           </div>
 
-          {vysledek.upozorneniRozdelitDavku && (
+          <div className="bg-green-50 p-4 rounded-lg mb-4">
+            <div className="text-center mb-2">
+              <div className="text-3xl font-bold text-[#4A7C59]">
+                {vysledek.vapneni.celkovaPotrebaCaO_t} t CaO/ha
+              </div>
+              <div className="text-sm text-gray-600">Celková potřeba vápníku</div>
+            </div>
+            
+            <div className="text-center mt-3 pt-3 border-t border-green-200">
+              <div className="text-xl font-bold text-[#2D5016]">
+                {vysledek.vapneni.prepocetyHnojiva.mletyVapenec_t} t/ha
+              </div>
+              <div className="text-sm text-gray-600">Mletý vápenec (48% CaO)</div>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-700">Max. jednorázová dávka:</span>
+              <span className="font-semibold">{vysledek.vapneni.maxJednorazovaDavka_t} t CaO/ha</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-700">Počet aplikací:</span>
+              <span className="font-semibold">{vysledek.vapneni.pocetAplikaci}×</span>
+            </div>
+            {vysledek.vapneni.pocetAplikaci > 1 && (
+              <div className="flex justify-between">
+                <span className="text-gray-700">Dávka na aplikaci:</span>
+                <span className="font-semibold">{vysledek.vapneni.davkaNaAplikaci_t} t CaO/ha</span>
+              </div>
+            )}
+          </div>
+
+          {vysledek.vapneni.pocetAplikaci > 1 && (
             <div className="mt-4 bg-orange-50 p-4 rounded-lg flex items-start">
-              <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0" />
+              <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0" />
               <p className="text-sm text-orange-900">
-                <strong>Upozornění:</strong> Doporučená dávka přesahuje maximální jednorázovou aplikaci 
-                ({vysledek.maxDavka} t CaO/ha). Doporučujeme rozdělit do 2 aplikací.
+                <strong>Upozornění:</strong> Doporučená dávka přesahuje maximální jednorázovou aplikaci.
+                {vysledek.vapneni.doporucenyInterval && ` Doporučujeme ${vysledek.vapneni.doporucenyInterval}.`}
               </p>
             </div>
           )}
@@ -575,7 +563,7 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
         {/* Živiny */}
         <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            🌱 STAV ŽIVIN
+            🌱 STAV ŽIVIN (na 1 hektar)
           </h2>
 
           <div className="overflow-x-auto">
@@ -585,23 +573,23 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
                   <th className="px-4 py-3 text-left font-semibold text-gray-900">Živina</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-900">Stav</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-900">Aktuální</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-900">Optimum</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-900">Třída</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-900">Deficit</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(vysledek.ziviny).map(([key, data]) => (
                   <tr key={key} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-semibold">{key === 'P' ? 'P₂O₅' : key === 'K' ? 'K₂O' : key === 'Mg' ? 'MgO' : key === 'Ca' ? 'CaO' : 'S'}</td>
+                    <td className="px-4 py-3 font-semibold">{key}</td>
                     <td className="px-4 py-3">
-                      <span className={getHodnoceniColor(data.hodnoceni)}>
-                        {getHodnoceniIcon(data.hodnoceni)} {data.hodnoceniText}
+                      <span style={{ color: data.tridaBarva }}>
+                        {getIconForTrida(data.trida)} {data.tridaNazev}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">{data.aktualni} mg/kg</td>
-                    <td className="px-4 py-3 text-right">{data.optimum} mg/kg</td>
+                    <td className="px-4 py-3 text-right">{data.trida}</td>
                     <td className="px-4 py-3 text-right font-semibold">
-                      {data.deficit > 0 ? `${data.deficit} kg/ha` : '-'}
+                      {data.deficit_kg_ha ? `${data.deficit_kg_ha} kg/ha` : '-'}
                     </td>
                   </tr>
                 ))}
@@ -619,8 +607,8 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
         {/* Info */}
         <div className="bg-blue-50 p-6 rounded-lg mb-6">
           <p className="text-blue-900">
-            ℹ️ Toto je orientační výpočet. Pro sestavení kompletního plánu hnojení s konkrétními 
-            hnojivy a cenovou kalkulací vás bude kontaktovat náš obchodní zástupce.
+            ℹ️ Toto je orientační výpočet na 1 hektar podle metodiky VDLUFA. Pro kompletní plán hnojení 
+            s konkrétními hnojivy a cenovou nabídkou vás bude kontaktovat náš obchodní zástupce.
           </p>
         </div>
 
@@ -630,7 +618,7 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
             onClick={onNova}
             className="bg-[#4A7C59] hover:bg-[#3d6449] text-white px-8 py-3 rounded-full font-semibold transition-all shadow-md text-lg"
           >
-            Nová kalkulace
+            Zpět na kalkulačku
           </button>
         </div>
       </div>

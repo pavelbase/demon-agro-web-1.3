@@ -1,20 +1,18 @@
-export type TypPudy = 'lehka' | 'stredni' | 'tezka';
-export type CilovePH = 'ekonomicke' | 'optimalni';
-export type Hodnoceni = 'nizky' | 'vyhovujici' | 'dobry' | 'vysoky' | 'velmiVysoky';
+export type TypPudy = 'piscita' | 'hlinito_piscita' | 'hlinita' | 'jilovita';
+export type PhTrida = 'A' | 'B' | 'C' | 'D' | 'E';
+export type TridaZasobenosti = 'A' | 'B' | 'C' | 'D' | 'E';
 
 export interface KalkulackaInputs {
-  // Základní údaje
-  plocha: number;
+  // Základní údaje (BEZ plochy - pouze na hektar)
   typPudy: TypPudy;
-  cilovePH: CilovePH;
   
-  // Rozbor půdy
+  // Rozbor půdy (mg/kg - standardní výstup AZZP)
   pH: number;
-  P2O5: number;
-  K2O: number;
-  CaO: number;
-  MgO: number;
-  S: number;
+  P: number;   // fosfor mg/kg
+  K: number;   // draslík mg/kg
+  Mg: number;  // hořčík mg/kg
+  Ca: number;  // vápník mg/kg
+  S: number;   // síra mg/kg
   
   // Kontaktní údaje
   jmeno: string;
@@ -24,27 +22,40 @@ export interface KalkulackaInputs {
   souhlas: boolean;
 }
 
+export interface VysledekVapneni {
+  celkovaPotrebaCaO_t: number;      // celková potřeba v t/ha
+  celkovaPotrebaCaO_dt: number;     // celková potřeba v dt/ha
+  maxJednorazovaDavka_t: number;    // max. jednorázová dávka v t/ha
+  pocetAplikaci: number;            // kolikrát je třeba aplikovat
+  davkaNaAplikaci_t: number;        // kolik na jednu aplikaci v t/ha
+  doporucenyInterval: string | null; // interval mezi aplikacemi
+  phTrida: PhTrida;
+  phTridaNazev: string;
+  phTridaPopis: string;
+  potrebaVapneni: boolean;
+  prepocetyHnojiva: {
+    mletyVapenec_t: number;         // 48% CaO
+  };
+}
+
 export interface VysledekZiviny {
-  aktualni: number;
-  optimum: number;
-  hodnoceni: Hodnoceni;
-  hodnoceniText: string;
-  deficit: number; // kg/ha
-  deficitCelkem: number; // kg celkem
+  aktualni: number;              // mg/kg
+  trida: TridaZasobenosti;
+  tridaNazev: string;
+  tridaBarva: string;
+  tridaAkce: string;
+  deficit_kg_ha: number | null;  // kg/ha nebo null pokud není deficit
 }
 
 export interface VysledekKalkulace {
   // Vstupní data
   vstup: KalkulackaInputs;
   
-  // Hodnocení pH
-  hodnotenipH: string;
+  // Automaticky určený humus
+  humus: string;
   
   // Vápnění
-  potrebaVapneniTha: number; // t CaO/ha
-  potrebaVapneniCelkem: number; // t CaO celkem
-  upozorneniRozdelitDavku: boolean;
-  maxDavka: number;
+  vapneni: VysledekVapneni;
   
   // Živiny
   ziviny: {
@@ -71,7 +82,6 @@ export interface UlozenaKalkulace {
   firma?: string;
   email: string;
   telefon: string;
-  plocha: number;
   typPudy: TypPudy;
   vysledek: VysledekKalkulace;
   kontaktovan: boolean;

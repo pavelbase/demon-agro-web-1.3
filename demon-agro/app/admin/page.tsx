@@ -943,7 +943,7 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Datum</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Jméno / Firma</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Kontakt</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Plocha</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Typ půdy</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">pH</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Kontaktován</th>
                       <th className="px-4 py-3 text-right font-semibold text-gray-900">Akce</th>
@@ -963,7 +963,7 @@ export default function AdminPage() {
                           <div>{kal.email}</div>
                           <div className="text-gray-600">{kal.telefon}</div>
                         </td>
-                        <td className="px-4 py-3">{kal.plocha} ha</td>
+                        <td className="px-4 py-3 capitalize">{kal.typPudy.replace('_', '-')}</td>
                         <td className="px-4 py-3">{kal.vysledek.vstup.pH}</td>
                         <td className="px-4 py-3">
                           <button
@@ -1056,65 +1056,75 @@ export default function AdminPage() {
                     {/* Základní údaje */}
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3">Základní údaje</h4>
-                      <div className="grid grid-cols-3 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-600">Plocha:</span>
-                          <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vstup.plocha} ha</span>
-                        </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <span className="text-gray-600">Typ půdy:</span>
-                          <span className="ml-2 capitalize">{selectedKalkulace.vysledek.vstup.typPudy}</span>
+                          <span className="ml-2 capitalize font-semibold">{selectedKalkulace.vysledek.vstup.typPudy.replace('_', '-')}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Cílové pH:</span>
-                          <span className="ml-2">{selectedKalkulace.vysledek.vstup.cilovePH === 'optimalni' ? '6.5' : '6.2'}</span>
+                          <span className="text-gray-600">Humus:</span>
+                          <span className="ml-2">{selectedKalkulace.vysledek.humus}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Vápnění */}
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">Potřeba vápnění</h4>
+                      <h4 className="font-semibold text-gray-900 mb-3">Potřeba vápnění (na 1 ha)</h4>
                       <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <span className="text-gray-600">Aktuální pH:</span>
-                            <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vstup.pH} ({selectedKalkulace.vysledek.hodnotenipH})</span>
+                            <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vstup.pH}</span>
                           </div>
                           <div>
-                            <span className="text-gray-600">Potřeba:</span>
-                            <span className="ml-2 font-semibold text-green-700">{selectedKalkulace.vysledek.potrebaVapneniTha} t CaO/ha</span>
+                            <span className="text-gray-600">pH třída:</span>
+                            <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vapneni.phTrida} ({selectedKalkulace.vysledek.vapneni.phTridaNazev})</span>
                           </div>
-                          <div className="col-span-2">
-                            <span className="text-gray-600">Celkem:</span>
-                            <span className="ml-2 font-bold text-green-700">{selectedKalkulace.vysledek.potrebaVapneniCelkem} t CaO</span>
+                          <div>
+                            <span className="text-gray-600">Celková potřeba:</span>
+                            <span className="ml-2 font-semibold text-green-700">{selectedKalkulace.vysledek.vapneni.celkovaPotrebaCaO_t} t CaO/ha</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Mletý vápenec:</span>
+                            <span className="ml-2 font-semibold text-green-700">{selectedKalkulace.vysledek.vapneni.prepocetyHnojiva.mletyVapenec_t} t/ha</span>
                           </div>
                         </div>
+                        {selectedKalkulace.vysledek.vapneni.pocetAplikaci > 1 && (
+                          <div className="pt-3 border-t border-green-200 text-sm">
+                            <div className="text-orange-700">
+                              ⚠️ Rozdělit do {selectedKalkulace.vysledek.vapneni.pocetAplikaci} aplikací
+                              ({selectedKalkulace.vysledek.vapneni.davkaNaAplikaci_t} t CaO/ha každá)
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Živiny */}
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">Stav živin</h4>
+                      <h4 className="font-semibold text-gray-900 mb-3">Stav živin (na 1 ha)</h4>
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-gray-50">
                             <th className="px-3 py-2 text-left">Živina</th>
+                            <th className="px-3 py-2 text-left">Třída</th>
                             <th className="px-3 py-2 text-left">Hodnocení</th>
                             <th className="px-3 py-2 text-right">Aktuální</th>
-                            <th className="px-3 py-2 text-right">Optimum</th>
-                            <th className="px-3 py-2 text-right">Deficit/ha</th>
+                            <th className="px-3 py-2 text-right">Deficit</th>
                           </tr>
                         </thead>
                         <tbody>
                           {Object.entries(selectedKalkulace.vysledek.ziviny).map(([key, data]) => (
                             <tr key={key} className="hover:bg-gray-50">
                               <td className="px-3 py-2 font-semibold">{key}</td>
-                              <td className="px-3 py-2">{data.hodnoceniText}</td>
-                              <td className="px-3 py-2 text-right">{data.aktualni}</td>
-                              <td className="px-3 py-2 text-right">{data.optimum}</td>
+                              <td className="px-3 py-2">{data.trida}</td>
+                              <td className="px-3 py-2" style={{ color: data.tridaBarva }}>
+                                {data.tridaNazev}
+                              </td>
+                              <td className="px-3 py-2 text-right">{data.aktualni} mg/kg</td>
                               <td className="px-3 py-2 text-right font-semibold">
-                                {data.deficit > 0 ? `${data.deficit} kg` : '-'}
+                                {data.deficit_kg_ha ? `${data.deficit_kg_ha} kg/ha` : '-'}
                               </td>
                             </tr>
                           ))}
