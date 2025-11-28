@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Démon agro - Design systém</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 2rem;
+            background: #F5F1E8;
+        }
+        .section {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h2 {
+            color: #5C4033;
+            margin-bottom: 1rem;
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        .color-box {
+            padding: 2rem;
+            border-radius: 0.75rem;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+        }
+        .color-label {
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .nutrient-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #5C4033; text-align: center;">Démon agro - Design systém</h1>
+    
+    <div class="section">
+        <h2>Hlavní barvy</h2>
+        <div class="color-grid">
+            <div class="color-box" style="background: #5C4033;">
+                Primární hnědá
+                <div class="color-label">#5C4033</div>
+            </div>
+            <div class="color-box" style="background: #C9A77C;">
+                Béžová
+                <div class="color-label">#C9A77C</div>
+            </div>
+            <div class="color-box" style="background: #F5F1E8; color: #333;">
+                Krémová
+                <div class="color-label">#F5F1E8</div>
+            </div>
+            <div class="color-box" style="background: #4A7C59;">
+                Zelená CTA
+                <div class="color-label">#4A7C59</div>
+            </div>
+            <div class="color-box" style="background: #2D2A26;">
+                Text tmavý
+                <div class="color-label">#2D2A26</div>
+            </div>
+            <div class="color-box" style="background: #6B6560;">
+                Text světlý
+                <div class="color-label">#6B6560</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Barvy živin</h2>
+        <div class="nutrient-grid">
+            <div class="color-box" style="background: #0EA5E9;">
+                Ca
+                <div class="color-label">Vápník</div>
+                <div class="color-label">#0EA5E9</div>
+            </div>
+            <div class="color-box" style="background: #10B981;">
+                Mg
+                <div class="color-label">Hořčík</div>
+                <div class="color-label">#10B981</div>
+            </div>
+            <div class="color-box" style="background: #8B5CF6;">
+                K
+                <div class="color-label">Draslík</div>
+                <div class="color-label">#8B5CF6</div>
+            </div>
+            <div class="color-box" style="background: #EAB308;">
+                S
+                <div class="color-label">Síra</div>
+                <div class="color-label">#EAB308</div>
+            </div>
+            <div class="color-box" style="background: #F97316;">
+                P
+                <div class="color-label">Fosfor</div>
+                <div class="color-label">#F97316</div>
+            </div>
+            <div class="color-box" style="background: #EC4899;">
+                N
+                <div class="color-label">Dusík</div>
+                <div class="color-label">#EC4899</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Převodní koeficienty</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #E5E7EB;">
+                    <th style="text-align: left; padding: 0.75rem; color: #5C4033;">Živina</th>
+                    <th style="text-align: left; padding: 0.75rem; color: #5C4033;">Směr</th>
+                    <th style="text-align: right; padding: 0.75rem; color: #5C4033;">Koeficient</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 0.75rem;" rowspan="6"><strong>Vápník (Ca)</strong></td><td style="padding: 0.75rem;">Ca → CaO</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">1.3992</td></tr>
+                <tr><td style="padding: 0.75rem;">CaO → Ca</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.7147</td></tr>
+                <tr><td style="padding: 0.75rem;">Ca → CaCO₃</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">2.4973</td></tr>
+                <tr><td style="padding: 0.75rem;">CaCO₃ → Ca</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.4005</td></tr>
+                <tr><td style="padding: 0.75rem;">CaO → CaCO₃</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">1.7848</td></tr>
+                <tr><td style="padding: 0.75rem;">CaCO₃ → CaO</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.5603</td></tr>
+                <tr style="border-top: 1px solid #E5E7EB;"><td style="padding: 0.75rem;" rowspan="2"><strong>Hořčík (Mg)</strong></td><td style="padding: 0.75rem;">Mg → MgO</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">1.6582</td></tr>
+                <tr><td style="padding: 0.75rem;">MgO → Mg</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.6031</td></tr>
+                <tr style="border-top: 1px solid #E5E7EB;"><td style="padding: 0.75rem;" rowspan="2"><strong>Draslík (K)</strong></td><td style="padding: 0.75rem;">K → K₂O</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">1.2046</td></tr>
+                <tr><td style="padding: 0.75rem;">K₂O → K</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.8302</td></tr>
+                <tr style="border-top: 1px solid #E5E7EB;"><td style="padding: 0.75rem;" rowspan="2"><strong>Síra (S)</strong></td><td style="padding: 0.75rem;">S → SO₃</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">2.4972</td></tr>
+                <tr><td style="padding: 0.75rem;">SO₃ → S</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.4005</td></tr>
+                <tr style="border-top: 1px solid #E5E7EB;"><td style="padding: 0.75rem;" rowspan="2"><strong>Fosfor (P)</strong></td><td style="padding: 0.75rem;">P → P₂O₅</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">2.2914</td></tr>
+                <tr><td style="padding: 0.75rem;">P₂O₅ → P</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.4364</td></tr>
+                <tr style="border-top: 1px solid #E5E7EB;"><td style="padding: 0.75rem;" rowspan="2"><strong>Dusík (N)</strong></td><td style="padding: 0.75rem;">N → NO₃</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">4.4268</td></tr>
+                <tr><td style="padding: 0.75rem;">NO₃ → N</td><td style="padding: 0.75rem; text-align: right; font-family: monospace;">0.2259</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Jednotky</h2>
+        <ul>
+            <li><strong>%</strong> - Procenta (multiplier: 1)</li>
+            <li><strong>kg/ha</strong> - Kilogramy na hektar (multiplier: 1)</li>
+            <li><strong>kg/t</strong> - Kilogramy na tunu (multiplier: 1)</li>
+            <li><strong>g/kg</strong> - Gramy na kilogram (multiplier: 0.1)</li>
+            <li><strong>mg/kg</strong> - Miligramy na kilogram (multiplier: 0.001)</li>
+        </ul>
+    </div>
+</body>
+</html>
