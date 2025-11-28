@@ -47,6 +47,17 @@ function getHumusPodleTypuPudy(typPudy: TypPudy): string {
 }
 
 // ============================================
+// OPTIMÁLNÍ pH ROZMEZÍ
+// ============================================
+
+const optimalniPhRozmezi: Record<TypPudy, string> = {
+  'piscita': '5.4 - 5.8',
+  'hlinito_piscita': '5.8 - 6.3',
+  'hlinita': '6.3 - 7.0',
+  'jilovita': '6.4 - 7.2'
+};
+
+// ============================================
 // pH TŘÍDY (VDLUFA)
 // ============================================
 
@@ -213,6 +224,7 @@ function vypocetVapneni(pH: number, typPudy: TypPudy): VysledekVapneni {
     phTrida,
     phTridaNazev: phInfo.nazev,
     phTridaPopis: phInfo.popis,
+    optimalniPhRozmezi: optimalniPhRozmezi[typPudy],
     potrebaVapneni: potrebaCaO_dt > 0,
     prepocetyHnojiva: {
       mletyVapenec_t: Math.round(mletyVapenec_t * 10) / 10

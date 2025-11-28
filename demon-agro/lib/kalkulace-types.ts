@@ -32,6 +32,7 @@ export interface VysledekVapneni {
   phTrida: PhTrida;
   phTridaNazev: string;
   phTridaPopis: string;
+  optimalniPhRozmezi: string;       // optimální pH rozmezí pro typ půdy
   potrebaVapneni: boolean;
   prepocetyHnojiva: {
     mletyVapenec_t: number;         // 48% CaO

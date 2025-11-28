@@ -1074,20 +1074,24 @@ export default function AdminPage() {
                       <div className="bg-green-50 p-4 rounded-lg">
                         <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
+                            <span className="text-gray-600">pH třída:</span>
+                            <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vapneni.phTrida} ({selectedKalkulace.vysledek.vapneni.phTridaNazev})</span>
+                          </div>
+                          <div>
                             <span className="text-gray-600">Aktuální pH:</span>
                             <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vstup.pH}</span>
                           </div>
                           <div>
-                            <span className="text-gray-600">pH třída:</span>
-                            <span className="ml-2 font-semibold">{selectedKalkulace.vysledek.vapneni.phTrida} ({selectedKalkulace.vysledek.vapneni.phTridaNazev})</span>
+                            <span className="text-gray-600">Optimální pH:</span>
+                            <span className="ml-2 font-semibold text-green-700">{selectedKalkulace.vysledek.vapneni.optimalniPhRozmezi}</span>
                           </div>
                           <div>
                             <span className="text-gray-600">Celková potřeba:</span>
                             <span className="ml-2 font-semibold text-green-700">{selectedKalkulace.vysledek.vapneni.celkovaPotrebaCaO_t} t CaO/ha</span>
                           </div>
-                          <div>
-                            <span className="text-gray-600">Mletý vápenec:</span>
-                            <span className="ml-2 font-semibold text-green-700">{selectedKalkulace.vysledek.vapneni.prepocetyHnojiva.mletyVapenec_t} t/ha</span>
+                          <div className="col-span-2">
+                            <span className="text-gray-600">Mletý vápenec (48% CaO):</span>
+                            <span className="ml-2 font-bold text-green-700">{selectedKalkulace.vysledek.vapneni.prepocetyHnojiva.mletyVapenec_t} t/ha</span>
                           </div>
                         </div>
                         {selectedKalkulace.vysledek.vapneni.pocetAplikaci > 1 && (

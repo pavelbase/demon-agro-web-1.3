@@ -511,6 +511,10 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
               <span className="font-semibold">{vysledek.vstup.pH}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-gray-700">Optimální pH:</span>
+              <span className="font-semibold text-[#4A7C59]">{vysledek.vapneni.optimalniPhRozmezi}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-gray-700">Popis:</span>
               <span className="text-sm text-gray-600">{vysledek.vapneni.phTridaPopis}</span>
             </div>
