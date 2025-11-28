@@ -3,12 +3,6 @@
 import { useState, useMemo } from "react";
 import { ArrowRightLeft, Info } from "lucide-react";
 
-export const metadata = {
-  title: "Převodní kalkulačka živin | Démon agro",
-  description: "Rychlý převod mezi prvkovou a oxidovou formou živin. Přepočet Ca, CaCO₃, CaO, Mg, K, S, P, N pro práci s laboratorními rozbory půdy.",
-  keywords: "převod živin, CaCO3 na CaO, fosfor P2O5, draslík K2O, hořčík MgO, agronomická kalkulačka",
-};
-
 // Typy
 type NutrientId = "Ca" | "Mg" | "K" | "S" | "P" | "N";
 
