@@ -536,21 +536,8 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
             </div>
           </div>
 
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-700">Max. jednorázová dávka:</span>
-              <span className="font-semibold">{vysledek.vapneni.maxJednorazovaDavka_t} t CaO/ha</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Počet aplikací:</span>
-              <span className="font-semibold">{vysledek.vapneni.pocetAplikaci}×</span>
-            </div>
-            {vysledek.vapneni.pocetAplikaci > 1 && (
-              <div className="flex justify-between">
-                <span className="text-gray-700">Dávka na aplikaci:</span>
-                <span className="font-semibold">{vysledek.vapneni.davkaNaAplikaci_t} t CaO/ha</span>
-              </div>
-            )}
+          <div className="mt-4 text-xs text-gray-500 italic">
+            ⚠️ Maximální jednorázová dávka a počet aplikací dle etikety použitého hnojiva.
           </div>
 
           {vysledek.vapneni.pocetAplikaci > 1 && (
