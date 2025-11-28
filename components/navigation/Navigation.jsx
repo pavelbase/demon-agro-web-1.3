@@ -14,8 +14,7 @@ export default function Navigation() {
   ]
 
   const kalkulackaItems = [
-    { label: 'Kalkulačka vápnění', href: '/kalkulacka/vapneni' },
-    { label: 'Převodní kalkulačka', href: '/kalkulacka/prevodni' },
+    { label: 'Kalkulačka vápnění', href: '/kalkulacka' },
   ]
 
   return (
