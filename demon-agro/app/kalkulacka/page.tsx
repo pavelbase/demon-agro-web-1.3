@@ -601,9 +601,12 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
             </table>
           </div>
 
-          <div className="mt-6 bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-900">
-              <strong>Poměr K:Mg:</strong> {vysledek.pomerKMg} - {vysledek.hodnoceniPomeru}
+          <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: `${vysledek.pomerKMgBarva}15` }}>
+            <p className="text-sm font-semibold" style={{ color: vysledek.pomerKMgBarva }}>
+              <strong>Poměr K:Mg:</strong> {vysledek.pomerKMg} ({vysledek.pomerKMgKategorie})
+            </p>
+            <p className="text-sm mt-1" style={{ color: vysledek.pomerKMgBarva }}>
+              {vysledek.hodnoceniPomeru}
             </p>
           </div>
         </div>

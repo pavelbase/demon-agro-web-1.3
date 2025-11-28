@@ -70,6 +70,8 @@ export interface VysledekKalkulace {
   // Poměr K:Mg
   pomerKMg: number;
   hodnoceniPomeru: string;
+  pomerKMgKategorie: string;
+  pomerKMgBarva: string;
   
   // Metadata
   id: string;

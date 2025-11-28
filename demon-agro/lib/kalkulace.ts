@@ -383,12 +383,34 @@ function vypocetDeficitu(aktualni: number, zivina: string, typPudy: TypPudy): nu
   return Math.round(deficit);
 }
 
-// Poměr K:Mg
-function hodnotitPomerKMg(pomer: number): string {
-  if (pomer < 1.0) return 'Nedostatek draslíku - potřeba hnojení K';
-  if (pomer <= 1.6) return 'Optimální - bez problémů s Mg';
-  if (pomer <= 3.2) return 'Opatrně s K u krmných plodin';
-  return 'Nevyhovující - riziko blokace Mg';
+// Poměr K:Mg - zpřísněné hranice podle praxe
+function hodnotitPomerKMg(pomer: number): { kategorie: string; popis: string; barva: string } {
+  if (pomer < 1.0) {
+    return {
+      kategorie: 'pod1',
+      popis: 'Nedostatek draslíku - doporučujeme doplnit K',
+      barva: '#E17055' // červená
+    };
+  }
+  if (pomer <= 1.6) {
+    return {
+      kategorie: '1-1.6',
+      popis: 'Optimální poměr',
+      barva: '#00B894' // zelená
+    };
+  }
+  if (pomer <= 1.8) {
+    return {
+      kategorie: '1.6-1.8',
+      popis: 'Přijatelný - sledovat',
+      barva: '#FDCB6E' // žlutá
+    };
+  }
+  return {
+    kategorie: 'nad1.8',
+    popis: 'Riziko blokace Mg - doporučujeme dolomit místo vápence',
+    barva: '#E17055' // červená
+  };
 }
 
 // ============================================
@@ -420,7 +442,7 @@ export function vypocetKalkulace(vstup: KalkulackaInputs): VysledekKalkulace {
 
   // Poměr K:Mg
   const pomerKMg = Mg > 0 ? Math.round((K / Mg) * 100) / 100 : 0;
-  const hodnoceniPomeru = hodnotitPomerKMg(pomerKMg);
+  const hodnoceniKMg = hodnotitPomerKMg(pomerKMg);
 
   const vysledek: VysledekKalkulace = {
     vstup,
@@ -469,7 +491,9 @@ export function vypocetKalkulace(vstup: KalkulackaInputs): VysledekKalkulace {
       }
     },
     pomerKMg,
-    hodnoceniPomeru,
+    hodnoceniPomeru: hodnoceniKMg.popis,
+    pomerKMgKategorie: hodnoceniKMg.kategorie,
+    pomerKMgBarva: hodnoceniKMg.barva,
     id: `kal-${Date.now()}`,
     datum: new Date().toISOString()
   };
