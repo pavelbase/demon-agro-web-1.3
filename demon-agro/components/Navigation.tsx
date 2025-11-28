@@ -9,6 +9,7 @@ export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReseniaOpen, setIsReseniaOpen] = useState(false);
+  const [isKalkulackaOpen, setIsKalkulackaOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState("/logo.jpg");
 
   useEffect(() => {
@@ -118,12 +119,37 @@ export default function Navigation() {
             >
               Rádce
             </Link>
-            <Link
-              href="/kalkulacka"
-              className="text-gray-700 hover:text-primary-green transition-colors font-medium"
+
+            {/* Kalkulačka Dropdown */}
+            <div
+              className="relative group"
+              onMouseEnter={() => setIsKalkulackaOpen(true)}
+              onMouseLeave={() => setIsKalkulackaOpen(false)}
             >
-              Kalkulačka
-            </Link>
+              <button className="flex items-center text-gray-700 hover:text-primary-green transition-colors font-medium py-2">
+                Kalkulačka
+                <ChevronDown className="ml-1 h-4 w-4" />
+              </button>
+              {isKalkulackaOpen && (
+                <div className="absolute left-0 top-full pt-2 w-56">
+                  <div className="bg-white shadow-lg rounded-lg py-2">
+                    <Link
+                      href="/kalkulacka"
+                      className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
+                    >
+                      Kalkulačka vápnění
+                    </Link>
+                    <Link
+                      href="/kalkulacka/prevodni"
+                      className="block px-4 py-2 text-gray-700 hover:bg-primary-cream hover:text-primary-green transition-colors"
+                    >
+                      Převodní kalkulačka
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Link
               href="/o-nas"
               className="text-gray-700 hover:text-primary-green transition-colors font-medium"
@@ -220,13 +246,28 @@ export default function Navigation() {
               >
                 Rádce
               </Link>
-              <Link
-                href="/kalkulacka"
-                className="text-gray-700 hover:text-primary-green transition-colors font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Kalkulačka
-              </Link>
+
+              {/* Mobile Kalkulačka */}
+              <div className="space-y-2">
+                <div className="text-gray-700 font-medium">Kalkulačka</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    href="/kalkulacka"
+                    className="block text-gray-600 hover:text-primary-green transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Kalkulačka vápnění
+                  </Link>
+                  <Link
+                    href="/kalkulacka/prevodni"
+                    className="block text-gray-600 hover:text-primary-green transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Převodní kalkulačka
+                  </Link>
+                </div>
+              </div>
+
               <Link
                 href="/o-nas"
                 className="text-gray-700 hover:text-primary-green transition-colors font-medium"
