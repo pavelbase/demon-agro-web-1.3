@@ -3,19 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getPageContent, defaultContent } from "@/lib/content";
-import { getImageUrl, defaultImages } from "@/lib/images";
+import { useImage } from "@/hooks/useImage";
 
 export default function ONasPage() {
   const [content, setContent] = useState(defaultContent.onas);
-  const [heroImage, setHeroImage] = useState(defaultImages.onas_hero);
-  const [kdoJsmeImage, setKdoJsmeImage] = useState(defaultImages.onas_kdo_jsme_img);
   const [mounted, setMounted] = useState(false);
+  
+  // Použití nového systému správy obrázků
+  const heroImage = useImage('onas_hero');
+  const kdoJsmeImage = useImage('onas_kdo_jsme_img');
+  const miseImage = useImage('onas_mise_img');
 
   useEffect(() => {
     setMounted(true);
     setContent(getPageContent("onas"));
-    setHeroImage(getImageUrl("onas_hero"));
-    setKdoJsmeImage(getImageUrl("onas_kdo_jsme_img"));
   }, []);
 
   if (!mounted) {

@@ -7,7 +7,7 @@ import ProductCard from "./ProductCard";
 import { PageContent, PageKey } from "@/lib/types";
 import { getPageContent, defaultContent } from "@/lib/content";
 import { getProductsByCategory, defaultProducts } from "@/lib/products";
-import { getImageUrl, defaultImages } from "@/lib/images";
+import { useImage } from "@/hooks/useImage";
 import { Product } from "@/lib/types";
 
 interface ProblemPageTemplateProps {
@@ -27,19 +27,18 @@ export default function ProblemPageTemplate({
   const [products, setProducts] = useState<Product[]>(
     defaultProducts.filter(p => p.kategorie === productCategory && p.dostupnost)
   );
-  const [heroImage, setHeroImage] = useState((defaultImages as any)[`${imagePrefix}_hero`] || "");
-  const [problemImage, setProblemImage] = useState((defaultImages as any)[`${imagePrefix}_problem_img`] || "");
-  const [dopadBgImage, setDopadBgImage] = useState((defaultImages as any)[`${imagePrefix}_dopad_bg`] || "");
   const [mounted, setMounted] = useState(false);
+  
+  // Použití nového systému správy obrázků
+  const heroImage = useImage(`${imagePrefix}_hero` as any);
+  const problemImage = useImage(`${imagePrefix}_problem_img` as any);
+  const dopadBgImage = useImage(`${imagePrefix}_dopad_bg` as any);
 
   useEffect(() => {
     setMounted(true);
     setContent(getPageContent(pageKey));
     setProducts(getProductsByCategory(productCategory));
-    setHeroImage(getImageUrl(`${imagePrefix}_hero` as any));
-    setProblemImage(getImageUrl(`${imagePrefix}_problem_img` as any));
-    setDopadBgImage(getImageUrl(`${imagePrefix}_dopad_bg` as any));
-  }, [pageKey, productCategory, imagePrefix]);
+  }, [pageKey, productCategory]);
 
   if (!mounted) {
     return null;

@@ -7,19 +7,19 @@ import ProblemCard from "@/components/ProblemCard";
 import FeatureCard from "@/components/FeatureCard";
 import StepNumber from "@/components/StepNumber";
 import { getPageContent, defaultContent } from "@/lib/content";
-import { getImageUrl, defaultImages } from "@/lib/images";
+import { useImage } from "@/hooks/useImage";
 
 export default function HomePage() {
   const [content, setContent] = useState(defaultContent.home);
-  const [heroImage, setHeroImage] = useState(defaultImages.home_hero);
-  const [krokyBgImage, setKrokyBgImage] = useState(defaultImages.home_kroky_bg);
   const [mounted, setMounted] = useState(false);
+  
+  // Použití nového systému správy obrázků
+  const heroImage = useImage('home_hero');
+  const krokyBgImage = useImage('home_kroky_bg');
 
   useEffect(() => {
     setMounted(true);
     setContent(getPageContent("home"));
-    setHeroImage(getImageUrl("home_hero"));
-    setKrokyBgImage(getImageUrl("home_kroky_bg"));
   }, []);
 
   if (!mounted) {
