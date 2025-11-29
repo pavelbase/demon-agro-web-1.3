@@ -19,8 +19,10 @@ interface ImageUploadModalProps {
 }
 
 export default function ImageUploadModal({ imageKey, currentImage, onClose, onSave }: ImageUploadModalProps) {
-  const keyData = IMAGE_KEYS[imageKey as keyof typeof IMAGE_KEYS];
-  const specs = keyData ? IMAGE_SPECS[keyData.category] : null;
+  // Kontrola zda je to produktový obrázek
+  const isProductImage = imageKey.startsWith('product_');
+  const keyData = !isProductImage ? IMAGE_KEYS[imageKey as keyof typeof IMAGE_KEYS] : null;
+  const specs = keyData ? IMAGE_SPECS[keyData.category] : IMAGE_SPECS.product;
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [urlInput, setUrlInput] = useState("");
@@ -31,13 +33,11 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
   const handleFileSelect = (file: File) => {
     setError(null);
     
-    if (!keyData) {
-      setError("Neplatný klíč obrázku");
-      return;
-    }
+    // Pro produktové obrázky použij product kategorii
+    const category: ImageCategory = isProductImage ? 'product' : (keyData?.category || 'product');
     
     // Validace
-    const validation = validateImage(file, keyData.category);
+    const validation = validateImage(file, category);
     if (!validation.valid) {
       setError(validation.error || "Neplatný soubor");
       return;
@@ -72,9 +72,13 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
   };
 
   const handleSave = async () => {
-    if (!keyData) return;
-    
     setIsUploading(true);
+    
+    // Pro produktové obrázky použij product kategorii
+    const category: ImageCategory = isProductImage ? 'product' : (keyData?.category || 'product');
+    const title = isProductImage 
+      ? `Produkt: ${imageKey.replace('product_', '')}`
+      : (keyData?.title || imageKey);
     
     try {
       let finalUrl = "";
@@ -98,9 +102,9 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
             
             const imageData: ImageData = {
               url: finalUrl,
-              category: keyData.category,
-              page: keyData.page,
-              title: keyData.title,
+              category: category,
+              ...(isProductImage ? { productId: imageKey.replace('product_', '') } : { page: keyData?.page }),
+              title: title,
               dimensions: imageDimensions,
               size: imageSize,
               format: imageFormat,
@@ -125,9 +129,9 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
           
           const imageData: ImageData = {
             url: finalUrl,
-            category: keyData.category,
-            page: keyData.page,
-            title: keyData.title,
+            category: category,
+            ...(isProductImage ? { productId: imageKey.replace('product_', '') } : { page: keyData?.page }),
+            title: title,
             dimensions: imageDimensions,
             size: 0,
             format: imageFormat,
@@ -158,7 +162,7 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
-            Nahrát obrázek - {keyData?.title}
+            Nahrát obrázek - {isProductImage ? imageKey.replace('product_', 'Produkt ') : (keyData?.title || imageKey)}
           </h2>
           <button
             onClick={onClose}

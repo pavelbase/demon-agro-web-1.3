@@ -30,31 +30,28 @@ export function useImage(key: string, fallback?: string): string {
 }
 
 /**
- * React hook pro načítání více obrázků najednou
+ * React hook pro načítání produktového obrázku
  * 
- * @param keys - Pole klíčů obrázků
- * @returns Objekt s URL obrázků { key: url }
+ * @param productId - ID produktu
+ * @param fallback - Volitelný fallback URL
+ * @returns URL obrázku produktu
  * 
  * @example
- * const images = useImages(['home_hero', 'home_kroky_bg']);
- * <div style={{ backgroundImage: `url(${images.home_hero})` }}>...</div>
+ * const productImage = useProductImage('prod-001', product.fotka_url);
+ * <img src={productImage} alt="Product" />
  */
-export function useImages(keys: string[]): Record<string, string> {
-  const [images, setImages] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    keys.forEach(key => {
-      initial[key] = `/images/placeholders/default-placeholder.jpg`;
-    });
-    return initial;
+export function useProductImage(productId: string, fallback?: string): string {
+  const [imageUrl, setImageUrl] = useState<string>(() => {
+    return fallback || `/images/placeholders/product-placeholder.svg`;
   });
 
   useEffect(() => {
-    const loadedImages: Record<string, string> = {};
-    keys.forEach(key => {
-      loadedImages[key] = getImageUrl(key);
-    });
-    setImages(loadedImages);
-  }, [keys.join(',')]);
+    // Client-side: načti skutečnou URL z localStorage
+    const key = `product_${productId}`;
+    const url = getImageUrl(key, fallback);
+    setImageUrl(url);
+  }, [productId, fallback]);
 
-  return images;
+  return imageUrl;
 }
+

@@ -163,6 +163,44 @@ export function getImageUrl(key: string, fallback?: string): string {
   return '/images/placeholders/default-placeholder.jpg';
 }
 
+// Získání URL produktového obrázku
+export function getProductImageUrl(productId: string, fallback?: string): string {
+  const key = `product_${productId}`;
+  const image = getImage(key);
+  
+  if (image && image.url) {
+    return image.url;
+  }
+  
+  return fallback || '/images/placeholders/product-placeholder.svg';
+}
+
+// Uložení produktového obrázku
+export function saveProductImage(productId: string, productName: string, imageUrl: string, metadata?: Partial<ImageData>): void {
+  const key = `product_${productId}`;
+  
+  const imageData: ImageData = {
+    url: imageUrl,
+    category: 'product',
+    productId: productId,
+    title: `Produkt: ${productName}`,
+    dimensions: metadata?.dimensions || '600x600',
+    size: metadata?.size || 0,
+    format: metadata?.format || 'jpg',
+    uploadedAt: new Date().toISOString()
+  };
+  
+  saveImage(key, imageData);
+}
+
+// Získání všech produktových obrázků
+export function getProductImages(): [string, ImageData][] {
+  const images = getImages();
+  return Object.entries(images).filter(([key, data]) => 
+    data.category === 'product' || key.startsWith('product_')
+  );
+}
+
 // Inicializace výchozích obrázků (pro development)
 export function initializeDefaultImages(): void {
   const images = getImages();

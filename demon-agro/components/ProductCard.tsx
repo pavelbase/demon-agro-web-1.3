@@ -1,21 +1,21 @@
 import Link from "next/link";
 import { Product } from "@/lib/types";
+import { useProductImage } from "@/hooks/useImage";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  // Použití nového systému správy obrázků
+  const productImage = useProductImage(product.id, product.fotka_url);
   return (
     <div className="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-105">
       <div className="aspect-video bg-gray-200 relative overflow-hidden">
         <img
-          src={product.fotka_url}
+          src={productImage}
           alt={product.nazev}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=80";
-          }}
         />
       </div>
       <div className="p-6">
