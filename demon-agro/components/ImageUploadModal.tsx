@@ -194,26 +194,23 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
           <div
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-[#4A7C59] transition-colors cursor-pointer"
+            className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-[#4A7C59] transition-colors"
           >
             <input
               type="file"
               accept="image/*"
               onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
               className="hidden"
-              id="file-upload"
+              id={`file-upload-${imageKey}`}
             />
-            <label htmlFor="file-upload" className="cursor-pointer">
+            <label htmlFor={`file-upload-${imageKey}`} className="cursor-pointer block">
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">
+              <p className="text-gray-600 mb-4">
                 Přetáhněte obrázek sem nebo klikněte
               </p>
-              <button
-                type="button"
-                className="bg-[#4A7C59] hover:bg-[#3d6449] text-white px-6 py-2 rounded-full font-semibold transition-colors"
-              >
+              <span className="inline-block bg-[#4A7C59] hover:bg-[#3d6449] text-white px-6 py-2 rounded-full font-semibold transition-colors">
                 Vybrat soubor
-              </button>
+              </span>
             </label>
           </div>
 
