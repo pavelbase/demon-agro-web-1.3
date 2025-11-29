@@ -245,7 +245,7 @@ export default function ImagesManagerTab() {
                         <div className="text-xs text-gray-500 space-y-0.5">
                           <div>{imageData.dimensions || '600x600'}</div>
                           <div>{imageData.size > 0 ? formatFileSize(imageData.size) : '—'}</div>
-                          <div className="text-gray-400">{imageData.format.toUpperCase()}</div>
+                          <div className="text-gray-400">{imageData.format ? imageData.format.toUpperCase() : 'JPG'}</div>
                         </div>
                       ) : (
                         <div className="text-xs text-gray-400">
@@ -328,17 +328,17 @@ export default function ImagesManagerTab() {
                       )}
                     </div>
 
-                    {imageData ? (
-                      <div className="text-xs text-gray-500 space-y-0.5">
-                        <div>{imageData.dimensions || specs.dimensions}</div>
-                        <div>{imageData.size > 0 ? formatFileSize(imageData.size) : '—'}</div>
-                        <div className="text-gray-400">{imageData.format.toUpperCase()}</div>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-gray-400">
-                        Doporučené: {specs.dimensions}
-                      </div>
-                    )}
+                      {imageData ? (
+                        <div className="text-xs text-gray-500 space-y-0.5">
+                          <div>{imageData.dimensions || specs.dimensions}</div>
+                          <div>{imageData.size > 0 ? formatFileSize(imageData.size) : '—'}</div>
+                          <div className="text-gray-400">{imageData.format ? imageData.format.toUpperCase() : 'JPG'}</div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-400">
+                          Doporučené: {specs.dimensions}
+                        </div>
+                      )}
 
                     <div className="pt-2 flex gap-2">
                       <button
