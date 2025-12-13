@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 
@@ -41,32 +40,23 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center py-2">
             {/* Desktop verze - celé logo */}
-            <Image
+            <img
               src="/logo/demon-agro-logo.svg"
               alt="Démon agro"
-              width={200}
-              height={50}
-              priority
               className="hidden md:block h-12 w-auto"
             />
             
             {/* Tablet verze - střední velikost */}
-            <Image
+            <img
               src="/logo/demon-agro-logo.svg"
               alt="Démon agro"
-              width={160}
-              height={40}
-              priority
               className="hidden sm:block md:hidden h-10 w-auto"
             />
             
             {/* Mobilní verze - jen ikona */}
-            <Image
+            <img
               src="/logo/demon-agro-icon.svg"
               alt="Démon agro"
-              width={40}
-              height={46}
-              priority
               className="block sm:hidden h-10 w-auto"
             />
           </Link>

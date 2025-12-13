@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Mail, Phone } from "lucide-react";
 
 export default function Footer() {
@@ -11,13 +10,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           {/* O nás */}
           <div>
-            <Image
+            <img
               src="/logo/demon-agro-logo.svg"
               alt="Démon agro"
-              width={150}
-              height={37}
               className="h-10 w-auto mb-4"
-              loading="lazy"
             />
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">
