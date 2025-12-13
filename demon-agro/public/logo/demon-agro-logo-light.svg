@@ -1,0 +1,83 @@
+<svg width="400" height="100" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .demon-light { fill: #ffffff; }
+      .demon-green-light { fill: #48bb78; }
+    </style>
+  </defs>
+  
+  <!-- Hexagon -->
+  <polygon 
+    points="50,10 85,30 85,70 50,90 15,70 15,30" 
+    class="demon-light"
+    stroke="#ffffff" 
+    stroke-width="4"
+    fill="none"
+  />
+  
+  <!-- Tlo démona -->
+  <path 
+    d="M 50 75 L 35 55 L 35 45 Q 35 35 50 35 Q 65 35 65 45 L 65 55 Z"
+    class="demon-light"
+  />
+  
+  <!-- Rohy -->
+  <path 
+    d="M 30 40 Q 25 25 30 20 Q 32 18 35 20 L 38 30 Q 36 38 35 42"
+    class="demon-light"
+  />
+  <path 
+    d="M 70 40 Q 75 25 70 20 Q 68 18 65 20 L 62 30 Q 64 38 65 42"
+    class="demon-light"
+  />
+  
+  <!-- Oi -->
+  <path d="M 40 48 L 45 50 L 40 52 Z" fill="#3d3021"/>
+  <path d="M 60 48 L 55 50 L 60 52 Z" fill="#3d3021"/>
+  
+  <!-- Úsmv -->
+  <path 
+    d="M 38 58 Q 50 65 62 58"
+    fill="none"
+    stroke="#3d3021"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+  
+  <!-- Zuby -->
+  <rect x="44" y="60" width="3" height="4" fill="#3d3021" rx="0.5"/>
+  <rect x="48" y="60" width="3" height="4" fill="#3d3021" rx="0.5"/>
+  <rect x="52" y="60" width="3" height="4" fill="#3d3021" rx="0.5"/>
+  
+  <!-- Bradka -->
+  <path 
+    d="M 42 65 L 50 72 L 58 65"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Text Démon -->
+  <text 
+    x="105" 
+    y="52" 
+    font-family="Arial, Helvetica, sans-serif" 
+    font-size="42" 
+    font-weight="bold" 
+    class="demon-light"
+    letter-spacing="-1"
+  >Démon</text>
+  
+  <!-- Text agro -->
+  <text 
+    x="105" 
+    y="75" 
+    font-family="Arial, Helvetica, sans-serif" 
+    font-size="24" 
+    font-weight="600" 
+    class="demon-green-light"
+    letter-spacing="1"
+  >agro</text>
+</svg>

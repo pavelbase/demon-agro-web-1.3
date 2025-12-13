@@ -1,29 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Phone } from "lucide-react";
-import { useState, useEffect } from "react";
 
 export default function Footer() {
-  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
-
-  useEffect(() => {
-    const savedLogo = localStorage.getItem('logo_url');
-    if (savedLogo) {
-      setLogoUrl(savedLogo);
-    }
-  }, []);
-
   return (
     <footer className="bg-[#2C2C2C] text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           {/* O nás */}
           <div>
-            <img
-              src={logoUrl}
+            <Image
+              src="/logo/demon-agro-logo.svg"
               alt="Démon agro"
-              className="max-h-10 w-auto max-w-[150px] object-contain mb-4"
+              width={150}
+              height={37}
+              className="h-10 w-auto mb-4"
+              loading="lazy"
             />
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">

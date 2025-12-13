@@ -10,7 +10,6 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReseniaOpen, setIsReseniaOpen] = useState(false);
   const [isKalkulackaOpen, setIsKalkulackaOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,14 +18,6 @@ export default function Navigation() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    // Load logo from localStorage
-    const savedLogo = localStorage.getItem('logo_url');
-    if (savedLogo) {
-      setLogoUrl(savedLogo);
-    }
   }, []);
 
   const scrollToContact = () => {
@@ -49,10 +40,34 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center py-2">
-            <img
-              src={logoUrl}
+            {/* Desktop verze - celé logo */}
+            <Image
+              src="/logo/demon-agro-logo.svg"
               alt="Démon agro"
-              className="max-h-16 sm:max-h-20 w-auto max-w-[200px] sm:max-w-[280px] object-contain"
+              width={200}
+              height={50}
+              priority
+              className="hidden md:block h-12 w-auto"
+            />
+            
+            {/* Tablet verze - střední velikost */}
+            <Image
+              src="/logo/demon-agro-logo.svg"
+              alt="Démon agro"
+              width={160}
+              height={40}
+              priority
+              className="hidden sm:block md:hidden h-10 w-auto"
+            />
+            
+            {/* Mobilní verze - jen ikona */}
+            <Image
+              src="/logo/demon-agro-icon.svg"
+              alt="Démon agro"
+              width={40}
+              height={46}
+              priority
+              className="block sm:hidden h-10 w-auto"
             />
           </Link>
 

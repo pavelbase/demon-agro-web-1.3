@@ -1,0 +1,22 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .demon-dark { fill: #3d3021; }
+      .demon-white { fill: #ffffff; }
+    </style>
+  </defs>
+  
+  <!-- Zjednoduaený hexagon -->
+  <polygon points="32,4 58,18 58,46 32,60 6,46 6,18" class="demon-dark"/>
+  
+  <!-- Rohy -->
+  <path d="M 18 22 L 22 12 L 24 22" class="demon-white"/>
+  <path d="M 46 22 L 42 12 L 40 22" class="demon-white"/>
+  
+  <!-- Oi -->
+  <circle cx="22" cy="28" r="3" class="demon-white"/>
+  <circle cx="42" cy="28" r="3" class="demon-white"/>
+  
+  <!-- Úsmv -->
+  <path d="M 20 38 Q 32 45 44 38" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>
