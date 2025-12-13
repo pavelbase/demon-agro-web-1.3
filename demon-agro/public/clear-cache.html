@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vymazat localStorage - Démon agro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #3d3021;
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #4A7C59;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #3d6449;
+        }
+        .button-red {
+            background: #e53e3e;
+        }
+        .button-red:hover {
+            background: #c53030;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #48bb78;
+        }
+        .info {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+        .code {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Vymazat cache a localStorage</h1>
+        
+        <div class="warning">
+            <strong>⚠️ PROBLÉM:</strong> Prohlížeč má uložené staré logo v localStorage!
+        </div>
+
+        <p>Kliknutím na tlačítka níže vymažete veškerou uloženou data:</p>
+
+        <div style="margin: 30px 0;">
+            <button class="button" onclick="clearLogoOnly()">
+                🎯 Vymazat jen logo_url
+            </button>
+            
+            <button class="button button-red" onclick="clearAll()">
+                💣 Vymazat VŠE (localStorage + cache)
+            </button>
+            
+            <button class="button" onclick="checkStorage()">
+                🔍 Zkontrolovat co je uložené
+            </button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div class="code" id="storageContent" style="display: none;">
+            <strong>localStorage obsah:</strong><br>
+            <pre id="storageData"></pre>
+        </div>
+
+        <hr style="margin: 30px 0;">
+
+        <h2>📝 Co dělají tlačítka:</h2>
+        <ul>
+            <li><strong>Vymazat jen logo_url</strong> - Odstraní pouze uložené logo (doporučeno)</li>
+            <li><strong>Vymazat VŠE</strong> - Vymaže localStorage + pokusí se vyčistit cache</li>
+            <li><strong>Zkontrolovat</strong> - Zobrazí, co je momentálně uložené</li>
+        </ul>
+
+        <h2>🎯 Po vymazání:</h2>
+        <ol>
+            <li>Klikněte na "Vymazat jen logo_url"</li>
+            <li>Otevřete <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+            <li>Stiskněte <strong>Ctrl + Shift + R</strong> (hard refresh)</li>
+            <li>Měli byste vidět nové logo!</li>
+        </ol>
+    </div>
+
+    <script>
+        function showStatus(message, isSuccess = true) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + (isSuccess ? 'success' : 'info');
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        function clearLogoOnly() {
+            // Odstranit logo_url z localStorage
+            localStorage.removeItem('logo_url');
+            
+            showStatus('✅ logo_url vymazáno! Nyní otevřete localhost:3000 a stiskněte Ctrl+Shift+R', true);
+            
+            // Zkontrolovat co zbylo
+            setTimeout(() => {
+                checkStorage();
+            }, 1000);
+        }
+
+        function clearAll() {
+            if (confirm('Opravdu chcete vymazat VŠE z localStorage? Toto nelze vrátit zpět.')) {
+                // Vymazat localStorage
+                localStorage.clear();
+                
+                // Vymazat sessionStorage
+                sessionStorage.clear();
+                
+                showStatus('✅ Vše vymazáno! Nyní otevřete localhost:3000 a stiskněte Ctrl+Shift+R', true);
+                
+                // Zkontrolovat co zbylo
+                setTimeout(() => {
+                    checkStorage();
+                }, 1000);
+            }
+        }
+
+        function checkStorage() {
+            const storageContent = document.getElementById('storageContent');
+            const storageData = document.getElementById('storageData');
+            
+            let output = '';
+            let count = 0;
+            
+            // Projít všechny položky v localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                output += `${key}: ${value}\n`;
+                count++;
+            }
+            
+            if (count === 0) {
+                output = '(prázdné - žádná data)';
+                showStatus('✅ localStorage je prázdné!', true);
+            } else {
+                showStatus(`ℹ️ Nalezeno ${count} položek v localStorage`, false);
+            }
+            
+            storageData.textContent = output;
+            storageContent.style.display = 'block';
+        }
+
+        // Automaticky zkontrolovat při načtení
+        window.onload = function() {
+            // Zkontrolovat jestli existuje logo_url
+            const logoUrl = localStorage.getItem('logo_url');
+            if (logoUrl) {
+                showStatus(`⚠️ PROBLÉM NALEZEN! localStorage obsahuje: logo_url = "${logoUrl}"`, false);
+                checkStorage();
+            } else {
+                showStatus('✅ V localStorage NENÍ žádné logo_url (to je dobře!)', true);
+                checkStorage();
+            }
+        };
+    </script>
+</body>
+</html>
