@@ -49,10 +49,13 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center py-2">
-            <img
+            <Image
               src={logoUrl}
               alt="Démon agro"
+              width={280}
+              height={80}
               className="max-h-16 sm:max-h-20 w-auto max-w-[200px] sm:max-w-[280px] object-contain"
+              priority
             />
           </Link>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import NextImage from "next/image";
 import { Image as ImageIcon, Edit2, Trash2, Filter } from "lucide-react";
 import ImageUploadModal from "./ImageUploadModal";
 import {
@@ -201,10 +202,11 @@ export default function ImagesManagerTab() {
                   <div key={key} className="bg-gray-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     {/* Náhled obrázku */}
                     <div className="aspect-video bg-gray-200 relative group">
-                      <img
+                      <NextImage
                         src={imageUrl}
                         alt={product.nazev}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <button
@@ -286,10 +288,11 @@ export default function ImagesManagerTab() {
                 <div key={key} className="bg-gray-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   {/* Náhled obrázku */}
                   <div className="aspect-video bg-gray-200 relative group">
-                    <img
+                    <NextImage
                       src={imageUrl}
                       alt={keyData.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <button

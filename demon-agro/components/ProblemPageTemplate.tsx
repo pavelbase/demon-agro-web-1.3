@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import ProblemIcon from "./ProblemIcon";
 import ProductCard from "./ProductCard";
 import { PageContent, PageKey } from "@/lib/types";
@@ -80,9 +81,11 @@ export default function ProblemPageTemplate({
               </p>
             </div>
             <div className="rounded-lg overflow-hidden shadow-xl">
-              <img
+              <Image
                 src={problemImage}
                 alt={content.problem_nadpis || "Problem"}
+                width={800}
+                height={600}
                 className="w-full h-auto"
               />
             </div>
