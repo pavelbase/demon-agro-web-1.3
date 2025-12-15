@@ -10,7 +10,7 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReseniaOpen, setIsReseniaOpen] = useState(false);
   const [isKalkulackaOpen, setIsKalkulackaOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("/logo.svg");
+  const logoUrl = "/logo.svg";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,14 +19,6 @@ export default function Navigation() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    // Load logo from localStorage
-    const savedLogo = localStorage.getItem('logo_url');
-    if (savedLogo) {
-      setLogoUrl(savedLogo);
-    }
   }, []);
 
   const scrollToContact = () => {
