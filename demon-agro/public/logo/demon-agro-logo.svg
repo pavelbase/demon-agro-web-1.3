@@ -1,0 +1,14 @@
+<svg width="400" height="100" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="100" fill="#4A7C59"/>
+  
+  <!-- Main Logo Text -->
+  <text x="200" y="45" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#FFFFFF" text-anchor="middle">
+    Démon agro
+  </text>
+  
+  <!-- Tagline -->
+  <text x="200" y="70" font-family="Arial, sans-serif" font-size="14" fill="#E8DCC4" text-anchor="middle">
+    pH Management a Vý~iva Pody
+  </text>
+</svg>

@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Démon agro - pH Management a Výživa Půdy",
   description: "Komplexní řešení pro zdravou a výnosnou půdu. pH management, výživa půdy a GPS mapování pro zemědělce v severních a západních Čechách.",
   keywords: "pH půdy, vápnění, analýza půdy, GPS mapování, zemědělství, draslík, síra, hořčík",
+  icons: {
+    icon: '/logo/demon-agro-favicon.svg',
+  },
 };
 
 export default function RootLayout({
