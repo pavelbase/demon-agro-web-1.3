@@ -6,7 +6,7 @@ import { Mail, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Footer() {
-  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
+  const [logoUrl, setLogoUrl] = useState("/logo.svg");
 
   useEffect(() => {
     const savedLogo = localStorage.getItem('logo_url');

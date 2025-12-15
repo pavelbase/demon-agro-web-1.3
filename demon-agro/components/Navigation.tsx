@@ -10,7 +10,7 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReseniaOpen, setIsReseniaOpen] = useState(false);
   const [isKalkulackaOpen, setIsKalkulackaOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
+  const [logoUrl, setLogoUrl] = useState("/logo.svg");
 
   useEffect(() => {
     const handleScroll = () => {
