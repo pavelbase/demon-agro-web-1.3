@@ -65,6 +65,24 @@ export const defaultContent: Record<PageKey, PageContent> = {
     cta_nadpis: "Začněme spolupracovat",
     cta_text: "Kontaktujte nás pro nezávaznou konzultaci",
   },
+  "privacy-policy": {
+    hero_nadpis: "Zásady ochrany osobních údajů",
+    hero_podnadpis: "",
+    privacy_text: `## 1. Úvodní ustanovení
+
+Tyto zásady ochrany osobních údajů popisují, jak shromažďujeme, používáme a chráníme vaše osobní údaje...
+
+## 2. Jaké údaje shromažďujeme
+
+- Jméno a příjmení
+- E-mailová adresa
+- Telefonní číslo
+- Informace o vaší farmě (pro účely kalkulace)
+
+## 3. Jak údaje využíváme
+
+Vaše údaje využíváme výhradně pro komunikaci s vámi a poskytování našich služeb.`
+  },
 };
 
 export function getPageContent(page: PageKey): PageContent {

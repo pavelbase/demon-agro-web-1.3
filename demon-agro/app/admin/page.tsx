@@ -383,6 +383,7 @@ export default function AdminPage() {
                 <option value="mg">Hořčík</option>
                 <option value="analyza">Analýza</option>
                 <option value="onas">O nás</option>
+                <option value="privacy-policy">Zásady ochrany osobních údajů</option>
               </select>
             </div>
 
@@ -1234,23 +1235,25 @@ function ContentForm({
         </p>
       </div>
 
-      <div>
-        <label className="block font-semibold text-gray-900 mb-2">
-          Hero podnadpis (max 500 znaků)
-        </label>
-        <textarea
-          value={content.hero_podnadpis || ""}
-          onChange={(e) => handleChange("hero_podnadpis", e.target.value.slice(0, 500))}
-          maxLength={500}
-          rows={3}
-          className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none resize-none"
-        />
-        <p className="text-sm text-gray-500 mt-1">
-          {content.hero_podnadpis?.length || 0}/500
-        </p>
-      </div>
+      {pageKey !== "privacy-policy" && (
+        <div>
+          <label className="block font-semibold text-gray-900 mb-2">
+            Hero podnadpis (max 500 znaků)
+          </label>
+          <textarea
+            value={content.hero_podnadpis || ""}
+            onChange={(e) => handleChange("hero_podnadpis", e.target.value.slice(0, 500))}
+            maxLength={500}
+            rows={3}
+            className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none resize-none"
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            {content.hero_podnadpis?.length || 0}/500
+          </p>
+        </div>
+      )}
 
-      {pageKey !== "home" && pageKey !== "onas" && (
+      {pageKey !== "home" && pageKey !== "onas" && pageKey !== "privacy-policy" && (
         <>
           <div>
             <label className="block font-semibold text-gray-900 mb-2">
@@ -1339,6 +1342,24 @@ function ContentForm({
             </p>
           </div>
         </>
+      )}
+
+      {pageKey === "privacy-policy" && (
+        <div>
+          <label className="block font-semibold text-gray-900 mb-2">
+            Text zásad (Markdown)
+          </label>
+          <textarea
+            value={content.privacy_text || ""}
+            onChange={(e) => handleChange("privacy_text", e.target.value)}
+            rows={20}
+            className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none resize-none font-mono text-sm"
+            placeholder="# Zásady ochrany osobních údajů..."
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Podporuje Markdown formátování
+          </p>
+        </div>
       )}
 
       {pageKey === "onas" && (

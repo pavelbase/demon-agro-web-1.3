@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import Link from "next/link";
 import { Mail, Phone, MapPin, CheckCircle2, AlertCircle } from "lucide-react";
 import emailjs from "@emailjs/browser";
 
@@ -322,6 +323,17 @@ export default function KontaktPage() {
                 >
                   {status === "sending" ? "Odesílám..." : "Odeslat poptávku"}
                 </button>
+                <p className="text-xs text-gray-500 mt-3 text-center">
+                  Odesláním formuláře berete na vědomí zpracování osobních údajů dle{" "}
+                  <Link 
+                    href="/zasady-ochrany-osobnich-udaju" 
+                    target="_blank"
+                    className="underline hover:text-gray-700"
+                  >
+                    Zásad ochrany osobních údajů
+                  </Link>
+                  .
+                </p>
               </form>
             </div>
           </div>
