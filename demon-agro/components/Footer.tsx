@@ -132,9 +132,26 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="border-t border-gray-700 pt-8 text-center text-gray-400">
-          <p>© 2025 Démon agro. Všechna práva vyhrazena.</p>
+        {/* Copyright & Legal */}
+        <div className="border-t border-gray-700 pt-8 mt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+            <p>© 2025 Démon agro. Všechna práva vyhrazena.</p>
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+              <Link
+                href="/zasady-ochrany-osobnich-udaju"
+                className="hover:text-white transition-colors"
+              >
+                Zásady ochrany osobních údajů
+              </Link>
+              <a
+                href="#"
+                className="hover:text-white transition-colors"
+                onClick={(e) => e.preventDefault()}
+              >
+                Nastavení cookies
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
