@@ -8,8 +8,9 @@ Komplexní webová aplikace pro zemědělce v severních a západních Čechách
 - **Řešení**: pH půdy, Nedostatek síry, Nedostatek draslíku, Nedostatek hořčíku, Analýza půdy
 - **Vzdělávání/Blog**: Články o pH, vápnění, živinách - Markdown editor, kategorie, SEO
 - **Produktový systém**: Správa produktů s localStorage
-- **Kontaktní formulář**: Integrace s EmailJS
-- **Admin panel**: Správa produktů, textů stránek, obrázků a článků
+- **Kalkulačka hnojení**: Výpočet potřeby vápnění a živin (VDLUFA)
+- **Kontaktní formulář**: Integrace s EmailJS, GDPR compliance
+- **Admin panel**: Správa produktů, textů, obrázků, článků a poptávek z kalkulačky
 - **Responzivní design**: Optimalizováno pro mobil, tablet i desktop
 
 ## Technologie
@@ -54,11 +55,20 @@ Aplikace poběží na [http://localhost:3000](http://localhost:3000)
 Přístup: `/admin`  
 Heslo: `demonagro2024`
 
-Čtyři záložky:
+Pět záložek:
 1. **Produkty**: Správa produktů (CRUD operace)
-2. **Obsah stránek**: Editace textů všech stránek
+2. **Obsah stránek**: Editace textů (včetně Zásad ochrany os. údajů)
 3. **Správa obrázků**: Změna URL obrázků + upload souborů
 4. **Vzdělávací články**: Správa blogových článků (Markdown editor)
+5. **Kalkulace**: Přehled vypočtených kalkulací, kontakty, marketingové souhlasy
+
+## GDPR a Právní náležitosti
+
+Web obsahuje implementaci pro soulad s GDPR:
+- **Zásady ochrany osobních údajů**: Samostatná stránka editovatelná v adminu (`/zasady-ochrany-osobnich-udaju`)
+- **Kontaktní formuláře**: Informační texty u tlačítek
+- **Marketingový souhlas**: Volitelný checkbox v kalkulačce pro newsletter
+- **Cookies**: Odkaz v patičce (příprava pro lištu)
 
 ## Struktura Projektu
 
@@ -72,11 +82,15 @@ demon-agro/
 │   ├── k/
 │   ├── mg/
 │   ├── analyza/
-│   ├── vzdelavani/        ⭐ NOVÉ
+│   ├── vzdelavani/        
 │   │   ├── page.tsx       (Seznam článků)
 │   │   └── [slug]/
 │   │       └── page.tsx   (Detail článku)
 │   ├── kalkulacka/
+│   │   ├── page.tsx       (Kalkulačka vápnění + živin)
+│   │   └── prevodni/      (Převodní kalkulačka)
+│   ├── zasady-ochrany-osobnich-udaju/ ⭐ NOVÉ
+│   │   └── page.tsx
 │   ├── o-nas/
 │   ├── kontakt/
 │   ├── admin/
@@ -93,7 +107,8 @@ demon-agro/
 │   ├── products.ts
 │   ├── content.ts
 │   ├── images.ts
-│   ├── articles.ts        ⭐ NOVÉ
+│   ├── articles.ts        
+│   ├── kalkulace.ts       (Logika výpočtů a ukládání)
 │   └── types.ts
 └── public/
     ├── logo.jpg
