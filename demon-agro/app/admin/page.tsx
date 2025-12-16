@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Check, Plus, Edit2, Trash2, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { X, Check, Plus, Edit2, Trash2, AlertCircle, Image as ImageIcon, Mail } from "lucide-react";
 import { Product, PageKey, ImageUrls, Article } from "@/lib/types";
 import { getProducts, saveProducts, resetProducts, defaultProducts } from "@/lib/products";
 import { getPageContent, savePageContent, resetPageContent, defaultContent } from "@/lib/content";
@@ -525,6 +525,9 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Datum</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Jméno / Firma</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Kontakt</th>
+                      <th className="px-4 py-3 text-center font-semibold text-gray-900" title="Newsletter souhlas">
+                        <Mail className="w-4 h-4 inline-block" />
+                      </th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Typ půdy</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">pH</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-900">Kontaktován</th>
@@ -544,6 +547,17 @@ export default function AdminPage() {
                         <td className="px-4 py-3 text-sm">
                           <div>{kal.email}</div>
                           <div className="text-gray-600">{kal.telefon}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {kal.marketing_consent ? (
+                            <span className="inline-flex items-center justify-center w-6 h-6 bg-green-100 rounded-full">
+                              <Check className="w-4 h-4 text-green-600" />
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-100 rounded-full">
+                              <X className="w-3 h-3 text-gray-400" />
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 capitalize">{kal.typPudy.replace('_', '-')}</td>
                         <td className="px-4 py-3">{kal.vysledek.vstup.pH}</td>
@@ -631,6 +645,22 @@ export default function AdminPage() {
                         <div>
                           <span className="text-gray-600">Datum:</span>
                           <span className="ml-2">{new Date(selectedKalkulace.datum).toLocaleString('cs-CZ')}</span>
+                        </div>
+                        <div className="col-span-2 pt-2 border-t mt-2">
+                          <div className="flex items-center">
+                            <span className="text-gray-600 mr-2">Marketingový souhlas (Newsletter):</span>
+                            {selectedKalkulace.marketing_consent ? (
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                                <Check className="w-3 h-3 mr-1" />
+                                ANO
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
+                                <X className="w-3 h-3 mr-1" />
+                                NE
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
