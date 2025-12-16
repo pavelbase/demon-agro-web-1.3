@@ -164,20 +164,20 @@ export default function KontaktPage() {
 
               <div className="mt-12 bg-[#F5F1E8] p-6 rounded-lg shadow-md">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Otevírací doba
+                  Telefonická dostupnost
                 </h3>
                 <div className="space-y-2 text-gray-700">
                   <div className="flex justify-between">
                     <span>Pondělí - Pátek:</span>
-                    <span className="font-semibold">8:00 - 17:00</span>
+                    <span className="font-semibold">8:00 - 18:00</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Sobota:</span>
-                    <span className="font-semibold">9:00 - 12:00</span>
+                    <span className="font-semibold">Dle individuální domluvy</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Neděle:</span>
-                    <span className="font-semibold">Zavřeno</span>
+                    <span className="font-semibold">Dle individuální domluvy</span>
                   </div>
                 </div>
               </div>
