@@ -443,34 +443,33 @@ export default function KalkulackaPage() {
                 </label>
               </div>
 
-              <div className="flex space-x-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <button
                   onClick={() => setKrok(2)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-full font-semibold transition-all shadow-md text-lg"
+                  className="w-full md:flex-1 bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-full font-semibold transition-all shadow-md text-lg"
                   disabled={odesila}
                 >
                   ← Zpět
                 </button>
-                <div className="flex-1 flex flex-col items-center">
-                  <button
-                    onClick={handleVypocet}
-                    disabled={odesila}
-                    className="w-full bg-[#4A7C59] hover:bg-[#3d6449] text-white px-8 py-4 rounded-full font-semibold transition-all shadow-md text-lg disabled:opacity-50"
-                  >
-                    {odesila ? 'Zpracovávám...' : 'Vypočítat →'}
-                  </button>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Vaše údaje zpracováváme pro účely výpočtu kalkulace a zaslání nabídky. Více informací v{' '}
-                    <Link
-                      href="/zasady-ochrany-osobnich-udaju"
-                      target="_blank"
-                      className="underline hover:text-gray-700"
-                    >
-                      Zásadách ochrany osobních údajů
-                    </Link>.
-                  </p>
-                </div>
+                <button
+                  onClick={handleVypocet}
+                  disabled={odesila}
+                  className="w-full md:flex-1 bg-[#4A7C59] hover:bg-[#3d6449] text-white px-8 py-4 rounded-full font-semibold transition-all shadow-md text-lg disabled:opacity-50"
+                >
+                  {odesila ? 'Zpracovávám...' : 'Vypočítat →'}
+                </button>
               </div>
+              
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                Vaše údaje zpracováváme pro účely výpočtu kalkulace a zaslání nabídky. Více informací v{' '}
+                <Link
+                  href="/zasady-ochrany-osobnich-udaju"
+                  target="_blank"
+                  className="underline hover:text-gray-700"
+                >
+                  Zásadách ochrany osobních údajů
+                </Link>.
+              </p>
             </div>
           )}
         </div>
