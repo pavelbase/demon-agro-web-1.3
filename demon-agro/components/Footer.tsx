@@ -24,6 +24,12 @@ export default function Footer() {
               src={logoUrl}
               alt="Démon agro"
               className="max-h-10 w-auto max-w-[150px] object-contain mb-4"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (target.src.indexOf("/logo.jpg") === -1) {
+                  target.src = "/logo.jpg";
+                }
+              }}
             />
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">

@@ -53,6 +53,12 @@ export default function Navigation() {
               src={logoUrl}
               alt="Démon agro"
               className="max-h-16 sm:max-h-20 w-auto max-w-[200px] sm:max-w-[280px] object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (target.src.indexOf("/logo.jpg") === -1) {
+                  target.src = "/logo.jpg";
+                }
+              }}
             />
           </Link>
 
