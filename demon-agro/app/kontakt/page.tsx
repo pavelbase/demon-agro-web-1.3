@@ -156,7 +156,7 @@ export default function KontaktPage() {
                       Oblast působnosti
                     </h3>
                     <p className="text-gray-600">
-                      Severní a západní Čechy
+                      Plzeňský, Karlovarský, Ústecký, Liberecký, Královéhradecký a Středočeský kraj
                     </p>
                   </div>
                 </div>
