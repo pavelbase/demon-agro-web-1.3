@@ -517,7 +517,8 @@ export function ulozitKalkulaci(vysledek: VysledekKalkulace): void {
     telefon: vysledek.vstup.telefon,
     typPudy: vysledek.vstup.typPudy,
     vysledek,
-    kontaktovan: false
+    kontaktovan: false,
+    marketing_consent: vysledek.vstup.souhlas
   };
 
   const existujici = getKalkulace();

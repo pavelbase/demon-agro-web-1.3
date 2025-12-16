@@ -88,5 +88,6 @@ export interface UlozenaKalkulace {
   typPudy: TypPudy;
   vysledek: VysledekKalkulace;
   kontaktovan: boolean;
+  marketing_consent: boolean;
   poznamka?: string;
 }
