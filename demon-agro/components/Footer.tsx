@@ -33,8 +33,8 @@ export default function Footer() {
             />
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">
-              Komplexní pH management a výživa půdy pro zemědělce v severních a
-              západních Čechách.
+              Komplexní pH management a výživa půdy pro zemědělce v západních, severních a
+              středních Čechách.
             </p>
             <Link
               href="/o-nas"
@@ -125,7 +125,7 @@ export default function Footer() {
                 <p className="text-gray-400 text-sm">
                   <strong>Oblast působnosti:</strong>
                   <br />
-                  Severní a západní Čechy
+                  Severní, západní a střední Čechy
                 </p>
               </div>
             </div>
