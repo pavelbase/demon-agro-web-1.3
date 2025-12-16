@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { KalkulackaInputs, TypPudy } from "@/lib/kalkulace-types";
 import { vypocetKalkulace, ulozitKalkulaci, zkontrolujDuplicitniEmail } from "@/lib/kalkulace";
-import { VysledekKalkulace } from "@/lib/kalkulace-types";
 import { Calculator, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
+import Link from "next/link";
 
 const TYPYPUDY = {
   'piscita': {
@@ -90,9 +90,8 @@ export default function KalkulackaPage() {
     if (formData.telefon.length < 9) {
       novéChyby.telefon = 'Zadejte platné telefonní číslo';
     }
-    if (!formData.souhlas) {
-      novéChyby.souhlas = 'Musíte souhlasit se zpracováním osobních údajů';
-    }
+    
+    // Checkbox 'souhlas' is now optional for marketing, so we don't validate it here.
     
     // Kontrola duplicitního emailu
     if (formData.email && zkontrolujDuplicitniEmail(formData.email)) {
@@ -431,18 +430,17 @@ export default function KalkulackaPage() {
               </div>
 
               <div>
-                <label className="flex items-start">
+                <label className="flex items-start cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.souhlas}
                     onChange={(e) => setFormData({ ...formData, souhlas: e.target.checked })}
-                    className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59] mt-1"
+                    className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59] mt-1 rounded border-gray-300"
                   />
                   <span className="ml-3 text-sm text-gray-700">
-                    Souhlasím se zpracováním osobních údajů pro účely této kalkulace a kontaktování obchodním zástupcem. *
+                    Chci odebírat novinky a tipy pro efektivní zemědělství.
                   </span>
                 </label>
-                {chyby.souhlas && <p className="text-red-600 text-sm mt-1">{chyby.souhlas}</p>}
               </div>
 
               <div className="flex space-x-4">
@@ -453,13 +451,25 @@ export default function KalkulackaPage() {
                 >
                   ← Zpět
                 </button>
-                <button
-                  onClick={handleVypocet}
-                  disabled={odesila}
-                  className="flex-1 bg-[#4A7C59] hover:bg-[#3d6449] text-white px-8 py-4 rounded-full font-semibold transition-all shadow-md text-lg disabled:opacity-50"
-                >
-                  {odesila ? 'Zpracovávám...' : 'Vypočítat →'}
-                </button>
+                <div className="flex-1 flex flex-col items-center">
+                  <button
+                    onClick={handleVypocet}
+                    disabled={odesila}
+                    className="w-full bg-[#4A7C59] hover:bg-[#3d6449] text-white px-8 py-4 rounded-full font-semibold transition-all shadow-md text-lg disabled:opacity-50"
+                  >
+                    {odesila ? 'Zpracovávám...' : 'Vypočítat →'}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Vaše údaje zpracováváme pro účely výpočtu kalkulace a zaslání nabídky. Více informací v{' '}
+                    <Link
+                      href="/zasady-ochrany-osobnich-udaju"
+                      target="_blank"
+                      className="underline hover:text-gray-700"
+                    >
+                      Zásadách ochrany osobních údajů
+                    </Link>.
+                  </p>
+                </div>
               </div>
             </div>
           )}
