@@ -65,6 +65,12 @@ export const defaultContent: Record<PageKey, PageContent> = {
     cta_nadpis: "Začněme spolupracovat",
     cta_text: "Kontaktujte nás pro nezávaznou konzultaci",
   },
+  kontakt: {
+    hero_nadpis: "Kontaktujte nás",
+    hero_podnadpis: "Jsme tu pro vás",
+    facebook_url: "#",
+    instagram_url: "#",
+  },
   "privacy-policy": {
     hero_nadpis: "Zásady ochrany osobních údajů",
     hero_podnadpis: "",

@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Facebook, Instagram } from "lucide-react";
 import { useState, useEffect } from "react";
+import { getPageContent, defaultContent } from "@/lib/content";
 
 export default function Footer() {
   const [logoUrl, setLogoUrl] = useState("/logo.jpg");
+  const [contactContent, setContactContent] = useState(defaultContent.kontakt);
 
   useEffect(() => {
+    setContactContent(getPageContent("kontakt"));
     const savedLogo = localStorage.getItem('logo_url');
     if (savedLogo) {
       setLogoUrl(savedLogo);
@@ -127,6 +130,26 @@ export default function Footer() {
                   <br />
                   Severní, západní a střední Čechy
                 </p>
+              </div>
+
+              {/* Social Icons */}
+              <div className="flex items-center space-x-4 mt-6">
+                <a
+                  href={contactContent.facebook_url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-primary-beige transition-colors"
+                >
+                  <Facebook className="h-6 w-6" />
+                </a>
+                <a
+                  href={contactContent.instagram_url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-primary-beige transition-colors"
+                >
+                  <Instagram className="h-6 w-6" />
+                </a>
               </div>
             </div>
           </div>
