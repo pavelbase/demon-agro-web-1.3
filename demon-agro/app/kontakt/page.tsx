@@ -55,15 +55,15 @@ export default function KontaktPage() {
 
     setStatus("sending");
 
-    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_CONTACT;
-    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+    // Hardcoded credentials for debugging
+    const serviceId = "service_xrx301a";
+    const templateId = "template_qfs1dml";
+    const publicKey = "xL_Khx5Gcnt-lEvUl";
 
-    if (!serviceId || !templateId || !publicKey) {
-      alert("CHYBA: Nenalezeny ENV klíče! Zkontroluj .env.local");
-      console.error("EmailJS env vars missing:", { serviceId, templateId, publicKey });
-      setStatus("error");
-      return;
+    if (publicKey === "YOUR_PUBLIC_KEY_HERE" || !publicKey) {
+       alert("Doplňte prosím Public Key do kódu!");
+       setStatus("error");
+       return;
     }
 
     try {
