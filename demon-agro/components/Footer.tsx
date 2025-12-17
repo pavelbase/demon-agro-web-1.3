@@ -1,20 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Phone, Facebook, Instagram } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getPageContent, defaultContent } from "@/lib/content";
 
 export default function Footer() {
-  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
   const [contactContent, setContactContent] = useState(defaultContent.kontakt);
 
   useEffect(() => {
     setContactContent(getPageContent("kontakt"));
-    const savedLogo = localStorage.getItem('logo_url');
-    if (savedLogo) {
-      setLogoUrl(savedLogo);
-    }
   }, []);
 
   return (
@@ -23,17 +19,15 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           {/* O nás */}
           <div>
-            <img
-              src={logoUrl}
-              alt="Démon agro"
-              className="max-h-10 w-auto max-w-[150px] object-contain mb-4"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                if (target.src.indexOf("/logo.jpg") === -1) {
-                  target.src = "/logo.jpg";
-                }
-              }}
-            />
+            <div className="bg-[#F5F1E8] p-3 rounded-xl inline-block mb-6">
+              <Image
+                src="/logo.png"
+                alt="Démon agro"
+                width={200}
+                height={80}
+                className="w-40 md:w-48 h-auto"
+              />
+            </div>
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">
               Komplexní pH management a výživa půdy pro zemědělce v západních, severních a
