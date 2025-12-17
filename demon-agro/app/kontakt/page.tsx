@@ -55,20 +55,14 @@ export default function KontaktPage() {
 
     setStatus("sending");
 
-    // EmailJS configuration
-    // NOTE: Configure these values in .env.local file
     const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
     const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_CONTACT;
     const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
     if (!serviceId || !templateId || !publicKey) {
-      console.error("EmailJS not configured. Please set up environment variables.");
-      // For demo purposes, simulate success
-      setTimeout(() => {
-        setStatus("success");
-        setFormData({ name: "", email: "", phone: "", farmLocation: "", message: "" });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 1000);
+      alert("CHYBA: Nenalezeny ENV klíče! Zkontroluj .env.local");
+      console.error("EmailJS env vars missing:", { serviceId, templateId, publicKey });
+      setStatus("error");
       return;
     }
 
@@ -83,10 +77,13 @@ export default function KontaktPage() {
 
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
 
+      alert("ÚSPĚCH! E-mail byl odeslán.");
       setStatus("success");
       setFormData({ name: "", email: "", phone: "", farmLocation: "", message: "" });
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.text || JSON.stringify(error);
+      alert("CHYBA ODESLÁNÍ: " + errorMessage);
       console.error("Email send error:", error);
       setStatus("error");
     }
