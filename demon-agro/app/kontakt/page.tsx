@@ -55,16 +55,10 @@ export default function KontaktPage() {
 
     setStatus("sending");
 
-    // Hardcoded credentials for debugging
+    // Hardcoded credentials for reliability
     const serviceId = "service_xrx301a";
     const templateId = "template_kogwumm";
     const publicKey = "xL_Khx5Gcnt-lEvUl";
-
-    if (publicKey === "YOUR_PUBLIC_KEY_HERE" || !publicKey) {
-       alert("Doplňte prosím Public Key do kódu!");
-       setStatus("error");
-       return;
-    }
 
     try {
       const templateParams = {
@@ -77,13 +71,10 @@ export default function KontaktPage() {
 
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
 
-      alert("ÚSPĚCH! E-mail byl odeslán.");
       setStatus("success");
       setFormData({ name: "", email: "", phone: "", farmLocation: "", message: "" });
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error: any) {
-      const errorMessage = error?.text || JSON.stringify(error);
-      alert("CHYBA ODESLÁNÍ: " + errorMessage);
+    } catch (error) {
       console.error("Email send error:", error);
       setStatus("error");
     }
