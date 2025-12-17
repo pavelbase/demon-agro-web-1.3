@@ -57,7 +57,7 @@ export default function KontaktPage() {
 
     // Hardcoded credentials for debugging
     const serviceId = "service_xrx301a";
-    const templateId = "template_qfs1dml";
+    const templateId = "template_kogwumm";
     const publicKey = "xL_Khx5Gcnt-lEvUl";
 
     if (publicKey === "YOUR_PUBLIC_KEY_HERE" || !publicKey) {
