@@ -58,7 +58,7 @@ export default function KontaktPage() {
     // EmailJS configuration
     // NOTE: Configure these values in .env.local file
     const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_CONTACT;
     const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
     if (!serviceId || !templateId || !publicKey) {
@@ -74,12 +74,11 @@ export default function KontaktPage() {
 
     try {
       const templateParams = {
-        from_name: formData.name,
-        from_email: formData.email,
-        phone: formData.phone,
+        user_name: formData.name,
+        user_email: formData.email,
+        user_phone: formData.phone,
         farm_location: formData.farmLocation || "Neuvedeno",
         message: formData.message,
-        to_email: "base@demonagro.cz",
       };
 
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
