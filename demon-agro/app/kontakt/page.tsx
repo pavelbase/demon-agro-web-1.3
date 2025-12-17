@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, FormEvent } from "react";
 import Link from "next/link";
@@ -10,7 +10,7 @@ export default function KontaktPage() {
     name: "",
     email: "",
     phone: "",
-    farmSize: "",
+    farmLocation: "",
     message: "",
   });
 
@@ -66,7 +66,7 @@ export default function KontaktPage() {
       // For demo purposes, simulate success
       setTimeout(() => {
         setStatus("success");
-        setFormData({ name: "", email: "", phone: "", farmSize: "", message: "" });
+        setFormData({ name: "", email: "", phone: "", farmLocation: "", message: "" });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 1000);
       return;
@@ -77,7 +77,7 @@ export default function KontaktPage() {
         from_name: formData.name,
         from_email: formData.email,
         phone: formData.phone,
-        farm_size: formData.farmSize || "Neuvedeno",
+        farm_location: formData.farmLocation || "Neuvedeno",
         message: formData.message,
         to_email: "base@demonagro.cz",
       };
@@ -85,7 +85,7 @@ export default function KontaktPage() {
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
 
       setStatus("success");
-      setFormData({ name: "", email: "", phone: "", farmSize: "", message: "" });
+      setFormData({ name: "", email: "", phone: "", farmLocation: "", message: "" });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("Email send error:", error);
@@ -280,18 +280,18 @@ export default function KontaktPage() {
                   )}
                 </div>
 
-                {/* Velikost farmy */}
+                {/* Lokalita / Okres */}
                 <div>
-                  <label htmlFor="farmSize" className="block font-semibold text-gray-900 mb-2">
-                    Velikost farmy (ha)
+                  <label htmlFor="farmLocation" className="block font-semibold text-gray-900 mb-2">
+                    Lokalita / Okres
                   </label>
                   <input
-                    type="number"
-                    id="farmSize"
-                    value={formData.farmSize}
-                    onChange={(e) => setFormData({ ...formData, farmSize: e.target.value })}
+                    type="text"
+                    id="farmLocation"
+                    value={formData.farmLocation}
+                    onChange={(e) => setFormData({ ...formData, farmLocation: e.target.value })}
                     className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none transition-all"
-                    placeholder="např. 100"
+                    placeholder="např. Louny, Plzeň-sever, Žatecko..."
                   />
                 </div>
 
