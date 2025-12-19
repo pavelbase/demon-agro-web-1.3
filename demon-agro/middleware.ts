@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Public routes - accessible without authentication
-  const publicRoutes = ['/portal', '/portal/prihlaseni', '/portal/reset-hesla']
+  const publicRoutes = ['/portal', '/portal/prihlaseni', '/portal/reset-hesla', '/portal/onboarding']
   const isPublicRoute = publicRoutes.includes(path)
 
   // Admin routes - require admin role

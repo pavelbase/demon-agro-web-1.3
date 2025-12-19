@@ -37,6 +37,9 @@ export interface Database {
           email: string
           full_name: string | null
           company_name: string | null
+          ico: string | null
+          address: string | null
+          district: string | null
           phone: string | null
           role: UserRole
           is_active: boolean
@@ -50,6 +53,9 @@ export interface Database {
           email: string
           full_name?: string | null
           company_name?: string | null
+          ico?: string | null
+          address?: string | null
+          district?: string | null
           phone?: string | null
           role?: UserRole
           is_active?: boolean
@@ -63,6 +69,9 @@ export interface Database {
           email?: string
           full_name?: string | null
           company_name?: string | null
+          ico?: string | null
+          address?: string | null
+          district?: string | null
           phone?: string | null
           role?: UserRole
           is_active?: boolean
