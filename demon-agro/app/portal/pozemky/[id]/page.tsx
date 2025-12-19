@@ -178,7 +178,7 @@ export default async function ParcelDetailPage({
 
       {/* Health Card */}
       <div className="mb-6">
-        <ParcelHealthCard analysis={latestAnalysis} parcelName={parcel.name} />
+        <ParcelHealthCard parcel={parcel} analysis={latestAnalysis} />
       </div>
 
       {/* Navigation Tabs */}
