@@ -39,6 +39,9 @@ export interface Database {
           company_name: string | null
           phone: string | null
           role: UserRole
+          is_active: boolean
+          must_change_password: boolean
+          onboarding_completed: boolean
           created_at: string
           updated_at: string
         }
@@ -49,6 +52,9 @@ export interface Database {
           company_name?: string | null
           phone?: string | null
           role?: UserRole
+          is_active?: boolean
+          must_change_password?: boolean
+          onboarding_completed?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -59,6 +65,9 @@ export interface Database {
           company_name?: string | null
           phone?: string | null
           role?: UserRole
+          is_active?: boolean
+          must_change_password?: boolean
+          onboarding_completed?: boolean
           created_at?: string
           updated_at?: string
         }
