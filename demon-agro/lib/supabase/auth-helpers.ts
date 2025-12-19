@@ -1,5 +1,7 @@
 import { createClient } from './server'
 import { redirect } from 'next/navigation'
+import { getUserRole, isAdmin as checkIsAdmin, getUserDisplayName } from '../utils/roles'
+import type { UserRole } from '../utils/roles'
 
 /**
  * Get the current authenticated user from server components
@@ -31,29 +33,29 @@ export async function requireAuth(redirectTo: string = '/portal/prihlaseni') {
  * Check if the current user is an admin
  */
 export async function isAdmin() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
+  return checkIsAdmin(user)
+}
 
-  if (!user) return false
-
-  // Check if user has admin role in metadata or a separate admin table
-  // This is a placeholder - adjust based on your auth setup
-  return user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin'
+/**
+ * Get the current user's role
+ */
+export async function getUserRoleServer(): Promise<UserRole> {
+  const user = await getCurrentUser()
+  return getUserRole(user)
 }
 
 /**
  * Require admin role or redirect
  */
 export async function requireAdmin(redirectTo: string = '/portal/dashboard') {
-  const admin = await isAdmin()
+  const user = await getCurrentUser()
   
-  if (!admin) {
+  if (!checkIsAdmin(user)) {
     redirect(redirectTo)
   }
   
-  return true
+  return user
 }
 
 /**
@@ -65,4 +67,20 @@ export async function getSession() {
     data: { session },
   } = await supabase.auth.getSession()
   return session
+}
+
+/**
+ * Get current user with additional metadata
+ */
+export async function getCurrentUserWithMetadata() {
+  const user = await getCurrentUser()
+  
+  if (!user) return null
+  
+  return {
+    user,
+    role: getUserRole(user),
+    isAdmin: checkIsAdmin(user),
+    displayName: getUserDisplayName(user),
+  }
 }
