@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, resetPasswordSchema, type LoginFormData, type ResetPasswordFormData } from '@/lib/utils/validations'
@@ -11,10 +11,20 @@ import Link from 'next/link'
 
 export default function PrihlaseniPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetEmailSent, setResetEmailSent] = useState(false)
+
+  // Check for success messages in URL
+  useEffect(() => {
+    const message = searchParams.get('message')
+    if (message === 'password_changed') {
+      setSuccessMessage('Vaše heslo bylo úspěšně změněno. Nyní se můžete přihlásit.')
+    }
+  }, [searchParams])
 
   // Login form
   const {
@@ -189,6 +199,26 @@ export default function PrihlaseniPage() {
           ) : (
             /* Login form */
             <form onSubmit={handleSubmitLogin(onLoginSubmit)} className="space-y-6">
+              {/* Success message */}
+              {successMessage && (
+                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+                  <div className="flex">
+                    <svg
+                      className="h-5 w-5 text-green-400 mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm">{successMessage}</span>
+                  </div>
+                </div>
+              )}
+              
               {/* Error message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">

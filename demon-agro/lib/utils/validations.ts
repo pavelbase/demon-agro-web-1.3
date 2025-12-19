@@ -34,7 +34,11 @@ export const resetPasswordSchema = z.object({
 })
 
 export const newPasswordSchema = z.object({
-  password: z.string().min(8, 'Heslo musí mít alespoň 8 znaků'),
+  password: z
+    .string()
+    .min(8, 'Heslo musí mít alespoň 8 znaků')
+    .regex(/[A-Z]/, 'Heslo musí obsahovat alespoň jedno velké písmeno')
+    .regex(/[0-9]/, 'Heslo musí obsahovat alespoň jedno číslo'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Hesla se neshodují',
