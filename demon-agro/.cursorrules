@@ -1,0 +1,1629 @@
+Cursor Prompt: Démon Agro – Uživatelský Portál
+
+📋 Přehled projektu
+
+Kontext
+Rozšiřuješ existující Next.js 14 web pro firmu Démon Agro (služby vápnění půdy pro české zemědělce). Web již existuje v repository a obsahuje hlavní stránky, kalkulačky, admin panel pro správu obsahu a obrázků.
+
+Tvůj úkol: Implementovat kompletní uživatelský portál pro zemědělské podniky, který jim umožní spravovat své pozemky, nahrávat půdní rozbory (PDF), získávat plány hnojení a vápnění.
+
+Klíčové principy
+- Použij existující design systém – barvy, fonty, komponenty z projektu
+- Vše v češtině – UI, chybové hlášky, komentáře v kódu
+- Supabase jako backend – PostgreSQL, Auth, Storage
+- Claude Vision API – pro extrakci dat z PDF
+- Responsivní design – primárně desktop, ale funkční na mobilu
+
+🛠️ Tech Stack
+
+Existující:
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- localStorage pro CMS obsah (admin panel)
+- EmailJS pro formuláře
+
+Nové (k implementaci):
+- Supabase (PostgreSQL + Auth + Storage)
+- Claude Vision API (@anthropic-ai/sdk)
+- React Hook Form + Zod (validace formulářů)
+- Recharts (grafy)
+- jsPDF + xlsx (exporty)
+
+📁 Struktura URL
+
+/portal                     → Landing page (info + přihlášení)
+/portal/prihlaseni          → Login stránka
+/portal/reset-hesla         → Reset hesla (s tokenem)
+/portal/onboarding          → Wizard pro nové uživatele
+/portal/dashboard           → Hlavní přehled
+/portal/pozemky             → Seznam pozemků
+/portal/pozemky/[id]        → Detail pozemku
+/portal/pozemky/[id]/rozbory    → Historie rozborů
+/portal/pozemky/[id]/plan-hnojeni → Plán hnojení
+/portal/pozemky/[id]/plan-vapneni → Plán vápnění
+/portal/upload              → Upload PDF
+/portal/historie-hnojeni    → Zadání historie hnojení
+/portal/osevni-postup       → Import osevního postupu
+/portal/poptavky            → Moje poptávky vápnění
+/portal/nastaveni           → Nastavení účtu
+
+/portal/admin               → Admin dashboard (pouze role admin)
+/portal/admin/uzivatele     → Správa uživatelů
+/portal/admin/uzivatele/[id] → Detail uživatele (read-only)
+/portal/admin/produkty      → Katalog hnojiv
+/portal/admin/produkty-vapneni → Katalog vápnících produktů
+/portal/admin/poptavky      → Přehled poptávek
+/portal/admin/obrazky-portalu → Správa obrázků landing page
+/portal/admin/audit-log     → Log admin přístupů
+/portal/admin/statistiky    → Agregované statistiky
+
+🗄️ Databázové schéma (Supabase PostgreSQL)
+
+```sql
+-- ============================================
+-- USERS & COMPANIES
+-- ============================================
+
+-- Rozšíření Supabase Auth users
+CREATE TABLE public.profiles (
+    id UUID REFERENCES auth.users(id) PRIMARY KEY,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+    company_name TEXT,
+    ico TEXT,
+    address TEXT,
+    district TEXT, -- pro dopravní zóny
+    phone TEXT,
+    is_active BOOLEAN DEFAULT true,
+    onboarding_completed BOOLEAN DEFAULT false,
+    must_change_password BOOLEAN DEFAULT true,
+    ai_extractions_today INTEGER DEFAULT 0,
+    ai_extractions_limit INTEGER DEFAULT 10,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS policies
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own profile" ON public.profiles
+    FOR SELECT USING (auth.uid() = id);
+    
+CREATE POLICY "Users can update own profile" ON public.profiles
+    FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Admins can update all profiles" ON public.profiles
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================
+-- PARCELS (Pozemky)
+-- ============================================
+
+CREATE TABLE public.parcels (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    code TEXT, -- LPIS/AZZP kód (např. 0701/27)
+    custom_name TEXT, -- vlastní název
+    area_ha DECIMAL(10,2) NOT NULL CHECK (area_ha >= 0.1),
+    soil_type TEXT CHECK (soil_type IN ('L', 'S', 'T')), -- Lehká/Střední/Těžká
+    culture TEXT CHECK (culture IN ('orna', 'ttp')), -- Orná půda / TTP
+    sampling_depth INTEGER DEFAULT 30, -- cm (30 pro ornou, 15 pro TTP)
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    source_parcel_id UUID REFERENCES public.parcels(id), -- při rozdělení/sloučení
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_parcels_user ON public.parcels(user_id);
+CREATE INDEX idx_parcels_status ON public.parcels(status);
+
+ALTER TABLE public.parcels ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own parcels" ON public.parcels
+    FOR ALL USING (auth.uid() = user_id);
+
+-- ============================================
+-- SOIL ANALYSES (Půdní rozbory)
+-- ============================================
+
+CREATE TABLE public.soil_analyses (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    parcel_id UUID REFERENCES public.parcels(id) ON DELETE CASCADE NOT NULL,
+    analysis_date DATE NOT NULL,
+    source_document TEXT, -- cesta k PDF v Storage
+    methodology TEXT DEFAULT 'mehlich3' CHECK (methodology IN ('mehlich3', 'vdlufa')),
+    
+    -- Hodnoty živin (mg/kg)
+    ph DECIMAL(4,2) CHECK (ph BETWEEN 3.5 AND 9.0),
+    p DECIMAL(8,2) CHECK (p >= 0), -- Fosfor
+    k DECIMAL(8,2) CHECK (k >= 0), -- Draslík
+    mg DECIMAL(8,2) CHECK (mg >= 0), -- Hořčík
+    ca DECIMAL(10,2) CHECK (ca >= 0), -- Vápník
+    s DECIMAL(8,2) CHECK (s >= 0), -- Síra
+    
+    -- Kategorie zásobenosti (N/VH/D/V/VV)
+    ph_category TEXT CHECK (ph_category IN ('EK', 'SK', 'N', 'SZ', 'EZ')),
+    p_category TEXT CHECK (p_category IN ('N', 'VH', 'D', 'V', 'VV')),
+    k_category TEXT CHECK (k_category IN ('N', 'VH', 'D', 'V', 'VV')),
+    mg_category TEXT CHECK (mg_category IN ('N', 'VH', 'D', 'V', 'VV')),
+    s_category TEXT CHECK (s_category IN ('N', 'VH', 'D', 'V', 'VV')),
+    
+    -- Doplňkové údaje
+    kvk DECIMAL(8,2), -- Kationtová výměnná kapacita (mmol/kg)
+    base_saturation DECIMAL(5,2), -- Nasycení bazemi (%)
+    k_mg_ratio DECIMAL(5,2), -- Poměr K:Mg
+    
+    -- Metadata
+    ai_extracted BOOLEAN DEFAULT false,
+    user_validated BOOLEAN DEFAULT false,
+    is_current BOOLEAN DEFAULT true, -- nejnovější rozbor
+    version_number INTEGER DEFAULT 1,
+    extraction_confidence DECIMAL(5,2), -- 0-100%
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_analyses_parcel ON public.soil_analyses(parcel_id);
+CREATE INDEX idx_analyses_current ON public.soil_analyses(parcel_id, is_current) WHERE is_current = true;
+
+ALTER TABLE public.soil_analyses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own analyses" ON public.soil_analyses
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.parcels WHERE id = parcel_id AND user_id = auth.uid())
+    );
+
+-- ============================================
+-- FERTILIZATION HISTORY (Historie hnojení)
+-- ============================================
+
+CREATE TABLE public.fertilization_history (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    parcel_id UUID REFERENCES public.parcels(id) ON DELETE CASCADE NOT NULL,
+    year TEXT NOT NULL, -- Hospodářský rok: "HY2024/25"
+    crop TEXT, -- Plodina
+    yield_t_ha DECIMAL(8,2), -- Výnos t/ha
+    
+    -- Zdroj dat
+    data_source TEXT DEFAULT 'average' CHECK (data_source IN ('average', 'imported', 'manual', 'inherited')),
+    source_document TEXT,
+    inherited_from_parcel_id UUID REFERENCES public.parcels(id),
+    
+    -- Aplikovaná hnojiva (JSON array)
+    fertilizers JSONB DEFAULT '[]'::jsonb,
+    -- Struktura: [{ "product_id": "uuid", "name": "DAM 390", "amount_kg_ha": 200, "date": "2024-03-15" }]
+    
+    -- Celkový přívod živin (kg/ha)
+    total_n DECIMAL(8,2) DEFAULT 0,
+    total_p2o5 DECIMAL(8,2) DEFAULT 0,
+    total_k2o DECIMAL(8,2) DEFAULT 0,
+    total_mgo DECIMAL(8,2) DEFAULT 0,
+    total_s DECIMAL(8,2) DEFAULT 0,
+    total_cao DECIMAL(8,2) DEFAULT 0,
+    
+    -- Acidifikace z hnojiv
+    acidification_caco3_kg DECIMAL(8,2) DEFAULT 0,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(parcel_id, year)
+);
+
+ALTER TABLE public.fertilization_history ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own history" ON public.fertilization_history
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.parcels WHERE id = parcel_id AND user_id = auth.uid())
+    );
+
+-- ============================================
+-- CROP ROTATIONS (Osevní postupy)
+-- ============================================
+
+CREATE TABLE public.crop_rotations (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    parcel_id UUID REFERENCES public.parcels(id) ON DELETE CASCADE NOT NULL,
+    year TEXT NOT NULL, -- "HY2024/25"
+    crop_code TEXT, -- Kód plodiny z číselníku
+    crop_name TEXT NOT NULL,
+    planned_yield_t_ha DECIMAL(8,2),
+    actual_yield_t_ha DECIMAL(8,2),
+    source TEXT DEFAULT 'manual' CHECK (source IN ('manual', 'lpis_import')),
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(parcel_id, year)
+);
+
+ALTER TABLE public.crop_rotations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own rotations" ON public.crop_rotations
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.parcels WHERE id = parcel_id AND user_id = auth.uid())
+    );
+
+-- ============================================
+-- FERTILIZATION PLANS (Plány hnojení)
+-- ============================================
+
+CREATE TABLE public.fertilization_plans (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    parcel_id UUID REFERENCES public.parcels(id) ON DELETE CASCADE NOT NULL,
+    target_year TEXT NOT NULL, -- "HY2025/26"
+    
+    -- Typ plánu
+    plan_type TEXT DEFAULT 'simple' CHECK (plan_type IN ('simple', 'advanced')),
+    user_type TEXT CHECK (user_type IN ('A', 'B', 'C')), -- Automaticky detekovaný typ
+    
+    -- Doporučené vápnění
+    recommended_lime_t_ha DECIMAL(6,2),
+    recommended_lime_type TEXT, -- 'calcitic' / 'dolomite'
+    
+    -- Doporučené živiny (kg/ha)
+    recommended_nutrients JSONB DEFAULT '{}'::jsonb,
+    -- Struktura: { "n": 120, "p2o5": 40, "k2o": 80, "mgo": 20, "s": 15 }
+    
+    -- Doporučené produkty
+    recommended_products JSONB DEFAULT '[]'::jsonb,
+    -- Struktura: [{ "product_id": "uuid", "name": "NPK 15-15-15", "amount_kg_ha": 300, "reason": "Doplnění P a K" }]
+    
+    -- Varování a poznámky
+    warnings JSONB DEFAULT '[]'::jsonb,
+    -- Struktura: [{ "type": "high_p", "severity": "warning", "message": "Vysoká zásobenost P - omezit hnojení" }]
+    
+    -- Predikce (pro pokročilý plán)
+    predictions JSONB DEFAULT '{}'::jsonb,
+    -- Struktura: { "years": [2025, 2026, 2027, 2028], "ph": [6.2, 6.1, 6.0, 5.9], "p": [...], ... }
+    
+    generated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(parcel_id, target_year)
+);
+
+ALTER TABLE public.fertilization_plans ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own plans" ON public.fertilization_plans
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.parcels WHERE id = parcel_id AND user_id = auth.uid())
+    );
+
+-- ============================================
+-- PRODUCTS (Katalog hnojiv)
+-- ============================================
+
+CREATE TABLE public.products (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT CHECK (type IN ('mineral', 'organic', 'organomineral', 'lime')),
+    manufacturer TEXT,
+    
+    -- Složení (%)
+    composition JSONB DEFAULT '{}'::jsonb,
+    -- Struktura: { "n": 27, "p2o5": 0, "k2o": 0, "mgo": 4, "s": 3, "cao": 0 }
+    
+    -- Acidifikační faktor (kg CaCO3 na kg N)
+    acidification_factor DECIMAL(4,2) DEFAULT 0,
+    
+    -- Pro vápence
+    is_calcitic BOOLEAN DEFAULT false, -- Kalcitický
+    is_dolomite BOOLEAN DEFAULT false, -- Dolomitický
+    cao_content DECIMAL(5,2), -- % CaO
+    mgo_content DECIMAL(5,2), -- % MgO
+    reactivity TEXT, -- 'slow', 'medium', 'fast'
+    
+    is_active BOOLEAN DEFAULT true,
+    is_demon_product BOOLEAN DEFAULT false, -- Produkty Démon Agro
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Veřejně čitelné, pouze admin může upravovat
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view active products" ON public.products
+    FOR SELECT USING (is_active = true);
+
+CREATE POLICY "Admins can manage products" ON public.products
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================
+-- LIMING REQUESTS (Poptávky vápnění)
+-- ============================================
+
+CREATE TABLE public.liming_requests (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    
+    status TEXT DEFAULT 'new' CHECK (status IN ('new', 'in_progress', 'quoted', 'completed', 'cancelled')),
+    
+    -- Souhrnné údaje
+    total_area_ha DECIMAL(10,2),
+    total_quantity_t DECIMAL(10,2),
+    
+    -- Preference zákazníka
+    preferred_term TEXT, -- "jaro 2025", "podzim 2025"
+    note TEXT,
+    
+    -- Admin poznámky
+    admin_note TEXT,
+    quoted_price DECIMAL(12,2),
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.liming_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own requests" ON public.liming_requests
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create requests" ON public.liming_requests
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all requests" ON public.liming_requests
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================
+-- LIMING REQUEST ITEMS (Položky poptávky)
+-- ============================================
+
+CREATE TABLE public.liming_request_items (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    request_id UUID REFERENCES public.liming_requests(id) ON DELETE CASCADE NOT NULL,
+    parcel_id UUID REFERENCES public.parcels(id) ON DELETE CASCADE NOT NULL,
+    
+    recommended_type TEXT CHECK (recommended_type IN ('calcitic', 'dolomite', 'either')),
+    recommended_product_id UUID REFERENCES public.products(id),
+    
+    quantity_cao_t DECIMAL(8,2), -- Potřeba CaO v tunách
+    quantity_product_t DECIMAL(8,2), -- Množství produktu v tunách
+    
+    reason TEXT, -- Důvod doporučení typu vápence
+    
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.liming_request_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own items" ON public.liming_request_items
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.liming_requests WHERE id = request_id AND user_id = auth.uid())
+    );
+
+CREATE POLICY "Users can create items for own requests" ON public.liming_request_items
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM public.liming_requests WHERE id = request_id AND user_id = auth.uid())
+    );
+
+CREATE POLICY "Admins can manage all items" ON public.liming_request_items
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================
+-- PORTAL IMAGES (Obrázky pro landing page)
+-- ============================================
+
+CREATE TABLE public.portal_images (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT NOT NULL,
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.portal_images ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view active images" ON public.portal_images
+    FOR SELECT USING (is_active = true);
+
+CREATE POLICY "Admins can manage images" ON public.portal_images
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================
+-- ADMIN AUDIT LOG (Logování přístupu admina)
+-- ============================================
+
+CREATE TABLE public.admin_audit_log (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    admin_id UUID REFERENCES public.profiles(id) NOT NULL,
+    target_user_id UUID REFERENCES public.profiles(id), -- NULL pro systémové akce
+    action TEXT NOT NULL, 
+    -- Možné akce: 'view_user_parcels', 'view_user_analyses', 'view_user_plans', 
+    -- 'view_user_history', 'reset_password', 'create_user', 'deactivate_user', 
+    -- 'activate_user', 'update_ai_limit', 'view_audit_log'
+    details JSONB DEFAULT '{}'::jsonb, -- Detaily akce (např. parcel_id, změněné hodnoty)
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_admin ON public.admin_audit_log(admin_id);
+CREATE INDEX idx_audit_target ON public.admin_audit_log(target_user_id);
+CREATE INDEX idx_audit_action ON public.admin_audit_log(action);
+CREATE INDEX idx_audit_date ON public.admin_audit_log(created_at DESC);
+
+ALTER TABLE public.admin_audit_log ENABLE ROW LEVEL SECURITY;
+
+-- Pouze admin může číst audit log
+CREATE POLICY "Admins can view audit log" ON public.admin_audit_log
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Insert povolen pro všechny (systém loguje)
+CREATE POLICY "System can insert audit log" ON public.admin_audit_log
+    FOR INSERT WITH CHECK (true);
+
+-- ============================================
+-- PASSWORD RESET TOKENS (pro self-service reset)
+-- ============================================
+-- Poznámka: Supabase Auth má vestavěný password reset,
+-- ale pro vlastní flow můžeme použít tuto tabulku
+
+CREATE TABLE public.password_reset_tokens (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_reset_token ON public.password_reset_tokens(token);
+CREATE INDEX idx_reset_user ON public.password_reset_tokens(user_id);
+
+ALTER TABLE public.password_reset_tokens ENABLE ROW LEVEL SECURITY;
+
+-- Nikdo nemůže přímo číst tokeny (pouze přes server funkce)
+CREATE POLICY "No direct access to tokens" ON public.password_reset_tokens
+    FOR ALL USING (false);
+
+-- ============================================
+-- HELPER FUNCTIONS
+-- ============================================
+
+-- Trigger pro aktualizaci updated_at
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_parcels_updated_at BEFORE UPDATE ON public.parcels
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_analyses_updated_at BEFORE UPDATE ON public.soil_analyses
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_history_updated_at BEFORE UPDATE ON public.fertilization_history
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON public.products
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_requests_updated_at BEFORE UPDATE ON public.liming_requests
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Funkce pro označení starých rozborů jako neaktuálních
+CREATE OR REPLACE FUNCTION mark_old_analyses_not_current()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.is_current = true THEN
+        UPDATE public.soil_analyses 
+        SET is_current = false 
+        WHERE parcel_id = NEW.parcel_id 
+          AND id != NEW.id 
+          AND is_current = true;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mark_old_analyses BEFORE INSERT OR UPDATE ON public.soil_analyses
+    FOR EACH ROW EXECUTE FUNCTION mark_old_analyses_not_current();
+
+-- Funkce pro reset denního limitu AI extrakcí (volat cronem o půlnoci)
+CREATE OR REPLACE FUNCTION reset_daily_ai_limits()
+RETURNS void AS $$
+BEGIN
+    UPDATE public.profiles SET ai_extractions_today = 0;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+🔐 Autentizace & Onboarding
+
+Flow přihlášení:
+1. Uživatel přijde na /portal
+2. Klikne "Přihlásit se" → /portal/prihlaseni
+3. Zadá email + heslo (Supabase Auth)
+4. Kontrola:
+   - is_active == false → "Účet deaktivován"
+   - must_change_password == true → přesměrování na změnu hesla
+   - onboarding_completed == false → /portal/onboarding
+   - jinak → /portal/dashboard
+
+Onboarding Wizard (3-4 kroky):
+```typescript
+// Kroky onboardingu
+const ONBOARDING_STEPS = [
+  {
+    id: 'welcome',
+    title: 'Vítejte v portálu Démon Agro',
+    description: 'Tento portál vám pomůže spravovat půdní rozbory a plánovat hnojení.',
+    skippable: false
+  },
+  {
+    id: 'password',
+    title: 'Změna hesla',
+    description: 'Pro vaši bezpečnost si prosím změňte heslo.',
+    skippable: false, // povinné při prvním přihlášení
+    condition: (user) => user.must_change_password
+  },
+  {
+    id: 'company',
+    title: 'Informace o podniku',
+    description: 'Vyplňte základní údaje o vašem zemědělském podniku.',
+    fields: ['company_name', 'ico', 'address', 'district', 'phone'],
+    skippable: true
+  },
+  {
+    id: 'first_upload',
+    title: 'První nahrání rozborů',
+    description: 'Můžete rovnou nahrát PDF s půdními rozbory (AZZP nebo laboratorní protokol).',
+    skippable: true
+  }
+];
+```
+
+Admin vytváření uživatelů:
+```typescript
+// Server action pro vytvoření uživatele (pouze admin)
+async function createUser(data: {
+  email: string;
+  company_name: string;
+  ico?: string;
+}) {
+  // 1. Vytvoř uživatele v Supabase Auth s náhodným heslem
+  const tempPassword = generateSecurePassword();
+  const { data: authUser, error } = await supabase.auth.admin.createUser({
+    email: data.email,
+    password: tempPassword,
+    email_confirm: true
+  });
+  
+  // 2. Vytvoř profil
+  await supabase.from('profiles').insert({
+    id: authUser.user.id,
+    email: data.email,
+    company_name: data.company_name,
+    ico: data.ico,
+    role: 'user',
+    must_change_password: true
+  });
+  
+  // 3. Pošli email s heslem přes EmailJS
+  await sendWelcomeEmail(data.email, tempPassword);
+}
+```
+
+📄 AI Extrakce PDF
+
+Podporované dokumenty:
+- AZZP zpráva (ÚKZÚZ) – strukturovaná tabulka s kódy pozemků
+- Laboratorní protokol – různé formáty od různých laboratoří
+
+Limity:
+- Max 10 PDF/den/uživatel (konfigurovatelné v admin)
+- Max 50 stran na jeden upload
+- Podporované formáty: PDF
+
+Extrakční flow:
+```typescript
+// 1. Upload PDF do Supabase Storage
+const { data: file } = await supabase.storage
+  .from('soil-documents')
+  .upload(`${userId}/${filename}`, pdfFile);
+
+// 2. Konverze PDF na obrázky (pdf-to-img nebo pdf.js)
+const images = await convertPdfToImages(pdfFile);
+
+// 3. Volání Claude Vision API
+const response = await anthropic.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 4096,
+  messages: [{
+    role: 'user',
+    content: [
+      ...images.map(img => ({
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/png', data: img }
+      })),
+      {
+        type: 'text',
+        text: EXTRACTION_PROMPT
+      }
+    ]
+  }]
+});
+
+// 4. Parsování JSON odpovědi
+const extractedData = JSON.parse(response.content[0].text);
+
+// 5. Uložení do DB s user_validated = false
+// 6. Zobrazení uživateli k validaci
+```
+
+Extrakční prompt:
+```typescript
+const EXTRACTION_PROMPT = `
+Analyzuj tento dokument s půdními rozbory. Extrahuj data do následující JSON struktury.
+
+DŮLEŽITÉ:
+- Dokument může být AZZP zpráva (strukturovaná tabulka) nebo laboratorní protokol
+- Hodnoty živin jsou v mg/kg (Mehlich 3 metodika)
+- pH je bezrozměrné číslo (typicky 4.5-8.0)
+- Kategorie zásobenosti: N (nízká), VH (velmi nízká), D (dobrá), V (vysoká), VV (velmi vysoká)
+- Kódy pozemků mohou být ve formátu: "0701/27", "680-0970", apod.
+
+Vrať POUZE validní JSON bez jakéhokoli dalšího textu:
+
+{
+  "document_type": "azzp" | "laboratory",
+  "analysis_date": "YYYY-MM-DD",
+  "laboratory": "název laboratoře pokud je uveden",
+  "methodology": "mehlich3",
+  "confidence": 0-100,
+  "parcels": [
+    {
+      "code": "kód pozemku",
+      "area_ha": číslo nebo null,
+      "soil_type": "L" | "S" | "T" | null,
+      "culture": "orna" | "ttp" | null,
+      "values": {
+        "ph": číslo,
+        "p": číslo (mg/kg),
+        "k": číslo (mg/kg),
+        "mg": číslo (mg/kg),
+        "ca": číslo nebo null (mg/kg),
+        "s": číslo nebo null (mg/kg),
+        "kvk": číslo nebo null (mmol/kg)
+      },
+      "categories": {
+        "ph": "EK" | "SK" | "N" | "SZ" | "EZ" | null,
+        "p": "N" | "VH" | "D" | "V" | "VV" | null,
+        "k": "N" | "VH" | "D" | "V" | "VV" | null,
+        "mg": "N" | "VH" | "D" | "V" | "VV" | null,
+        "s": "N" | "VH" | "D" | "V" | "VV" | null
+      }
+    }
+  ],
+  "warnings": ["případné problémy s extrakcí"]
+}
+`;
+```
+
+Validační UI:
+Po extrakci zobrazit uživateli tabulku s extrahovanými daty:
+- Editovatelné buňky pro opravu hodnot
+- Zvýraznění podezřelých hodnot (mimo rozsah)
+- Tlačítko "Potvrdit a uložit"
+- Možnost přidat/odebrat pozemky
+
+Párování s existujícími pozemky:
+```typescript
+// Inteligentní párování (skóre 0-100%)
+function matchParcel(extractedCode: string, existingParcels: Parcel[]): {
+  match: Parcel | null;
+  score: number;
+  action: 'auto' | 'confirm' | 'manual';
+} {
+  // Přesná shoda kódu
+  const exactMatch = existingParcels.find(p => p.code === extractedCode);
+  if (exactMatch) return { match: exactMatch, score: 100, action: 'auto' };
+  
+  // Částečná shoda (např. "0701/27" vs "701/27")
+  const partialMatches = existingParcels
+    .map(p => ({ parcel: p, score: calculateSimilarity(extractedCode, p.code) }))
+    .filter(m => m.score > 50)
+    .sort((a, b) => b.score - a.score);
+  
+  if (partialMatches.length > 0) {
+    const best = partialMatches[0];
+    return {
+      match: best.parcel,
+      score: best.score,
+      action: best.score >= 85 ? 'confirm' : 'manual'
+    };
+  }
+  
+  return { match: null, score: 0, action: 'manual' };
+}
+```
+
+🌾 Algoritmy plánování hnojení
+
+Typy uživatelů (automatická detekce):
+```typescript
+function detectUserType(parcel: Parcel): 'A' | 'B' | 'C' {
+  const hasAnalysis = parcel.soil_analyses.length > 0;
+  const hasCropRotation = parcel.crop_rotations.length > 0;
+  const hasFertHistory = parcel.fertilization_history.length > 0;
+  
+  if (hasAnalysis && hasCropRotation && hasFertHistory) return 'C'; // Profesionální
+  if (hasAnalysis && (hasCropRotation || hasFertHistory)) return 'B'; // Pokročilý
+  return 'A'; // Základní
+}
+```
+
+Typ A – Základní plán (pouze AZZP):
+```typescript
+interface SimplePlanInput {
+  soilAnalysis: SoilAnalysis;
+  parcel: Parcel;
+}
+
+function generateSimplePlan(input: SimplePlanInput): FertilizationPlan {
+  const { soilAnalysis, parcel } = input;
+  const isArable = parcel.culture === 'orna';
+  
+  // 1. Vápnění dle tabulek
+  const limeRecommendation = calculateLimeNeed({
+    ph: soilAnalysis.ph,
+    soilType: parcel.soil_type,
+    culture: parcel.culture,
+    targetPh: isArable ? 6.5 : 6.0
+  });
+  
+  // 2. Základní dávky živin dle zásobenosti
+  // Průměrná plodina: obiloviny (orná) nebo louka (TTP)
+  const baseYield = isArable ? 6 : 8; // t/ha
+  
+  const nutrients = {
+    p2o5: calculatePNeed(soilAnalysis.p_category, baseYield, isArable),
+    k2o: calculateKNeed(soilAnalysis.k_category, baseYield, isArable),
+    mgo: calculateMgNeed(soilAnalysis.mg_category, baseYield),
+    s: calculateSNeed(soilAnalysis.s_category, baseYield)
+  };
+  
+  // 3. Korekce dle poměru K:Mg
+  const kMgRatio = soilAnalysis.k / soilAnalysis.mg;
+  if (kMgRatio > 2.5) {
+    nutrients.k2o *= 0.75; // Snížit K
+    nutrients.mgo *= 1.25; // Zvýšit Mg
+  } else if (kMgRatio < 1.5) {
+    nutrients.k2o *= 1.25;
+    nutrients.mgo *= 0.75;
+  }
+  
+  return {
+    plan_type: 'simple',
+    user_type: 'A',
+    recommended_lime_t_ha: limeRecommendation.amount,
+    recommended_lime_type: limeRecommendation.type,
+    recommended_nutrients: nutrients,
+    warnings: [
+      {
+        type: 'info',
+        message: 'Bez znalosti osevního postupu je doporučení orientační (±25%)'
+      }
+    ]
+  };
+}
+```
+
+Tabulka potřeby vápnění:
+```typescript
+// Potřeba CaO v t/ha podle pH a půdního druhu
+const LIME_NEED_TABLE = {
+  // Orná půda (cílové pH 6.5)
+  orna: {
+    L: { // Lehká půda
+      '< 5.0': 2.5,
+      '5.0-5.5': 2.0,
+      '5.5-6.0': 1.5,
+      '6.0-6.5': 0.5,
+      '> 6.5': 0
+    },
+    S: { // Střední půda
+      '< 5.0': 3.5,
+      '5.0-5.5': 3.0,
+      '5.5-6.0': 2.0,
+      '6.0-6.5': 1.0,
+      '> 6.5': 0
+    },
+    T: { // Těžká půda
+      '< 5.0': 4.5,
+      '5.0-5.5': 4.0,
+      '5.5-6.0': 3.0,
+      '6.0-6.5': 1.5,
+      '> 6.5': 0
+    }
+  },
+  // TTP (cílové pH 6.0)
+  ttp: {
+    L: {
+      '< 5.0': 2.0,
+      '5.0-5.5': 1.5,
+      '5.5-6.0': 0.5,
+      '> 6.0': 0
+    },
+    S: {
+      '< 5.0': 3.0,
+      '5.0-5.5': 2.0,
+      '5.5-6.0': 1.0,
+      '> 6.0': 0
+    },
+    T: {
+      '< 5.0': 4.0,
+      '5.0-5.5': 3.0,
+      '5.5-6.0': 1.5,
+      '> 6.0': 0
+    }
+  }
+};
+```
+
+Výběr typu vápence:
+```typescript
+function selectLimeType(analysis: SoilAnalysis): 'calcitic' | 'dolomite' | 'either' {
+  const kMgRatio = analysis.k / analysis.mg;
+  
+  // Dolomitický vápenec když:
+  // - Mg je v kategorii N nebo VH
+  // - nebo K:Mg > 2.5
+  if (
+    ['N', 'VH'].includes(analysis.mg_category) ||
+    kMgRatio > 2.5
+  ) {
+    return 'dolomite';
+  }
+  
+  // Kalcitický vápenec když:
+  // - Mg je v kategorii D, V nebo VV
+  // - a K:Mg < 2.0
+  if (
+    ['D', 'V', 'VV'].includes(analysis.mg_category) &&
+    kMgRatio < 2.0
+  ) {
+    return 'calcitic';
+  }
+  
+  // Jinak volitelný
+  return 'either';
+}
+```
+
+Typ C – Pokročilý plán (simulace 4 roky):
+```typescript
+interface AdvancedPlanInput {
+  soilAnalysis: SoilAnalysis;
+  parcel: Parcel;
+  cropRotations: CropRotation[]; // 4 roky dopředu
+  fertilizationHistory: FertilizationHistory[]; // minulé roky
+}
+
+function generateAdvancedPlan(input: AdvancedPlanInput): FertilizationPlan {
+  const { soilAnalysis, parcel, cropRotations, fertilizationHistory } = input;
+  
+  // 1. Inicializace stavu půdy
+  let soilState = initializeSoilState(soilAnalysis, parcel);
+  
+  // 2. Zpracování historie (pokud existuje)
+  for (const history of fertilizationHistory) {
+    soilState = processHistoricalYear(soilState, history, parcel);
+  }
+  
+  // 3. Predikce na 4 roky
+  const predictions = [];
+  const recommendations = [];
+  
+  for (const rotation of cropRotations) {
+    // Výpočet potřeby živin pro plodinu
+    const cropNeeds = calculateCropNeeds(rotation.crop_name, rotation.planned_yield_t_ha);
+    
+    // Výpočet doporučení
+    const yearRecommendation = calculateYearRecommendation(soilState, cropNeeds, parcel);
+    recommendations.push(yearRecommendation);
+    
+    // Aplikace doporučení a aktualizace stavu
+    soilState = simulateYear(soilState, yearRecommendation, cropNeeds, parcel);
+    predictions.push({ ...soilState, year: rotation.year });
+  }
+  
+  return {
+    plan_type: 'advanced',
+    user_type: 'C',
+    recommended_lime_t_ha: recommendations[0].lime,
+    recommended_lime_type: selectLimeType(soilAnalysis),
+    recommended_nutrients: recommendations[0].nutrients,
+    recommended_products: recommendations[0].products,
+    warnings: generateWarnings(soilState, predictions),
+    predictions: {
+      years: predictions.map(p => p.year),
+      ph: predictions.map(p => p.ph),
+      p: predictions.map(p => p.p),
+      k: predictions.map(p => p.k),
+      mg: predictions.map(p => p.mg)
+    }
+  };
+}
+
+// Přepočet mg/kg na kg/ha
+function mgKgToKgHa(mgKg: number, depth: number = 30): number {
+  // Koeficient 4.2 pro 30cm, objemová hmotnost ~1.4 g/cm³
+  const coefficient = depth === 30 ? 4.2 : 2.1; // 15cm = 2.1
+  return mgKg * coefficient;
+}
+
+// Odhad KVK pokud chybí
+function estimateKVK(soilType: string): number {
+  switch (soilType) {
+    case 'L': return 80;  // mmol/kg
+    case 'S': return 150;
+    case 'T': return 250;
+    default: return 150;
+  }
+}
+```
+
+Acidifikace z hnojiv:
+```typescript
+// kg CaCO3 na kg N
+const ACIDIFICATION_FACTORS = {
+  'ledek_vapenaty': 0,      // Alkalické
+  'lav': 1.8,               // LAV/LAD
+  'lad': 1.8,
+  'mocovina': 2.7,          // Průměr 1.8-3.6
+  'dam_390': 3.0,           // Průměr 2.5-3.6
+  'ledek_amonny': 3.6,
+  'dap': 5.3,
+  'map': 7.0,
+  'siran_amonny': 7.0,
+  'elementarni_sira': 3.0   // kg CaCO3 / kg S
+};
+
+// Přirozená acidifikace (kg CaCO3/ha/rok)
+const NATURAL_ACIDIFICATION = {
+  // Podle půdního druhu a průměrných srážek (600mm)
+  L: 60,  // 30-120 dle srážek
+  S: 50,  // 20-100
+  T: 40   // 10-80
+};
+```
+
+Odběrové normativy (příklady):
+```typescript
+// kg živin na 1 t hlavního produktu
+const CROP_NUTRIENT_UPTAKE = {
+  'pšenice ozimá': { n: 25, p: 5.2, k: 19.9, mg: 2.4, s: 1.5 },
+  'pšenice jarní': { n: 25, p: 5.2, k: 17.4, mg: 2.0, s: 1.5 },
+  'ječmen ozimý': { n: 22, p: 4.4, k: 17.4, mg: 1.6, s: 1.2 },
+  'ječmen jarní': { n: 20, p: 4.4, k: 16.6, mg: 1.6, s: 1.2 },
+  'řepka ozimá': { n: 50, p: 11.0, k: 49.8, mg: 4.8, s: 8.0 },
+  'kukuřice zrno': { n: 27, p: 5.2, k: 23.2, mg: 4.8, s: 1.2 },
+  'kukuřice siláž': { n: 3.5, p: 0.6, k: 4.6, mg: 0.6, s: 0.3 }, // na 1 t siláže
+  'cukrovka': { n: 4.4, p: 0.7, k: 4.7, mg: 0.8, s: 0.5 }, // na 1 t bulev
+  'brambory': { n: 4.0, p: 0.6, k: 5.8, mg: 0.4, s: 0.3 },
+  'luční seno': { n: 17, p: 3.1, k: 12.5, mg: 2.4, s: 1.5 },
+  'jetel': { n: 25, p: 3.5, k: 20.0, mg: 3.0, s: 2.0 },
+  'vojtěška': { n: 27, p: 3.5, k: 22.0, mg: 3.5, s: 2.5 }
+};
+```
+
+🧪 Plán vápnění & Poptávky
+
+Produkty Démon Agro (výchozí data):
+```typescript
+const DEMON_LIME_PRODUCTS = [
+  {
+    name: 'Superfos 500',
+    type: 'calcitic',
+    cao_content: 50,
+    mgo_content: 2,
+    reactivity: 'medium',
+    is_demon_product: true
+  },
+  {
+    name: 'Superfos 500 Mg',
+    type: 'dolomite',
+    cao_content: 30,
+    mgo_content: 20,
+    reactivity: 'medium',
+    is_demon_product: true
+  },
+  {
+    name: 'Calcite 80',
+    type: 'calcitic',
+    cao_content: 80,
+    mgo_content: 0,
+    reactivity: 'fast',
+    is_demon_product: true
+  },
+  {
+    name: 'Granucal',
+    type: 'granulated',
+    cao_content: 45,
+    mgo_content: 5,
+    reactivity: 'fast',
+    is_demon_product: true
+  },
+  {
+    name: 'Dolite 30',
+    type: 'dolomite',
+    cao_content: 30,
+    mgo_content: 18,
+    reactivity: 'slow',
+    is_demon_product: true
+  }
+];
+```
+
+Výpočet množství produktu:
+```typescript
+function calculateProductQuantity(
+  caoNeedTonnes: number,
+  product: LimeProduct
+): number {
+  // Přepočet potřeby CaO na množství produktu
+  // caoNeedTonnes = potřeba čistého CaO
+  // product.cao_content = % CaO v produktu
+  return caoNeedTonnes / (product.cao_content / 100);
+}
+
+// Příklad:
+// Potřeba: 2 t CaO/ha
+// Produkt: Superfos 500 (50% CaO)
+// Množství: 2 / 0.5 = 4 t produktu/ha
+```
+
+Poptávkový systém:
+```typescript
+// Vytvoření poptávky
+async function createLimingRequest(data: {
+  parcels: Array<{
+    parcelId: string;
+    recommendedType: 'calcitic' | 'dolomite' | 'either';
+    quantityCaoT: number;
+    reason: string;
+  }>;
+  preferredTerm: string;
+  note?: string;
+}) {
+  const userId = await getCurrentUserId();
+  
+  // 1. Vytvoř hlavní poptávku
+  const { data: request } = await supabase
+    .from('liming_requests')
+    .insert({
+      user_id: userId,
+      status: 'new',
+      preferred_term: data.preferredTerm,
+      note: data.note,
+      total_area_ha: calculateTotalArea(data.parcels),
+      total_quantity_t: calculateTotalQuantity(data.parcels)
+    })
+    .select()
+    .single();
+  
+  // 2. Vytvoř položky
+  const items = data.parcels.map(p => ({
+    request_id: request.id,
+    parcel_id: p.parcelId,
+    recommended_type: p.recommendedType,
+    quantity_cao_t: p.quantityCaoT,
+    quantity_product_t: calculateProductQuantity(p.quantityCaoT, getDefaultProduct(p.recommendedType)),
+    reason: p.reason
+  }));
+  
+  await supabase.from('liming_request_items').insert(items);
+  
+  // 3. Odešli notifikaci adminovi
+  await sendEmailNotification({
+    to: 'base@demonagro.cz',
+    subject: `Nová poptávka vápnění - ${request.total_quantity_t} t`,
+    template: 'new_liming_request',
+    data: { request, items, user: await getUser(userId) }
+  });
+  
+  return request;
+}
+```
+
+👨‍💼 Admin sekce
+
+Co admin MŮŽE vidět:
+```typescript
+// Agregované statistiky
+interface AdminStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalParcels: number;
+  totalAreaHa: number;
+  totalAnalyses: number;
+  pendingRequests: number;
+  aiUsageToday: number;
+  totalLimeNeedT: number; // Celková potřeba vápnění
+  avgPh: number; // Průměrné pH napříč všemi pozemky
+}
+
+// Seznam uživatelů
+interface UserListItem {
+  id: string;
+  email: string;
+  company_name: string;
+  ico: string;
+  district: string;
+  parcels_count: number;
+  total_area_ha: number;
+  last_login: Date;
+  is_active: boolean;
+  created_at: Date;
+}
+
+// Admin má READ-ONLY přístup k datům uživatelů:
+// - Seznam pozemků uživatele (kód, název, výměra, půdní druh)
+// - Hodnoty rozborů (pH, P, K, Mg, S, kategorie)
+// - Plány hnojení a vápnění
+// - Historie hnojení
+// - Osevní postupy
+```
+
+Co admin NEMŮŽE:
+- Měnit/editovat data uživatelů (pouze read-only prohlížení)
+- Mazat rozbory nebo pozemky uživatelů
+- Hromadně exportovat všechna data všech uživatelů (ochrana před únikem)
+
+Audit Log (logování přístupu):
+Každý admin přístup k datům konkrétního uživatele se loguje.
+
+Podmínky užívání (informovat uživatele):
+V podmínkách užívání portálu musí být uvedeno:
+
+"Provozovatel portálu (Démon Agro) má přístup k vašim datům za účelem:
+- Zajištění kvality služeb a kontroly správnosti dat
+- Technické podpory
+- Přípravy cenových nabídek
+- Zlepšování produktu
+
+Přístupy jsou logovány. Data nejsou sdílena s třetími stranami."
+
+Admin funkce:
+```typescript
+// Správa uživatelů
+- createUser(email, company_name, ico?)
+- deactivateUser(userId)
+- activateUser(userId)
+- resetPassword(userId) // Vygeneruje nové heslo a pošle emailem
+- updateAiLimit(userId, limit)
+- viewUserData(userId) // Read-only přístup k datům uživatele (logováno)
+
+// Správa produktů
+- CRUD pro hnojiva (products)
+- CRUD pro vápnící produkty
+
+// Správa poptávek
+- listRequests(filters?)
+- updateRequestStatus(requestId, status)
+- addAdminNote(requestId, note)
+
+// Správa obrázků portálu
+- uploadPortalImage(file, title, description)
+- updateImageOrder(imageId, order)
+- deleteImage(imageId)
+
+// Audit log
+- viewAuditLog(filters?) // Přehled všech admin přístupů
+```
+
+Reset hesla (dvě možnosti):
+
+1. Self-service (uživatel sám):
+   /portal/prihlaseni → "Zapomněl jsem heslo"
+   → Zadá email
+   → Supabase pošle reset link
+   → Uživatel nastaví nové heslo
+
+2. Admin reset (záloha):
+   Admin sekce → Uživatelé → [uživatel] → "Resetovat heslo"
+   → Systém vygeneruje nové heslo
+   → Pošle emailem uživateli
+   → Uživatel musí heslo změnit při prvním přihlášení
+
+🎨 UI Komponenty
+
+Zdravotní karta pozemku:
+```tsx
+interface HealthCardProps {
+  parcel: Parcel;
+  analysis: SoilAnalysis;
+}
+
+function ParcelHealthCard({ parcel, analysis }: HealthCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{parcel.custom_name || parcel.code}</CardTitle>
+        <CardDescription>
+          {parcel.area_ha} ha • {parcel.soil_type === 'L' ? 'Lehká' : parcel.soil_type === 'S' ? 'Střední' : 'Těžká'} půda
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {/* pH indikátor */}
+        <NutrientBar 
+          label="pH"
+          value={analysis.ph}
+          category={analysis.ph_category}
+          min={4.5}
+          max={7.5}
+          optimal={[6.0, 6.8]}
+        />
+        
+        {/* Živiny */}
+        <NutrientBar label="Fosfor (P)" value={analysis.p} category={analysis.p_category} />
+        <NutrientBar label="Draslík (K)" value={analysis.k} category={analysis.k_category} />
+        <NutrientBar label="Hořčík (Mg)" value={analysis.mg} category={analysis.mg_category} />
+        <NutrientBar label="Síra (S)" value={analysis.s} category={analysis.s_category} />
+        
+        {/* Poměr K:Mg */}
+        <RatioIndicator 
+          label="K:Mg"
+          value={analysis.k_mg_ratio}
+          optimal={[1.5, 2.5]}
+          warning={[1.0, 3.0]}
+        />
+        
+        {/* Metadata */}
+        <div className="text-sm text-muted-foreground mt-4">
+          Rozbor ze dne {formatDate(analysis.analysis_date)}
+          {isAnalysisOld(analysis) && (
+            <Badge variant="warning">Rozbor starší než 4 roky</Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+Kategorie zásobenosti – barvy:
+```typescript
+const CATEGORY_COLORS = {
+  // pH
+  EK: '#ef4444', // Extrémně kyselá - červená
+  SK: '#f97316', // Silně kyselá - oranžová
+  N: '#eab308',  // Neutrální - žlutá
+  SZ: '#84cc16', // Slabě zásaditá - zelená
+  EZ: '#06b6d4', // Extrémně zásaditá - cyan
+  
+  // Živiny
+  VH: '#ef4444', // Velmi nízká - červená
+  N: '#f97316',  // Nízká - oranžová
+  D: '#22c55e',  // Dobrá - zelená
+  V: '#3b82f6',  // Vysoká - modrá
+  VV: '#8b5cf6'  // Velmi vysoká - fialová
+};
+```
+
+Varování a upozornění:
+```tsx
+const WARNING_TYPES = {
+  high_p: {
+    severity: 'warning',
+    title: 'Vysoká zásobenost fosforu',
+    description: 'Dle vyhlášky 377/2013 Sb. omezte hnojení P.'
+  },
+  low_ph: {
+    severity: 'error',
+    title: 'Nízké pH půdy',
+    description: 'Doporučujeme vápnění před aplikací hnojiv.'
+  },
+  k_mg_imbalance: {
+    severity: 'warning',
+    title: 'Nevyvážený poměr K:Mg',
+    description: 'Poměr K:Mg je mimo optimální rozmezí 1.5-2.5.'
+  },
+  old_analysis: {
+    severity: 'info',
+    title: 'Starý rozbor',
+    description: 'Rozbor je starší než 4 roky. Doporučujeme nový odběr.'
+  },
+  zod_area: {
+    severity: 'warning',
+    title: 'Zranitelná oblast',
+    description: 'Pozemek se nachází v ZOD. Platí omezení hnojení dusíkem.'
+  }
+};
+```
+
+📤 Export
+
+PDF export plánu hnojení:
+```typescript
+import jsPDF from 'jspdf';
+
+async function exportFertilizationPlanPDF(plan: FertilizationPlan, parcel: Parcel) {
+  const doc = new jsPDF();
+  
+  // Logo Démon Agro
+  const logo = await loadImage('/images/logo-demon-agro.png');
+  doc.addImage(logo, 'PNG', 10, 10, 50, 20);
+  
+  // Hlavička
+  doc.setFontSize(18);
+  doc.text('Plán hnojení', 105, 40, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.text(`Pozemek: ${parcel.custom_name || parcel.code}`, 20, 55);
+  doc.text(`Výměra: ${parcel.area_ha} ha`, 20, 62);
+  doc.text(`Cílový rok: ${plan.target_year}`, 20, 69);
+  
+  // Doporučení vápnění
+  doc.setFontSize(14);
+  doc.text('Doporučení vápnění', 20, 85);
+  doc.setFontSize(11);
+  doc.text(`Množství: ${plan.recommended_lime_t_ha} t CaO/ha`, 25, 95);
+  doc.text(`Typ: ${plan.recommended_lime_type === 'dolomite' ? 'Dolomitický' : 'Kalcitický'}`, 25, 102);
+  
+  // Doporučené živiny
+  doc.setFontSize(14);
+  doc.text('Doporučené dávky živin (kg/ha)', 20, 120);
+  
+  const nutrients = plan.recommended_nutrients;
+  const nutrientTable = [
+    ['Živina', 'Dávka (kg/ha)'],
+    ['P₂O₅', nutrients.p2o5?.toString() || '-'],
+    ['K₂O', nutrients.k2o?.toString() || '-'],
+    ['MgO', nutrients.mgo?.toString() || '-'],
+    ['S', nutrients.s?.toString() || '-']
+  ];
+  
+  doc.autoTable({
+    startY: 125,
+    head: [nutrientTable[0]],
+    body: nutrientTable.slice(1),
+    theme: 'grid'
+  });
+  
+  // Varování
+  if (plan.warnings?.length > 0) {
+    doc.setFontSize(14);
+    doc.text('Upozornění', 20, doc.lastAutoTable.finalY + 15);
+    doc.setFontSize(10);
+    plan.warnings.forEach((w, i) => {
+      doc.text(`• ${w.message}`, 25, doc.lastAutoTable.finalY + 25 + (i * 7));
+    });
+  }
+  
+  // Patička
+  doc.setFontSize(9);
+  doc.text('Vygenerováno portálem Démon Agro', 105, 280, { align: 'center' });
+  doc.text(`Datum: ${new Date().toLocaleDateString('cs-CZ')}`, 105, 285, { align: 'center' });
+  
+  return doc.output('blob');
+}
+```
+
+Excel export:
+```typescript
+import * as XLSX from 'xlsx';
+
+function exportParcelsExcel(parcels: ParcelWithAnalysis[]) {
+  const data = parcels.map(p => ({
+    'Kód': p.code,
+    'Název': p.custom_name || '-',
+    'Výměra (ha)': p.area_ha,
+    'Půdní druh': p.soil_type,
+    'Kultura': p.culture === 'orna' ? 'Orná půda' : 'TTP',
+    'pH': p.analysis?.ph || '-',
+    'P (mg/kg)': p.analysis?.p || '-',
+    'K (mg/kg)': p.analysis?.k || '-',
+    'Mg (mg/kg)': p.analysis?.mg || '-',
+    'S (mg/kg)': p.analysis?.s || '-',
+    'K:Mg': p.analysis?.k_mg_ratio?.toFixed(2) || '-',
+    'Datum rozboru': p.analysis?.analysis_date || '-'
+  }));
+  
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pozemky');
+  
+  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+}
+```
+
+🏠 Landing Page Portálu (/portal)
+
+Obsah:
+
+1. Hero sekce
+   - Nadpis: "Portál pro správu půdních rozborů"
+   - Popis: Krátký text o výhodách portálu
+   - CTA: "Přihlásit se" (odkaz na /portal/prihlaseni)
+
+2. Sekce funkcí (ikony + text)
+   - Upload rozborů a AI extrakce
+   - Zdravotní karty pozemků
+   - Plány hnojení a vápnění
+   - Export do PDF a Excel
+
+3. Galerie screenshotů
+   - Obrázky spravované v admin sekci (tabulka portal_images)
+   - Carousel nebo grid layout
+
+4. CTA sekce
+   - "Máte zájem o přístup?"
+   - Kontaktní formulář nebo odkaz na kontakt
+
+Správa obrázků v admin:
+```tsx
+// Admin panel - správa obrázků portálu
+function PortalImagesManager() {
+  const [images, setImages] = useState<PortalImage[]>([]);
+  
+  async function uploadImage(file: File, title: string, description: string) {
+    // 1. Upload do Supabase Storage
+    const { data: fileData } = await supabase.storage
+      .from('portal-images')
+      .upload(`${Date.now()}-${file.name}`, file);
+    
+    // 2. Získat veřejnou URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('portal-images')
+      .getPublicUrl(fileData.path);
+    
+    // 3. Uložit do DB
+    await supabase.from('portal_images').insert({
+      title,
+      description,
+      image_url: publicUrl,
+      display_order: images.length
+    });
+  }
+  
+  // Drag & drop řazení, mazání, editace...
+}
+```
+
+🔧 Konfigurace prostředí
+
+.env.local:
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
+SUPABASE_SERVICE_ROLE_KEY=xxx
+
+# Anthropic (Claude API)
+ANTHROPIC_API_KEY=xxx
+
+# EmailJS (již existující)
+NEXT_PUBLIC_EMAILJS_SERVICE_ID=xxx
+NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=xxx
+NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=xxx
+
+# Nové template pro notifikace poptávek
+NEXT_PUBLIC_EMAILJS_LIMING_REQUEST_TEMPLATE_ID=xxx
+```
+
+Supabase setup:
+```bash
+# 1. Vytvoř nový Supabase projekt (region: Frankfurt - EU)
+# 2. Spusť SQL schéma z této dokumentace
+# 3. Nastav Storage buckety:
+#    - soil-documents (private)
+#    - portal-images (public)
+# 4. Nastav Edge Functions pro AI extrakci (volitelné)
+```
+
+⚠️ Důležité poznámky
+
+Zemědělský rok:
+```typescript
+// Hospodářský rok (HY): 1. října – 30. září
+// HY2024/25 = 1.10.2024 – 30.9.2025
+
+function getHospodarskyRok(date: Date = new Date()): string {
+  const month = date.getMonth(); // 0-11
+  const year = date.getFullYear();
+  
+  // Říjen (9) až prosinec (11) = začátek nového HY
+  if (month >= 9) {
+    return `HY${year}/${(year + 1).toString().slice(-2)}`;
+  }
+  // Leden (0) až září (8) = pokračování předchozího HY
+  return `HY${year - 1}/${year.toString().slice(-2)}`;
+}
+```
+
+Validace vstupních dat:
+```typescript
+const VALIDATION_RANGES = {
+  ph: { min: 3.5, max: 9.0, suspicious: { min: 4.5, max: 8.0 } },
+  p: { min: 0, max: 800, suspicious: { max: 300 } },
+  k: { min: 0, max: 1200, suspicious: { max: 600 } },
+  mg: { min: 0, max: 800, suspicious: { max: 400 } },
+  area_ha: { min: 0.1, max: 1000, suspicious: { max: 100 } }
+};
+```
+
+Co NENÍ v MVP:
+- Self-registrace uživatelů
+- Více uživatelů na jeden podnik
+- Offline režim
+- VDLUFA metodika (odloženo)
+- Variabilní aplikační zóny
+- Automatické ceny s dopravou
+- PDF export plánu vápnění (admin řeší ručně)
+
+🚀 Pořadí implementace
+
+Fáze 1: Základ
+- Supabase setup + schéma
+- Autentizace + middleware
+- Layout portálu + navigace
+- Landing page /portal
+- Onboarding wizard
+
+Fáze 2: Správa pozemků
+- Seznam pozemků
+- Detail pozemku
+- CRUD operace
+- Rozdělení/sloučení
+
+Fáze 3: Rozbory
+- Upload PDF
+- AI extrakce (Claude Vision)
+- Validační UI
+- Párování s pozemky
+- Verzování rozborů
+
+Fáze 4: Plánování
+- Jednoduchý plán (typ A)
+- Pokročilý plán (typ C)
+- Plán vápnění
+- Poptávkový systém
+
+Fáze 5: Admin + Export
+- Admin dashboard
+- Správa uživatelů
+- Správa produktů
+- Přehled poptávek
+- PDF/Excel export
+
+📚 Reference
+- Supabase Docs
+- Next.js 14 App Router
+- Anthropic Claude API
+- Tailwind CSS
+- Recharts
+- jsPDF
+- SheetJS
+
+Tento prompt obsahuje kompletní specifikaci pro implementaci uživatelského portálu Démon Agro. Použij existující design systém projektu (barvy, fonty, komponenty) a dodržuj českou lokalizaci.
