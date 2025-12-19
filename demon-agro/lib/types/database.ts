@@ -95,6 +95,8 @@ export interface Database {
           soil_type: SoilType
           culture: Culture
           notes: string | null
+          status: 'active' | 'archived'
+          source_parcel_id: string | null
           created_at: string
           updated_at: string
         }
@@ -107,6 +109,8 @@ export interface Database {
           soil_type: SoilType
           culture: Culture
           notes?: string | null
+          status?: 'active' | 'archived'
+          source_parcel_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -119,6 +123,8 @@ export interface Database {
           soil_type?: SoilType
           culture?: Culture
           notes?: string | null
+          status?: 'active' | 'archived'
+          source_parcel_id?: string | null
           created_at?: string
           updated_at?: string
         }

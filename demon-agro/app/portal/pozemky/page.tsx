@@ -13,7 +13,7 @@ export default async function PozemkyPage() {
   const user = await requireAuth()
   const supabase = await createClient()
 
-  // Fetch all parcels with their latest analysis
+  // Fetch active parcels with their latest analysis
   const { data: parcels } = await supabase
     .from('parcels')
     .select(`
@@ -33,6 +33,7 @@ export default async function PozemkyPage() {
       )
     `)
     .eq('user_id', user.id)
+    .eq('status', 'active')
     .order('created_at', { ascending: false })
 
   // Process parcels to get latest analysis and status

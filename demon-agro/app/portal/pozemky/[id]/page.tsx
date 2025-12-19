@@ -1,9 +1,6 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Edit,
-  Archive,
-  Scissors,
   Upload,
   ShoppingCart,
   MapPin,
@@ -15,16 +12,11 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
 import { ParcelHealthCard } from '@/components/portal/ParcelHealthCard'
+import { ParcelActionButtons } from '@/components/portal/ParcelActionButtons'
 import {
   SOIL_TYPE_LABELS,
   CULTURE_LABELS,
 } from '@/lib/constants/database'
-import type {
-  Parcel,
-  SoilAnalysis,
-  FertilizationHistory,
-  CropRotation,
-} from '@/lib/types/database'
 
 interface ParcelDetailPageProps {
   params: { id: string }
@@ -128,29 +120,7 @@ export default async function ParcelDetailPage({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/portal/pozemky/${params.id}/edit`}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-            >
-              <Edit className="w-4 h-4" />
-              <span className="hidden sm:inline">Upravit</span>
-            </Link>
-            <button
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-              title="Rozdělit pozemek"
-            >
-              <Scissors className="w-4 h-4" />
-              <span className="hidden sm:inline">Rozdělit</span>
-            </button>
-            <button
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-              title="Archivovat pozemek"
-            >
-              <Archive className="w-4 h-4" />
-              <span className="hidden sm:inline">Archivovat</span>
-            </button>
-          </div>
+          <ParcelActionButtons parcel={parcel} />
         </div>
 
         {/* Parcel Info Grid */}
