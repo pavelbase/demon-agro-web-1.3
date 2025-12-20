@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
@@ -53,6 +54,15 @@ const navigation = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const [newRequestsCount, setNewRequestsCount] = useState(0)
+
+  useEffect(() => {
+    // Fetch new requests count
+    fetch('/api/admin/requests/count')
+      .then(res => res.json())
+      .then(data => setNewRequestsCount(data.count || 0))
+      .catch(() => setNewRequestsCount(0))
+  }, [pathname])
 
   const isActive = (href: string) => {
     if (href === '/portal/admin') {
@@ -91,6 +101,11 @@ export function AdminSidebar() {
               >
                 <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
                 {item.name}
+                {item.href === '/portal/admin/poptavky' && newRequestsCount > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {newRequestsCount}
+                  </span>
+                )}
               </Link>
             )
           })}
