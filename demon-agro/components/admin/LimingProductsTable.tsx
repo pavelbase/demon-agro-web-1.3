@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Edit, Trash2, Flask } from 'lucide-react'
+import { Plus, Edit, Trash2, Beaker } from 'lucide-react'
 import { LimingProductModal } from './LimingProductModal'
 
 interface LimingProduct {

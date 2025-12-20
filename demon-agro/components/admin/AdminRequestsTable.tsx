@@ -236,7 +236,7 @@ export function AdminRequestsTable({ requests, newCount }: AdminRequestsTablePro
       {/* Detail Modal */}
       {viewingRequest && (
         <RequestDetailModal
-          request={viewingRequest}
+          request={viewingRequest as any}
           onClose={() => setViewingRequest(null)}
           onUpdate={() => {
             setViewingRequest(null)

@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  Users, 
-  Package, 
-  Flask, 
-  ShoppingCart, 
+import {
+  LayoutDashboard,
+  Users,
+  Package,
+  Beaker,
+  ShoppingCart,
   Image as ImageIcon,
   BarChart3,
   Shield,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react'
 
 const navigation = [
@@ -34,7 +34,7 @@ const navigation = [
   {
     name: 'Produkty vápnění',
     href: '/portal/admin/produkty-vapneni',
-    icon: Flask,
+    icon: Beaker,
   },
   {
     name: 'Poptávky',

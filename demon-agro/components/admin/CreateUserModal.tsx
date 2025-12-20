@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
-import { DISTRICTS } from '@/lib/constants/districts'
+import { CZECH_DISTRICTS } from '@/lib/constants/districts'
 
 interface CreateUserModalProps {
   onClose: () => void
@@ -134,9 +134,9 @@ export function CreateUserModal({ onClose }: CreateUserModalProps) {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
                 >
                   <option value="">Vyberte okres</option>
-                  {DISTRICTS.map((district) => (
-                    <option key={district} value={district}>
-                      {district}
+                  {CZECH_DISTRICTS.map((district) => (
+                    <option key={district.value} value={district.value}>
+                      {district.label}
                     </option>
                   ))}
                 </select>
