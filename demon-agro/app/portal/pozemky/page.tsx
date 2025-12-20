@@ -5,7 +5,7 @@ import type { Parcel, SoilAnalysis } from '@/lib/types/database'
 
 export interface ParcelWithAnalysis extends Parcel {
   latest_analysis?: SoilAnalysis | null
-  status: 'ok' | 'warning' | 'critical'
+  health_status: 'ok' | 'warning' | 'critical'
   status_reason?: string
 }
 
@@ -39,8 +39,8 @@ export default async function PozemkyPage() {
   // Process parcels to get latest analysis and status
   const parcelsWithStatus: ParcelWithAnalysis[] = (parcels || []).map(parcel => {
     const analyses = parcel.soil_analyses || []
-    const latestAnalysis = analyses.sort((a, b) => 
-      new Date(b.analysis_date).getTime() - new Date(a.analysis_date).getTime()
+    const latestAnalysis = (analyses as any[]).sort((a: any, b: any) => 
+      new Date(b.analysis_date || b.date).getTime() - new Date(a.analysis_date || a.date).getTime()
     )[0]
 
     // Determine status
