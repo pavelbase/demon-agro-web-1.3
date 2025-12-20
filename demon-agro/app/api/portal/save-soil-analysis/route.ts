@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { categorizeNutrient, categorizePh } from '@/lib/utils/soil-categories'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,6 +84,9 @@ export async function POST(request: NextRequest) {
         pdf_url: pdfUrl || null,
         lab_name: lab_name || null,
         notes: notes || null,
+        is_current: true,
+        ai_extracted: !!pdfUrl,
+        user_validated: true,
       })
       .select()
       .single()
@@ -110,6 +114,11 @@ export async function POST(request: NextRequest) {
           has_pdf: !!pdfUrl,
         },
       })
+
+    // Revalidate paths to update UI
+    revalidatePath('/portal/pozemky')
+    revalidatePath(`/portal/pozemky/${parcelId}`)
+    revalidatePath(`/portal/pozemky/${parcelId}/rozbory`)
 
     return NextResponse.json({
       success: true,
