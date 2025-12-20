@@ -90,9 +90,15 @@ export async function middleware(request: NextRequest) {
 
   // If it's an admin route, check for admin role
   if (isAdminRoute && user) {
-    // Check if user has admin role
-    // Role can be in user_metadata or app_metadata depending on your setup
-    const userRole = user.user_metadata?.role || user.app_metadata?.role
+    // Check if user has admin role from the database
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    // Check metadata as fallback
+    const userRole = profile?.role || user.user_metadata?.role || user.app_metadata?.role
 
     if (userRole !== 'admin') {
       // Non-admin user trying to access admin route - redirect to dashboard
