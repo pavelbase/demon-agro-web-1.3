@@ -5,7 +5,7 @@
 
 ---
 
-## ✅ HOTOVO - Fáze 1-5
+## ✅ HOTOVO - Fáze 1-7.1
 
 ### **Fáze 1: Autentizace & Onboarding**
 
@@ -529,9 +529,73 @@
 
 ---
 
+### **Fáze 7: Administrace**
+
+#### 7.1: Admin Layout & Dashboard ✅
+**Soubory:**
+- `app/portal/admin/layout.tsx` (61 řádků)
+- `app/portal/admin/page.tsx` (150 řádků)
+- `components/admin/AdminSidebar.tsx` (110 řádků)
+- `components/admin/RegistrationsChart.tsx` (110 řádků)
+- `components/admin/RecentRequests.tsx` (115 řádků)
+- `components/admin/RecentRegistrations.tsx` (100 řádků)
+
+**Funkce:**
+
+**Admin Layout:**
+- Server Component s role check
+- requireAuth() + profile fetch
+- Redirect pokud role !== 'admin'
+- AdminSidebar komponenta
+- Admin header s "Admin" badge
+- Responsive layout
+
+**AdminSidebar:**
+- 7 navigačních položek:
+  - Dashboard (LayoutDashboard)
+  - Uživatelé (Users)
+  - Produkty hnojiva (Package)
+  - Produkty vápnění (Flask)
+  - Poptávky (ShoppingCart)
+  - Obrázky portálu (Image)
+  - Statistiky (BarChart3)
+- "Zpět na portál" link
+- Dark theme (bg-gray-900)
+- Active state highlighting
+
+**Admin Dashboard:**
+- 6 statistických karet:
+  - Celkem uživatelů (modrá, Users)
+  - Celkem pozemků (zelená, MapPin)
+  - Celková výměra (žlutá, Ruler)
+  - Celkem rozborů (fialová, FlaskConical)
+  - Nové poptávky (červená, ShoppingCart)
+  - AI využití dnes (indigo, Brain)
+- Graf registrací (Recharts, LineChart):
+  - Last 30 days
+  - Grouped by date
+  - Summary stats (celkem, průměr/den)
+  - Responsive
+- Poslední poptávky (5 karet):
+  - User name, status badge
+  - Plocha, množství
+  - Link na detail
+- Poslední registrace (5 karet):
+  - User/company name, email
+  - Datum registrace
+  - Link na profil
+
+**Privacy:**
+- ❌ Admin NEVIDÍ konkrétní data (pH, živiny, plány)
+- ✅ Pouze agregované statistiky a metadata
+
+**~650 řádků kódu**
+
+---
+
 ## 📊 Celková statistika HOTOVO
 
-### Fáze 1-6
+### Fáze 1-7.1
 | Fáze | Popis | Řádky kódu | Soubory |
 |------|-------|------------|---------|
 | 1.1-1.5 | Auth základy | ~800 | 6 |
@@ -548,17 +612,18 @@
 | 6.1 | Plán vápnění | 1,030 | 4 |
 | 6.2 | Košík & Nová poptávka | 1,300 | 6 |
 | 6.3 | Seznam poptávek | 555 | 3 |
-| **CELKEM** | **Fáze 1-6** | **~13,285** | **47** |
+| 7.1 | Admin Layout & Dashboard | 650 | 7 |
+| **CELKEM** | **Fáze 1-7.1** | **~13,935** | **54** |
 
 ### Databázové tabulky (implementované)
-- `profiles` (extended)
+- `profiles` (extended, with role)
 - `parcels` (s status a source_parcel_id)
 - `soil_analyses`
 - `fertilization_history`
 - `crop_rotation`
 - `liming_products` ✨
 - `liming_requests` ✨
-- `liming_request_items` ✨ **NOVÁ**
+- `liming_request_items` ✨
 - `portal_images`
 - `audit_logs`
 
@@ -635,7 +700,19 @@ Plán vápnění → "Přidat do poptávky" →
 → Detail poptávky (modal)
 ```
 
-### 6. Operace s pozemky
+### 7. Admin přístup
+```
+Admin user → /portal/admin →
+→ Role check (layout) →
+→ AdminSidebar + Header →
+→ Dashboard:
+  - 6 statistických karet
+  - Graf registrací (30 dní)
+  - Poslední poptávky (5)
+  - Poslední registrace (5)
+```
+
+### 8. Operace s pozemky
 ```
 Detail pozemku → "Rozdělit" →
 → Rozdělení na 2-5 částí →
@@ -649,9 +726,9 @@ Detail pozemku → "Archivovat" →
 
 ## 🚧 CO ZATÍM NENÍ (budoucí fáze)
 
-- ❌ **Fáze 7:** Osevní postup (formulář, CRUD)
-- ❌ **Fáze 8:** Historie hnojení (formulář, CRUD)
-- ❌ **Fáze 9:** Admin plná funkcionalita (správa poptávek)
+- ❌ **Fáze 7.2+:** Admin stránky (uživatelé, produkty, poptávky detail)
+- ❌ **Fáze 8:** Osevní postup (formulář, CRUD)
+- ❌ **Fáze 9:** Historie hnojení (formulář, CRUD)
 - ❌ **Fáze 10:** Export PDF (plány, reporty)
 - ❌ Mapové zobrazení
 
@@ -706,9 +783,19 @@ Detail pozemku → "Archivovat" →
    - Detail poptávky (modal)
    - 5 statusů (new, in_progress, quoted, completed, cancelled)
 
+7. **Admin Layout & Dashboard** ✅
+   - Role check (server-side, redirect)
+   - AdminSidebar (7 navigačních položek)
+   - Admin header s "Admin" badge
+   - 6 statistických karet
+   - Graf registrací (Recharts, 30 dní)
+   - Poslední poptávky (5 karet)
+   - Poslední registrace (5 karet)
+   - Privacy compliance (no user data)
+
 ### 🎯 Připraveno k testování
 
-Všech 6 fází je implementováno a připraveno k:
+Všech 7 fází (1-6 + 7.1) je implementováno a připraveno k:
 - Manuálnímu testování
 - Unit testům
 - Integration testům
