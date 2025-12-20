@@ -595,7 +595,7 @@
 
 ## 📊 Celková statistika HOTOVO
 
-### Fáze 1-7
+### Fáze 1-8.1
 | Fáze | Popis | Řádky kódu | Soubory |
 |------|-------|------------|---------|
 | 1.1-1.5 | Auth základy | ~800 | 6 |
@@ -618,7 +618,8 @@
 | 7.4 | Správa poptávek | 705 | 5 |
 | 7.5 | Správa obrázků | 805 | 8 |
 | 7.6 | Audit log | 290 | 2 |
-| **CELKEM** | **Fáze 1-7** | **~19,140** | **99** |
+| 8.1 | PDF Export plánu | 720 | 3 |
+| **CELKEM** | **Fáze 1-8.1** | **~19,860** | **102** |
 
 ### Databázové tabulky (implementované)
 - `profiles` (extended, with role)
@@ -759,11 +760,33 @@ Detail pozemku → "Archivovat" →
 
 ---
 
+## ✅ HOTOVO - Fáze 8.1
+
+### **Fáze 8.1: PDF Export plánu hnojení** ✅
+
+**Soubory:**
+- `lib/utils/pdf-export.ts` (650 řádků)
+- `components/portal/ExportPlanPDFButton.tsx` (70 řádků)
+- `app/portal/pozemky/[id]/plan-hnojeni/page.tsx` (updated)
+
+**Funkce:**
+- PDF export s jsPDF + jspdf-autotable
+- 8 sekcí: Header, Pozemek, Stav půdy, Vápnění, Živiny, Varování, Predikce, Footer
+- České formátování (data, čísla)
+- Barevné kategorie
+- Multi-page support
+- Loading + error states
+- Auto download
+- Filename generation
+
+**~720 řádků kódu**
+
+---
+
 ## 🚧 CO ZATÍM NENÍ (volitelné budoucí fáze)
 
-- ❌ **Fáze 8:** Osevní postup (formulář, CRUD)
+- ❌ **Fáze 8.2:** Osevní postup (formulář, CRUD)
 - ❌ **Fáze 9:** Historie hnojení (formulář, CRUD)
-- ❌ **Fáze 10:** Export PDF (plány, reporty)
 - ❌ **Admin:** Detailní statistiky (grafy, reporty)
 - ❌ **Admin:** Email actions (reset password, welcome)
 - ❌ **Admin:** User actions (deactivate, delete)
