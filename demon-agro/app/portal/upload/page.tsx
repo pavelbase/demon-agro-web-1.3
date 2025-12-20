@@ -4,15 +4,11 @@ import { PDFUploadZone } from '@/components/portal/PDFUploadZone'
 import type { Parcel } from '@/lib/types/database'
 import { FileText, Upload, Zap } from 'lucide-react'
 
-interface UploadPageProps {
-  searchParams: { parcel?: string }
-}
-
-export default async function UploadPage({ searchParams }: UploadPageProps) {
+export default async function UploadPage() {
   const user = await requireAuth()
   const supabase = await createClient()
 
-  // Fetch user's active parcels for dropdown
+  // Fetch user's active parcels for validation page
   const { data: parcels } = await supabase
     .from('parcels')
     .select('id, name, cadastral_number, area')
@@ -94,7 +90,6 @@ export default async function UploadPage({ searchParams }: UploadPageProps) {
       {!isLimitReached ? (
         <PDFUploadZone
           parcels={(parcels as Parcel[]) || []}
-          preselectedParcelId={searchParams.parcel}
           userId={user.id}
           remainingExtractions={remainingExtractions}
         />
@@ -151,15 +146,15 @@ export default async function UploadPage({ searchParams }: UploadPageProps) {
             </li>
             <li className="flex gap-2">
               <span className="font-bold text-green-600">2.</span>
-              <span>AI automaticky extrahuje pH, P, K, Mg, Ca hodnoty</span>
+              <span>AI automaticky extrahuje pH, P, K, Mg, Ca hodnoty a informace o pozemcích</span>
             </li>
             <li className="flex gap-2">
               <span className="font-bold text-green-600">3.</span>
-              <span>Zkontrolujte a upravte data před uložením</span>
+              <span>Zkontrolujte data a spárujte rozbory s existujícími pozemky nebo vytvořte nové</span>
             </li>
             <li className="flex gap-2">
               <span className="font-bold text-green-600">4.</span>
-              <span>Přiřaďte rozbor k pozemku a uložte</span>
+              <span>Potvrďte a uložte rozbory do systému</span>
             </li>
           </ol>
         </div>

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { pdfUrl, documentType, parcelId, userId } = await request.json()
+    const { pdfUrl, documentType, userId } = await request.json()
 
     if (!pdfUrl) {
       return NextResponse.json(
@@ -114,7 +114,6 @@ export async function POST(request: NextRequest) {
 
     // Add metadata
     extractedData.pdfUrl = pdfUrl
-    extractedData.parcelId = parcelId
     extractedData.extractedAt = new Date().toISOString()
     extractedData.documentType = documentType
 

@@ -23,23 +23,19 @@ export default async function ValidatePage({ searchParams }: ValidatePageProps) 
     redirect('/portal/upload')
   }
 
-  // Fetch parcel details
-  const { data: parcel } = await supabase
+  // Fetch user's active parcels for selection/matching
+  const { data: parcels } = await supabase
     .from('parcels')
     .select('id, name, cadastral_number, area, soil_type, culture')
-    .eq('id', extractedData.parcelId)
     .eq('user_id', user.id)
-    .single()
-
-  if (!parcel) {
-    redirect('/portal/upload')
-  }
+    .eq('status', 'active')
+    .order('name', { ascending: true })
 
   return (
     <div className="max-w-4xl mx-auto">
       <ExtractionValidator
         extractedData={extractedData}
-        parcel={parcel as any}
+        parcels={(parcels as any[]) || []}
         userId={user.id}
       />
     </div>

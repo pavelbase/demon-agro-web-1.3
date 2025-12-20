@@ -2,17 +2,38 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, AlertTriangle, X, Save, ArrowLeft, Loader2 } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, X, Save, ArrowLeft, Loader2, Plus, Link as LinkIcon } from 'lucide-react'
 import type { Parcel } from '@/lib/types/database'
 
 interface ExtractionValidatorProps {
   extractedData: any
-  parcel: Parcel
+  parcels: Parcel[]
   userId: string
 }
 
-export function ExtractionValidator({ extractedData, parcel, userId }: ExtractionValidatorProps) {
+interface ParcelFormData {
+  selectedParcelId: string // 'new' for creating new parcel, or existing parcel ID
+  newParcelName: string
+  newParcelArea: number | ''
+  newParcelCadastralNumber: string
+  newParcelSoilType: string
+  newParcelCulture: 'orna' | 'ttp'
+}
+
+export function ExtractionValidator({ extractedData, parcels, userId }: ExtractionValidatorProps) {
   const router = useRouter()
+  
+  // Parcel selection/creation
+  const [parcelData, setParcelData] = useState<ParcelFormData>({
+    selectedParcelId: '',
+    newParcelName: extractedData.parcel_name || '',
+    newParcelArea: '',
+    newParcelCadastralNumber: extractedData.cadastral_number || '',
+    newParcelSoilType: '',
+    newParcelCulture: 'orna',
+  })
+
+  // Soil analysis data
   const [formData, setFormData] = useState({
     analysis_date: extractedData.analysis_date || '',
     ph: extractedData.ph || '',
@@ -31,9 +52,19 @@ export function ExtractionValidator({ extractedData, parcel, userId }: Extractio
   const confidence = extractedData.confidence || 'medium'
   const validationErrors = extractedData.validationErrors || []
 
+  const handleParcelChange = (field: keyof ParcelFormData, value: any) => {
+    setParcelData(prev => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
+  }
+
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    // Clear error for this field
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev }
@@ -46,6 +77,19 @@ export function ExtractionValidator({ extractedData, parcel, userId }: Extractio
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
+    // Validate parcel selection/creation
+    if (!parcelData.selectedParcelId) {
+      newErrors.selectedParcelId = 'Prosím vyberte existující pozemek nebo vytvořte nový'
+    } else if (parcelData.selectedParcelId === 'new') {
+      if (!parcelData.newParcelName) {
+        newErrors.newParcelName = 'Název pozemku je povinný'
+      }
+      if (!parcelData.newParcelArea || parcelData.newParcelArea <= 0) {
+        newErrors.newParcelArea = 'Výměra musí být větší než 0'
+      }
+    }
+
+    // Validate soil analysis data
     if (!formData.analysis_date) {
       newErrors.analysis_date = 'Datum analýzy je povinné'
     }
@@ -82,15 +126,41 @@ export function ExtractionValidator({ extractedData, parcel, userId }: Extractio
     setIsSaving(true)
 
     try {
+      let parcelId = parcelData.selectedParcelId
+
+      // If creating new parcel, create it first
+      if (parcelData.selectedParcelId === 'new') {
+        const createParcelResponse = await fetch('/api/portal/create-parcel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            name: parcelData.newParcelName,
+            area: parseFloat(String(parcelData.newParcelArea)),
+            cadastral_number: parcelData.newParcelCadastralNumber || null,
+            soil_type: parcelData.newParcelSoilType || null,
+            culture: parcelData.newParcelCulture,
+          }),
+        })
+
+        if (!createParcelResponse.ok) {
+          const error = await createParcelResponse.json()
+          throw new Error(error.error || 'Chyba při vytváření pozemku')
+        }
+
+        const { parcelId: newParcelId } = await createParcelResponse.json()
+        parcelId = newParcelId
+      }
+
+      // Save soil analysis
       const response = await fetch('/api/portal/save-soil-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          parcelId: parcel.id,
+          parcelId,
           userId,
           pdfUrl: extractedData.pdfUrl,
           ...formData,
-          // Convert strings to numbers
           ph: parseFloat(formData.ph as string),
           phosphorus: parseFloat(formData.phosphorus as string),
           potassium: parseFloat(formData.potassium as string),
@@ -108,7 +178,7 @@ export function ExtractionValidator({ extractedData, parcel, userId }: Extractio
       const { analysisId } = await response.json()
 
       // Redirect to parcel detail
-      router.push(`/portal/pozemky/${parcel.id}?success=analysis-saved`)
+      router.push(`/portal/pozemky/${parcelId}?success=analysis-saved`)
 
     } catch (error) {
       console.error('Save error:', error)
@@ -161,7 +231,7 @@ export function ExtractionValidator({ extractedData, parcel, userId }: Extractio
               Kontrola extrahovaných dat
             </h1>
             <p className="text-gray-600">
-              Zkontrolujte a upravte data z PDF před uložením do systému
+              Zkontrolujte data z PDF a přiřaďte rozbor k pozemku
             </p>
           </div>
           {getConfidenceBadge()}
@@ -192,31 +262,174 @@ export function ExtractionValidator({ extractedData, parcel, userId }: Extractio
         </div>
       )}
 
-      {/* Parcel Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-medium text-blue-900 mb-2">Pozemek</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="text-blue-700">Název:</span>
-            <p className="font-medium text-blue-900">{parcel.name}</p>
-          </div>
-          <div>
-            <span className="text-blue-700">Výměra:</span>
-            <p className="font-medium text-blue-900">{parcel.area} ha</p>
-          </div>
-          {parcel.cadastral_number && (
-            <div>
-              <span className="text-blue-700">Katastr:</span>
-              <p className="font-medium text-blue-900">{parcel.cadastral_number}</p>
-            </div>
-          )}
-          <div>
-            <span className="text-blue-700">Kultura:</span>
-            <p className="font-medium text-blue-900">
-              {parcel.culture === 'orna' ? 'Orná půda' : 'TTP'}
+      {/* Parcel Selection/Creation */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Přiřazení k pozemku
+        </h2>
+
+        {/* Show extracted parcel info if available */}
+        {(extractedData.parcel_name || extractedData.cadastral_number) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-900 font-medium mb-2">
+              Informace o pozemku z PDF:
             </p>
+            <div className="text-sm text-blue-800 space-y-1">
+              {extractedData.parcel_name && (
+                <p><strong>Název:</strong> {extractedData.parcel_name}</p>
+              )}
+              {extractedData.cadastral_number && (
+                <p><strong>Katastrální číslo:</strong> {extractedData.cadastral_number}</p>
+              )}
+            </div>
           </div>
+        )}
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Vyberte možnost <span className="text-red-500">*</span>
+          </label>
+          
+          {/* Option buttons */}
+          <div className="space-y-2">
+            {parcels.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleParcelChange('selectedParcelId', parcels.length > 0 ? (parcelData.selectedParcelId && parcelData.selectedParcelId !== 'new' ? parcelData.selectedParcelId : '') : '')}
+                className={`w-full text-left px-4 py-3 border-2 rounded-lg transition-colors ${
+                  parcelData.selectedParcelId && parcelData.selectedParcelId !== 'new'
+                    ? 'border-primary-green bg-green-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <LinkIcon className="h-5 w-5 text-gray-600" />
+                  <div>
+                    <p className="font-medium text-gray-900">Spárovat s existujícím pozemkem</p>
+                    <p className="text-sm text-gray-600">Vyberte pozemek ze seznamu</p>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => handleParcelChange('selectedParcelId', 'new')}
+              className={`w-full text-left px-4 py-3 border-2 rounded-lg transition-colors ${
+                parcelData.selectedParcelId === 'new'
+                  ? 'border-primary-green bg-green-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Plus className="h-5 w-5 text-gray-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Vytvořit nový pozemek</p>
+                  <p className="text-sm text-gray-600">Pozemek bude vytvořen automaticky</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {errors.selectedParcelId && (
+            <p className="text-sm text-red-600 mt-2">{errors.selectedParcelId}</p>
+          )}
         </div>
+
+        {/* Existing parcel selection */}
+        {parcelData.selectedParcelId && parcelData.selectedParcelId !== 'new' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Vyberte pozemek
+            </label>
+            <select
+              value={parcelData.selectedParcelId}
+              onChange={(e) => handleParcelChange('selectedParcelId', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+            >
+              <option value="">-- Vyberte pozemek --</option>
+              {parcels.map((parcel) => (
+                <option key={parcel.id} value={parcel.id}>
+                  {parcel.name} ({parcel.area} ha)
+                  {parcel.cadastral_number && ` - ${parcel.cadastral_number}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* New parcel form */}
+        {parcelData.selectedParcelId === 'new' && (
+          <div className="space-y-4 pt-4 border-t border-gray-200">
+            <h3 className="font-medium text-gray-900">Nový pozemek</h3>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Název <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={parcelData.newParcelName}
+                  onChange={(e) => handleParcelChange('newParcelName', e.target.value)}
+                  placeholder="např. Pole u lesa"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent ${
+                    errors.newParcelName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.newParcelName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.newParcelName}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Výměra (ha) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={parcelData.newParcelArea}
+                  onChange={(e) => handleParcelChange('newParcelArea', e.target.value ? parseFloat(e.target.value) : '')}
+                  placeholder="např. 5.5"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent ${
+                    errors.newParcelArea ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.newParcelArea && (
+                  <p className="text-sm text-red-600 mt-1">{errors.newParcelArea}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Katastrální číslo
+                </label>
+                <input
+                  type="text"
+                  value={parcelData.newParcelCadastralNumber}
+                  onChange={(e) => handleParcelChange('newParcelCadastralNumber', e.target.value)}
+                  placeholder="např. 123/4"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kultura
+                </label>
+                <select
+                  value={parcelData.newParcelCulture}
+                  onChange={(e) => handleParcelChange('newParcelCulture', e.target.value as 'orna' | 'ttp')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                >
+                  <option value="orna">Orná půda</option>
+                  <option value="ttp">TTP (Trvalý travní porost)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Form */}
