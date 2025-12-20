@@ -654,7 +654,6 @@ Detail pozemku → "Archivovat" →
 - ❌ **Fáze 9:** Admin plná funkcionalita (správa poptávek)
 - ❌ **Fáze 10:** Export PDF (plány, reporty)
 - ❌ Mapové zobrazení
-- ❌ LimingCartButton v portal layoutu (globální viditelnost)
 
 ---
 

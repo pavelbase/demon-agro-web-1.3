@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
+import { LimingCartButton } from './LimingCartButton'
 import type { Profile } from '@/lib/types/database'
 
 interface PortalLayoutClientProps {
@@ -104,6 +105,9 @@ export function PortalLayoutClient({ user, isAdmin, children }: PortalLayoutClie
           </main>
         </div>
       </div>
+
+      {/* Floating Cart Button - visible on all portal pages */}
+      <LimingCartButton />
     </div>
   )
 }

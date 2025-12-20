@@ -577,6 +577,49 @@ All requirements met:
 
 ---
 
+## 🔗 Integrace do Portal Layout
+
+### LimingCartButton přidán do layoutu ✅
+
+**Soubory upraveny:**
+- `app/portal/layout.tsx` - wrapped v LimingCartProvider
+- `components/portal/PortalLayoutClient.tsx` - přidán LimingCartButton
+
+**Implementace:**
+
+```tsx
+// app/portal/layout.tsx
+import { LimingCartProvider } from '@/lib/contexts/LimingCartContext'
+
+return (
+  <LimingCartProvider>
+    <PortalLayoutClient user={userData} isAdmin={isAdmin}>
+      {children}
+    </PortalLayoutClient>
+  </LimingCartProvider>
+)
+
+// components/portal/PortalLayoutClient.tsx
+import { LimingCartButton } from './LimingCartButton'
+
+return (
+  <div className="min-h-screen bg-gray-50">
+    {/* ... sidebar, header, main ... */}
+    
+    {/* Floating Cart Button - visible on all portal pages */}
+    <LimingCartButton />
+  </div>
+)
+```
+
+**Výsledek:**
+- ✅ Košík viditelný na VŠECH stránkách portálu
+- ✅ Context dostupný pro všechny komponenty
+- ✅ Floating button (fixed bottom-right)
+- ✅ Persistence přes localStorage
+
+---
+
 **Implementation Date**: December 20, 2025  
 **Implemented By**: AI Assistant (Claude Sonnet 4.5)  
 **Phase**: 6.3 - Requests List  
@@ -586,4 +629,5 @@ All requirements met:
 - page.tsx: 95 lines
 - LimingRequestsTable: 180 lines
 - LimingRequestDetailModal: 280 lines
-- Total: ~555 lines
+- Layout integration: 2 files modified
+- Total: ~555 lines + 2 integrations
