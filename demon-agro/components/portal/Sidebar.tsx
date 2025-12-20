@@ -69,6 +69,12 @@ const adminNavItems = [
 export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
   const pathname = usePathname()
 
+  // DEBUG: Log admin status in sidebar
+  console.log('=== SIDEBAR DEBUG ===')
+  console.log('isAdmin prop:', isAdmin)
+  console.log('pathname:', pathname)
+  console.log('====================')
+
   const handleLogout = async () => {
     await logout()
   }
@@ -133,6 +139,7 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
         </div>
 
         {/* Admin section - POUZE pro uživatele s role="admin" */}
+        {/* DEBUG: isAdmin = {isAdmin ? 'TRUE' : 'FALSE'} */}
         {isAdmin && (
           <>
             {/* Vizuální oddělení admin sekce */}

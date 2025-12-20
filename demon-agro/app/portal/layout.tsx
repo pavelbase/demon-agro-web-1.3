@@ -32,11 +32,21 @@ export default async function PortalLayout({
 
   // Fetch user profile
   const supabase = await createClient()
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
+
+  // DEBUG: Log user and profile data
+  console.log('=== PORTAL LAYOUT DEBUG ===')
+  console.log('User ID:', user.id)
+  console.log('User Email:', user.email)
+  console.log('User metadata:', user.user_metadata)
+  console.log('User app_metadata:', user.app_metadata)
+  console.log('Profile data:', profile)
+  console.log('Profile error:', profileError)
+  console.log('Profile role:', profile?.role)
 
   // Prepare user data for client component
   const userData = {
@@ -44,7 +54,19 @@ export default async function PortalLayout({
     profile: profile as Profile | null,
   }
 
-  const isAdmin = profile?.role === 'admin'
+  // Determine admin status with multiple fallbacks
+  // 1. Check profile.role from database (primary source)
+  // 2. Check user.app_metadata.role (Supabase auth metadata)
+  // 3. Check user.user_metadata.role (custom user metadata)
+  // 4. Check if email is base@demonagro.cz (temporary fallback for testing)
+  const isAdmin = 
+    profile?.role === 'admin' ||
+    user.app_metadata?.role === 'admin' ||
+    user.user_metadata?.role === 'admin' ||
+    user.email === 'base@demonagro.cz'
+
+  console.log('Is Admin:', isAdmin)
+  console.log('=========================')
 
   // Render authenticated layout with sidebar
   return (
