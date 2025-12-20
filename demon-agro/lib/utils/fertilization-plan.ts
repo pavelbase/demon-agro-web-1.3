@@ -113,7 +113,7 @@ export interface FertilizationHistory {
   calcium: number | null
 }
 
-interface SoilState {
+export interface SoilState {
   ph: number
   p_mgkg: number
   k_mgkg: number
