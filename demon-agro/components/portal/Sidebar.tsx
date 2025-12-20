@@ -18,9 +18,26 @@ import {
   BarChart3,
   ClipboardList,
   LogOut,
-  X
+  X,
+  Shield
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
+
+/**
+ * Sidebar navigace pro uživatelský portál
+ * 
+ * Role-based přístup:
+ * - Běžní uživatelé (role='user'): Vidí pouze hlavní navigaci
+ * - Admin uživatelé (role='admin'): Vidí hlavní navigaci + Admin Zónu
+ * 
+ * Admin role se získává z:
+ * - app/portal/layout.tsx: `const isAdmin = profile?.role === 'admin'`
+ * - Kontroluje se pole `role` v tabulce `profiles`
+ * 
+ * @param {boolean} isAdmin - Určuje, zda je uživatel admin (z parent layoutu)
+ * @param {function} onClose - Callback pro zavření sidebaru (mobilní verze)
+ * @param {boolean} isMobile - Určuje, zda je sidebar v mobilním režimu
+ */
 
 interface SidebarProps {
   isAdmin: boolean
@@ -115,15 +132,23 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
           })}
         </div>
 
-        {/* Admin section */}
+        {/* Admin section - POUZE pro uživatele s role="admin" */}
         {isAdmin && (
           <>
-            <div className="my-4 border-t border-gray-200" />
+            {/* Vizuální oddělení admin sekce */}
+            <div className="my-4 border-t-2 border-gray-300" />
+            
+            {/* Hlavička admin sekce s ikonou Shield */}
             <div className="mb-3 px-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Administrace
-              </h3>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-red-600" />
+                <h3 className="text-xs font-semibold text-red-600 uppercase tracking-wider">
+                  Admin Zóna
+                </h3>
+              </div>
             </div>
+            
+            {/* Admin navigační odkazy */}
             <div className="space-y-1">
               {adminNavItems.map((item) => {
                 const Icon = item.icon
@@ -137,8 +162,8 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
                       ${active 
-                        ? 'bg-primary-brown text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-red-600 text-white shadow-md' 
+                        : 'text-gray-700 hover:bg-red-50 hover:text-red-600'
                       }
                     `}
                   >
