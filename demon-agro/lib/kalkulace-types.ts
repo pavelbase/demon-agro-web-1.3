@@ -19,7 +19,7 @@ export interface KalkulackaInputs {
   firma?: string;
   email: string;
   telefon: string;
-  souhlas: boolean;
+  souhlas: boolean; // toto teď bude znamenat marketingový souhlas (newsletter)
 }
 
 export interface VysledekVapneni {
@@ -88,5 +88,6 @@ export interface UlozenaKalkulace {
   typPudy: TypPudy;
   vysledek: VysledekKalkulace;
   kontaktovan: boolean;
+  marketing_consent: boolean;
   poznamka?: string;
 }

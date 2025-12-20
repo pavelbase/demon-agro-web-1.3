@@ -117,6 +117,12 @@ export default function ImagesManagerTab() {
         <p className="text-gray-600">
           Centralizovaná správa všech obrázků na webu
         </p>
+        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>ℹ️ Poznámka:</strong> Logo webu (Démon agro) je fixní a nelze jej měnit přes admin panel. 
+            SVG soubory loga se nacházejí v <code className="bg-blue-100 px-2 py-0.5 rounded">/public/logo/</code> a lze je upravit pouze přímo v souborovém systému.
+          </p>
+        </div>
       </div>
 
       {/* Filtry */}

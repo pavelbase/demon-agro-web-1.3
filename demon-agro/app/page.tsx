@@ -165,7 +165,7 @@ export default function HomePage() {
             <FeatureCard
               icon={MapPin}
               title="Regionální pokrytí"
-              description="Působíme v severních a západních Čechách"
+              description="Působíme v západních, severních a středních Čechách"
             />
             <FeatureCard
               icon={HeartHandshake}

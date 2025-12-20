@@ -23,6 +23,9 @@ export interface PageContent {
   nase_mise_text?: string;
   cta_nadpis?: string;
   cta_text?: string;
+  privacy_text?: string;
+  facebook_url?: string;
+  instagram_url?: string;
 }
 
 export interface ImageUrls {
@@ -47,7 +50,7 @@ export interface ImageUrls {
   onas_kdo_jsme_img: string;
 }
 
-export type PageKey = "home" | "ph" | "sira" | "k" | "mg" | "analyza" | "onas";
+export type PageKey = "home" | "ph" | "sira" | "k" | "mg" | "analyza" | "onas" | "privacy-policy" | "kontakt";
 
 export interface Article {
   id: string;

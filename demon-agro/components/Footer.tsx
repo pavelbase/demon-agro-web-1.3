@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Facebook, Instagram } from "lucide-react";
 import { useState, useEffect } from "react";
+import { getPageContent, defaultContent } from "@/lib/content";
 
 export default function Footer() {
   const logoUrl = "/logo.png";
+  const [contactContent, setContactContent] = useState(defaultContent.kontakt);
+
+  useEffect(() => {
+    setContactContent(getPageContent("kontakt"));
+  }, []);
 
   return (
     <footer className="bg-[#2C2C2C] text-white pt-16 pb-8">
@@ -23,8 +29,8 @@ export default function Footer() {
             />
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">
-              Komplexní pH management a výživa půdy pro zemědělce v severních a
-              západních Čechách.
+              Komplexní pH management a výživa půdy pro zemědělce v západních, severních a
+              středních Čechách.
             </p>
             <Link
               href="/o-nas"
@@ -115,16 +121,53 @@ export default function Footer() {
                 <p className="text-gray-400 text-sm">
                   <strong>Oblast působnosti:</strong>
                   <br />
-                  Severní a západní Čechy
+                  Severní, západní a střední Čechy
                 </p>
+              </div>
+
+              {/* Social Icons */}
+              <div className="flex items-center space-x-4 mt-6">
+                <a
+                  href={contactContent.facebook_url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-primary-beige transition-colors"
+                >
+                  <Facebook className="h-6 w-6" />
+                </a>
+                <a
+                  href={contactContent.instagram_url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-primary-beige transition-colors"
+                >
+                  <Instagram className="h-6 w-6" />
+                </a>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="border-t border-gray-700 pt-8 text-center text-gray-400">
-          <p>© 2025 Démon agro. Všechna práva vyhrazena.</p>
+        {/* Copyright & Legal */}
+        <div className="border-t border-gray-700 pt-8 mt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+            <p>© 2025 Démon agro. Všechna práva vyhrazena.</p>
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+              <Link
+                href="/zasady-ochrany-osobnich-udaju"
+                className="hover:text-white transition-colors"
+              >
+                Zásady ochrany osobních údajů
+              </Link>
+              <a
+                href="#"
+                className="hover:text-white transition-colors"
+                onClick={(e) => e.preventDefault()}
+              >
+                Nastavení cookies
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
