@@ -20,25 +20,8 @@ export default async function AdminLayout({
     .single()
 
   // If there's an error fetching the profile or user is not admin, redirect to dashboard
-  // REDIRECT DISABLED FOR DEBUGGING
-  // if (error || !profile || profile.role !== 'admin') {
-  //   redirect('/portal/dashboard')
-  // }
-
-  // DEBUG MODE: Show debug info instead of redirecting
   if (error || !profile || profile.role !== 'admin') {
-    return (
-      <div className="p-10 bg-red-100 text-red-800 m-10 border-2 border-red-500">
-        <h1 className="text-2xl font-bold">Přístup zamítnut (DEBUG MODE)</h1>
-        <p>Tato obrazovka se zobrazuje místo redirectu.</p>
-        <pre className="mt-4 p-4 bg-black text-white rounded">
-          {`User ID: ${user?.id}
-Profile Role: ${profile?.role}
-Profile Error: ${JSON.stringify(error, null, 2)}
-Profile Data: ${JSON.stringify(profile, null, 2)}`}
-        </pre>
-      </div>
-    )
+    redirect('/portal/dashboard')
   }
 
   // User is confirmed admin - render admin interface
