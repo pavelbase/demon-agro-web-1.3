@@ -92,6 +92,14 @@ export default function Footer() {
                   Rádce
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/portal"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Klientský portál
+                </Link>
+              </li>
             </ul>
           </div>
 

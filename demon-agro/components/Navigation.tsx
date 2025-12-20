@@ -157,6 +157,12 @@ export default function Navigation() {
             >
               Kontakt
             </Link>
+            <Link
+              href="/portal"
+              className="text-gray-700 hover:text-primary-green transition-colors font-medium"
+            >
+              Portál
+            </Link>
 
             {/* CTA Button */}
             <button
@@ -276,6 +282,13 @@ export default function Navigation() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Kontakt
+              </Link>
+              <Link
+                href="/portal"
+                className="text-gray-700 hover:text-primary-green transition-colors font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Portál
               </Link>
 
               <button
