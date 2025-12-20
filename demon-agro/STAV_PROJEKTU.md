@@ -354,9 +354,79 @@
 
 ---
 
+### **Fáze 6: Plány vápnění**
+
+#### 6.1: Plán vápnění ✅
+**Soubory:**
+- `lib/supabase/sql/create_liming_products_table.sql` (250+ řádků)
+- `app/portal/pozemky/[id]/plan-vapneni/page.tsx` (450+ řádků)
+- `components/portal/LimingProductSelector.tsx` (330+ řádků)
+- `lib/types/database.ts` (aktualizace)
+
+**Funkce:**
+
+**Přehled potřeby:**
+- Aktuální pH vs cílové pH
+- Potřeba CaO (t/ha a celkem)
+- Rozdíl pH
+- Barevné karty (zelená/hnědá)
+
+**Doporučený typ vápence:**
+- Automatické doporučení (vápenatý/dolomitický/libovolný)
+- Logika podle Mg a K:Mg poměru
+- Textové zdůvodnění
+- Zobrazení aktuálního stavu Mg
+- K:Mg poměr s hodnocením
+
+**Produkty Démon Agro:**
+- Databázová tabulka `liming_products`
+- 6 výchozích produktů:
+  - Vápenec mletý (52% CaO, velmi vysoká reaktivita)
+  - Dolomit mletý (30% CaO, 18% MgO, vysoká)
+  - Granulovaný vápenec (50% CaO, střední)
+  - Vápenec drcený (48% CaO, střední)
+  - Dolomit granulovaný (32% CaO, 16% MgO, střední)
+  - Vápenec + Mg hybridní (45% CaO, 8% MgO, vysoká)
+- Filtrace podle doporučeného typu
+- Pro každý produkt:
+  - Složení (% CaO, % MgO)
+  - Reaktivita (velmi vysoká/vysoká/střední/nízká)
+  - Granulace a forma
+  - **Výpočet potřebného množství** pro pozemek
+  - Poznámky k aplikaci
+- Radio button výběr
+
+**Kalkulace:**
+- Vybraný produkt
+- Množství (t/ha × plocha = t celkem)
+- Výpočet: `limeNeedKgHa / (cao_content / 100) × area / 1000`
+- "Cena bude stanovena individuálně"
+
+**Akce:**
+- "Přidat do poptávky" → LimingCart context
+- "Odeslat poptávku" → redirect na `/portal/poptavky/nova`
+- Success message (zelený banner, 3s)
+
+**Podmíněné zobrazení:**
+- Pokud chybí rozbor → Empty state s CTA "Nahrát rozbor"
+- Pokud pH >= cílové → "Vápnění není potřeba" + aktuální stav
+
+**Sidebar:**
+- Info o výpočtu (metodika ÚKZÚZ)
+- Doporučený termín aplikace (podzim/jaro)
+- Použitá data (rozbor, lab, půdní typ, kultura)
+
+**RLS Policies:**
+- Veřejné čtení aktivních produktů
+- Admin může upravovat
+
+**~1,030 řádků kódu**
+
+---
+
 ## 📊 Celková statistika HOTOVO
 
-### Fáze 1-5
+### Fáze 1-6
 | Fáze | Popis | Řádky kódu | Soubory |
 |------|-------|------------|---------|
 | 1.1-1.5 | Auth základy | ~800 | 6 |
@@ -369,8 +439,9 @@
 | 3.4 | Operace | 1,295 | 3 |
 | 4 | Upload & AI | 1,660 | 8 |
 | 5.1-5.3 | Kalkulace | 1,760 | 1 |
-| 5.4 | UI Plánu | 1,216 | 4 |
-| **CELKEM** | **Fáze 1-5** | **~10,400** | **34** |
+| 5.4 | UI Plánu hnojení | 1,216 | 4 |
+| 6.1 | Plán vápnění | 1,030 | 4 |
+| **CELKEM** | **Fáze 1-6** | **~11,430** | **38** |
 
 ### Databázové tabulky (implementované)
 - `profiles` (extended)
@@ -378,6 +449,7 @@
 - `soil_analyses`
 - `fertilization_history`
 - `crop_rotation`
+- `liming_products` ✨ **NOVÁ**
 - `liming_requests`
 - `portal_images`
 - `audit_logs`
@@ -433,7 +505,17 @@ Detail pozemku → Tab "Plán hnojení" →
 → Asistent rozhodování
 ```
 
-### 5. Operace s pozemky
+### 5. Plán vápnění
+```
+Detail pozemku → Tab "Plán vápnění" →
+→ Výpočet potřeby vápnění →
+→ Doporučení typu vápence →
+→ Výběr produktu →
+→ Kalkulace množství →
+→ Přidání do poptávky
+```
+
+### 6. Operace s pozemky
 ```
 Detail pozemku → "Rozdělit" →
 → Rozdělení na 2-5 částí →
@@ -447,47 +529,15 @@ Detail pozemku → "Archivovat" →
 
 ## 🚧 CO ZATÍM NENÍ (budoucí fáze)
 
-### Fáze 6: Osevní postup (NENÍ)
-- [ ] Stránka `/portal/osevni-postup`
-- [ ] Formulář pro zadání osevního postupu
-- [ ] Tabulka historie
-- [ ] CRUD operace
+### 🚧 CO ZATÍM NENÍ (budoucí fáze)
 
-### Fáze 7: Historie hnojení (NENÍ)
-- [ ] Stránka `/portal/historie-hnojeni`
-- [ ] Formulář pro zadání aplikací
-- [ ] Tabulka historie
-- [ ] CRUD operace
-
-### Fáze 8: Plán vápnění (NENÍ)
-- [ ] Stránka `/portal/pozemky/[id]/plan-vapneni`
-- [ ] Multi-year vápnění strategie
-- [ ] Výběr produktů
-- [ ] Timing aplikací
-
-### Fáze 9: Poptávky vápnění (ČÁSTEČNĚ)
-- [ ] Seznam poptávek `/portal/poptavky`
-- [ ] Detail poptávky
-- [x] DB tabulka existuje
-- [ ] Košík vápnění (LimingCartContext existuje)
-- [ ] Kompletní workflow
-
-### Fáze 10: Admin sekce (ČÁSTEČNĚ)
-- [x] `/portal/admin` existuje
-- [ ] Správa uživatelů
-- [ ] Audit log viewer
-- [ ] Statistiky
-- [ ] Správa produktů
-- [ ] Správa obrázků
-
-### Ostatní funkce
-- [ ] Export PDF (plány, reporty)
-- [ ] Export Excel (rozšířený)
-- [ ] Email notifikace
-- [ ] Mobilní aplikace
-- [ ] Mapové zobrazení pozemků
-- [ ] Integrace s LPIS
-- [ ] Weather data
+- ❌ **Fáze 7:** Osevní postup (formulář, CRUD)
+- ❌ **Fáze 8:** Historie hnojení (formulář, CRUD)
+- ❌ **Fáze 9:** Poptávky vápnění (košík, workflow)
+- ❌ **Fáze 10:** Admin plná funkcionalita
+- ❌ Export PDF (plány, reporty)
+- ❌ Email notifikace
+- ❌ Mapové zobrazení
 
 ---
 
@@ -527,9 +577,16 @@ Detail pozemku → "Archivovat" →
    - UI s grafy
    - Asistent rozhodování
 
+6. **Plány vápnění** ✅
+   - Výpočet potřeby vápnění
+   - Doporučení typu vápence
+   - 6 produktů v DB
+   - Výběr produktu s kalkulací
+   - Přidání do košíku
+
 ### 🎯 Připraveno k testování
 
-Všech 5 fází je implementováno a připraveno k:
+Všech 6 fází je implementováno a připraveno k:
 - Manuálnímu testování
 - Unit testům
 - Integration testům
