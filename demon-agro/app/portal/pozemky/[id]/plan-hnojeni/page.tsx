@@ -25,6 +25,8 @@ import { detectUserType } from '@/lib/utils/calculations'
 import { FertilizationPlanChart } from '@/components/portal/FertilizationPlanChart'
 import { PlanRecommendationsTable } from '@/components/portal/PlanRecommendationsTable'
 import { PlanDecisionAssistant } from '@/components/portal/PlanDecisionAssistant'
+import { ExportPlanPDFButton } from '@/components/portal/ExportPlanPDFButton'
+import { ExportPlanExcelButton } from '@/components/portal/ExportPlanExcelButton'
 
 interface PlanHnojeniPageProps {
   params: { id: string }
@@ -491,10 +493,18 @@ export default async function PlanHnojeniPage({ params }: PlanHnojeniPageProps) 
             <h3 className="text-lg font-bold text-gray-900 mb-4">Akce</h3>
             <div className="space-y-3">
               {/* Export PDF */}
-              <button className="w-full flex items-center gap-3 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                <FileDown className="w-5 h-5" />
-                Exportovat do PDF
-              </button>
+              <ExportPlanPDFButton 
+                plan={plan}
+                parcel={parcel}
+                analysis={latestAnalysis}
+              />
+
+              {/* Export Excel */}
+              <ExportPlanExcelButton 
+                plan={plan}
+                parcel={parcel}
+                analysis={latestAnalysis}
+              />
 
               {/* Add to liming request */}
               {plan.recommended_lime_kg_ha > 0 && (

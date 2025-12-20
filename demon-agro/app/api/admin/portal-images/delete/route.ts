@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/supabase/auth-helpers'
 export async function DELETE(request: NextRequest) {
   try {
     const user = await requireAuth()
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const { data: profile } = await supabase
       .from('profiles')

@@ -7,7 +7,7 @@ import { NewLimingRequestForm } from '@/components/portal/NewLimingRequestForm'
 
 export default async function NewLimingRequestPage() {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch user profile for pre-filling contact info
   const { data: profile } = await supabase

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, AlertTriangle, X, Save, ArrowLeft } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, X, Save, ArrowLeft, Loader2 } from 'lucide-react'
 import type { Parcel } from '@/lib/types/database'
 
 interface ExtractionValidatorProps {

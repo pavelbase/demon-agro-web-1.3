@@ -6,7 +6,7 @@ export async function PUT(request: NextRequest) {
   try {
     // Verify admin
     const user = await requireAuth()
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const { data: profile } = await supabase
       .from('profiles')

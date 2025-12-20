@@ -595,7 +595,7 @@
 
 ## 📊 Celková statistika HOTOVO
 
-### Fáze 1-7
+### Fáze 1-8.1
 | Fáze | Popis | Řádky kódu | Soubory |
 |------|-------|------------|---------|
 | 1.1-1.5 | Auth základy | ~800 | 6 |
@@ -618,7 +618,8 @@
 | 7.4 | Správa poptávek | 705 | 5 |
 | 7.5 | Správa obrázků | 805 | 8 |
 | 7.6 | Audit log | 290 | 2 |
-| **CELKEM** | **Fáze 1-7** | **~19,140** | **99** |
+| 8.1 | PDF Export plánu | 720 | 3 |
+| **CELKEM** | **Fáze 1-8.1** | **~19,860** | **102** |
 
 ### Databázové tabulky (implementované)
 - `profiles` (extended, with role)
@@ -759,15 +760,128 @@ Detail pozemku → "Archivovat" →
 
 ---
 
+## ✅ HOTOVO - Fáze 8.1
+
+### **Fáze 8.1: PDF Export plánu hnojení** ✅
+
+**Soubory:**
+- `lib/utils/pdf-export.ts` (650 řádků)
+- `components/portal/ExportPlanPDFButton.tsx` (70 řádků)
+- `app/portal/pozemky/[id]/plan-hnojeni/page.tsx` (updated)
+
+**Funkce:**
+- PDF export s jsPDF + jspdf-autotable
+- 8 sekcí: Header, Pozemek, Stav půdy, Vápnění, Živiny, Varování, Predikce, Footer
+- České formátování (data, čísla)
+- Barevné kategorie
+- Multi-page support
+- Loading + error states
+- Auto download
+- Filename generation
+
+**~720 řádků kódu**
+
+---
+
+## ✅ HOTOVO - Fáze 8.2
+
+### **Fáze 8.2: Excel Exporty** ✅
+
+**Soubory:**
+- `lib/utils/excel-export.ts` (480 řádků)
+- `components/portal/ExportParcelsExcelButton.tsx` (85 řádků)
+- `components/portal/ExportPlanExcelButton.tsx` (85 řádků)
+- `components/portal/ExportRequestExcelButton.tsx` (82 řádků)
+- `components/portal/ParcelsTable.tsx` (updated)
+- `app/portal/pozemky/[id]/plan-hnojeni/page.tsx` (updated)
+
+**Funkce:**
+- Excel export pomocí xlsx (SheetJS)
+- 3 hlavní funkce:
+  - `exportParcelsExcel()` - seznam pozemků s rozbory
+  - `exportFertilizationPlanExcel()` - plán hnojení (3 listy)
+  - `exportLimingRequestExcel()` - poptávka pro admin kalkulaci
+- České formátování (soil types, cultures, categories)
+- Multi-sheet workbooks
+- Auto download
+- Filename generation
+- Loading + error states
+
+**~728 řádků kódu**
+
+---
+
+## ✅ HOTOVO - Fáze 8.3
+
+### **Fáze 8.3: EmailJS Notifikace** ✅
+
+**Soubory:**
+- `lib/utils/email.ts` (350 řádků)
+- `EMAILJS_TEMPLATES_SETUP.md` (150 řádků)
+- `app/api/admin/users/create/route.ts` (updated)
+- `lib/actions/liming-requests.ts` (updated)
+- `.env.local.example` (updated)
+
+**Funkce:**
+- 3 email notifikace:
+  - `sendWelcomeEmail()` - onboarding s dočasným heslem
+  - `sendPasswordResetEmail()` - nové heslo po resetu
+  - `sendNewLimingRequestNotification()` - notifikace na admin
+- EmailJS integrace
+- Non-blocking email sending
+- Error handling
+- Template setup dokumentace
+- ENV variables pro templates
+
+**~511 řádků kódu**
+
+---
+
+## ✅ HOTOVO - Fáze 8.4
+
+### **Fáze 8.4: Finální Úpravy & Testování** ✅
+
+**Nové komponenty:**
+- `components/ui/Skeleton.tsx` - Loading stavy (161 řádků)
+- `components/ui/Toast.tsx` - Notifikační systém (127 řádků)
+- `components/ui/EmptyState.tsx` - Prázdné stavy (99 řádků)
+- `components/ui/FormField.tsx` - Form komponenty s validací (240 řádků)
+
+**Nové utility:**
+- `lib/utils/cn.ts` - Tailwind merge utility (7 řádků)
+- `lib/utils/accessibility.ts` - A11y helpers (93 řádků)
+
+**Loading & Error pages:**
+- `app/portal/error.tsx` - Error boundary (43 řádků)
+- `app/portal/dashboard/loading.tsx` - Dashboard loading (13 řádků)
+- `app/portal/pozemky/loading.tsx` - Parcels loading (17 řádků)
+
+**Dokumentace:**
+- `README_PORTAL.md` - Kompletní projekt README (417 řádků)
+- `PHASE_8_4_COMPLETE.md` - Implementační dokumentace
+
+**Funkce:**
+1. ⚡ **Responzivita** - Mobile hamburger menu, responsive layouts
+2. 🔄 **Loading stavy** - Skeleton komponenty, Loading.tsx
+3. 🚨 **Error handling** - Error boundary, Toast notifikace
+4. 📭 **Empty states** - Komponenty pro prázdné seznamy
+5. ✅ **Validace** - FormField komponenty s inline errory
+6. ♿ **Přístupnost** - ARIA, keyboard navigation, focus management
+7. 🔍 **SEO** - Enhanced metadata, robots tags
+8. 📚 **Dokumentace** - README, implementation docs, JSDoc
+
+**~1,217 řádků kódu**
+
+---
+
 ## 🚧 CO ZATÍM NENÍ (volitelné budoucí fáze)
 
-- ❌ **Fáze 8:** Osevní postup (formulář, CRUD)
-- ❌ **Fáze 9:** Historie hnojení (formulář, CRUD)
-- ❌ **Fáze 10:** Export PDF (plány, reporty)
+- ❌ **Fáze 9:** Osevní postup (formulář, CRUD)
+- ❌ **Fáze 10:** Historie hnojení (formulář, CRUD)
 - ❌ **Admin:** Detailní statistiky (grafy, reporty)
-- ❌ **Admin:** Email actions (reset password, welcome)
-- ❌ **Admin:** User actions (deactivate, delete)
-- ❌ Mapové zobrazení
+- ❌ Mapové zobrazení pozemků
+- ❌ PWA support (offline mode)
+- ❌ Dark mode
 
 ---
 
@@ -866,6 +980,50 @@ Detail pozemku → "Archivovat" →
     - Export Excel
     - Pagination (50/page)
     - GDPR compliance
+
+
+13. **PDF Export** ✅
+    - Export plánu hnojení do PDF
+    - jsPDF + jspdf-autotable
+    - České formátování
+    - Barevné kategorie
+    - Multi-page support
+
+14. **Excel Exporty** ✅
+    - Export pozemků s rozbory
+    - Export plánu hnojení (3 listy)
+    - Export poptávky pro admin
+    - SheetJS (xlsx)
+    - Auto download
+
+15. **Email Notifikace** ✅
+    - Welcome email s dočasným heslem
+    - Password reset email
+    - Notifikace nové poptávky na admin
+    - EmailJS integrace
+    - Non-blocking sending
+
+16. **UX & A11y** ✅
+    - Responzivní design (mobile hamburger)
+    - Loading stavy (Skeleton komponenty)
+    - Error handling (Error boundary, Toasts)
+    - Empty states pro všechny seznamy
+    - FormField komponenty s validací
+    - ARIA labels a keyboard navigation
+    - SEO metadata
+    - Kompletní dokumentace
+
+### 📊 Celkové Statistiky
+
+| Fáze | Stav | Řádky kódu | Soubory |
+|------|------|-----------|---------|
+| 1-6 | ✅ Hotovo | ~13,285 | 47 |
+| 7 | ✅ Hotovo | ~5,855 | 52 |
+| 8.1 | ✅ Hotovo | ~720 | 3 |
+| 8.2 | ✅ Hotovo | ~728 | 6 |
+| 8.3 | ✅ Hotovo | ~511 | 3 |
+| 8.4 | ✅ Hotovo | ~1,217 | 12 |
+| **Celkem** | **✅ 8.4 fází** | **~22,316** | **123** |
 
 ### 🎯 Připraveno k testování
 

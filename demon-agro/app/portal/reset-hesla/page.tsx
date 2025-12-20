@@ -50,7 +50,7 @@ function ResetHeslaContent() {
       
       if (changePassword) {
         // User is already logged in and wants to change password
-        const supabase = createClient()
+        const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
         
         if (user) {

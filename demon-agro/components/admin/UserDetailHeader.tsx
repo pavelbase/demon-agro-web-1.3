@@ -140,7 +140,7 @@ export function UserDetailHeader({ user }: UserDetailHeaderProps) {
       <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
         <p className="text-sm text-blue-800">
           <strong>READ-ONLY:</strong> Toto je pouze zobrazení dat uživatele. Pro úpravy použijte
-          tlačítko "Upravit" v seznamu uživatelů.
+          tlačítko &quot;Upravit&quot; v seznamu uživatelů.
         </p>
       </div>
     </div>

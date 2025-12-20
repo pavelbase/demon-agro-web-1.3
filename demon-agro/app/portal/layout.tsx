@@ -3,6 +3,19 @@ import { createClient } from '@/lib/supabase/server'
 import { PortalLayoutClient } from '@/components/portal/PortalLayoutClient'
 import { LimingCartProvider } from '@/lib/contexts/LimingCartContext'
 import type { Profile } from '@/lib/types/database'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: {
+    default: 'Portál | Démon Agro',
+    template: '%s | Portál Démon Agro',
+  },
+  description: 'Uživatelský portál pro správu pozemků, plány hnojení a vápnění',
+  robots: {
+    index: false, // Don't index authenticated portal
+    follow: false,
+  },
+}
 
 export default async function PortalLayout({
   children,

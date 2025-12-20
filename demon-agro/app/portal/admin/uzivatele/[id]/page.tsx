@@ -13,7 +13,7 @@ export default async function AdminUserDetailPage({
   searchParams: { tab?: string }
 }) {
   const admin = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Check admin role
   const { data: adminProfile } = await supabase

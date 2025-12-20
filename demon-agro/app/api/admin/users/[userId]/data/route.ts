@@ -9,7 +9,7 @@ export async function GET(
   try {
     // Verify admin
     const user = await requireAuth()
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const { data: profile } = await supabase
       .from('profiles')

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { SOIL_TYPE_LABELS } from '@/lib/constants/database'
 import * as XLSX from 'xlsx'
+import { ExportParcelsExcelButton } from './ExportParcelsExcelButton'
 
 interface ParcelsTableProps {
   parcels: ParcelWithAnalysis[]
@@ -188,42 +189,7 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
     setSelectedParcel(null)
   }
 
-  const handleExportExcel = () => {
-    const data = filteredParcels.map(p => ({
-      'Kód': p.cadastral_number || '-',
-      'Název': p.name,
-      'Výměra (ha)': p.area,
-      'Půdní druh': SOIL_TYPE_LABELS[p.soil_type],
-      'Kultura': p.culture === 'orna' ? 'Orná půda' : 'TTP',
-      'pH': p.latest_analysis?.ph?.toFixed(1) || '-',
-      'P': p.latest_analysis?.p || '-',
-      'K': p.latest_analysis?.k || '-',
-      'Mg': p.latest_analysis?.mg || '-',
-      'Stav': p.status_reason || 'OK',
-      'Poznámky': p.notes || '',
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Pozemky')
-    
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 15 }, // Kód
-      { wch: 25 }, // Název
-      { wch: 12 }, // Výměra
-      { wch: 15 }, // Půdní druh
-      { wch: 12 }, // Kultura
-      { wch: 8 },  // pH
-      { wch: 8 },  // P
-      { wch: 8 },  // K
-      { wch: 8 },  // Mg
-      { wch: 20 }, // Stav
-      { wch: 30 }, // Poznámky
-    ]
-
-    XLSX.writeFile(wb, `pozemky_${new Date().toISOString().split('T')[0]}.xlsx`)
-  }
+  // Export handler removed - now using ExportParcelsExcelButton component
 
   const openEditModal = (parcel: ParcelWithAnalysis) => {
     setSelectedParcel(parcel)
@@ -294,13 +260,10 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
             <Plus className="h-4 w-4" />
             Přidat pozemek
           </button>
-          <button
-            onClick={handleExportExcel}
-            className="inline-flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors text-sm"
-          >
-            <Download className="h-4 w-4" />
-            Export Excel
-          </button>
+          <ExportParcelsExcelButton 
+            parcels={filteredParcels}
+            className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors text-sm"
+          />
         </div>
       </div>
 

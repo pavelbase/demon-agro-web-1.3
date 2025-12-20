@@ -9,7 +9,7 @@ export default async function AdminAuditLogPage({
   searchParams: { page?: string; admin?: string; search?: string }
 }) {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Check admin role
   const { data: profile } = await supabase

@@ -17,7 +17,7 @@ import { RecentRegistrations } from '@/components/admin/RecentRegistrations'
 
 export default async function AdminDashboardPage() {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch statistics
   const [
@@ -82,7 +82,7 @@ export default async function AdminDashboardPage() {
       profiles!inner(full_name, company_name)
     `)
     .order('created_at', { ascending: false })
-    .limit(5)
+    .limit(5) as { data: any[] | null }
 
   // Fetch recent registrations (5 newest)
   const { data: recentUsers } = await supabase
