@@ -5,7 +5,7 @@ import { LimingProductsTable } from '@/components/admin/LimingProductsTable'
 
 export default async function AdminLimingProductsPage() {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Check admin role
   const { data: profile } = await supabase

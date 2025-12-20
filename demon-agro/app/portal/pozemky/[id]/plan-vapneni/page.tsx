@@ -12,7 +12,7 @@ export default async function LimingPlanPage({
   params: { id: string }
 }) {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch parcel
   const { data: parcel, error: parcelError } = await supabase

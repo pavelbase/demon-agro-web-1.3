@@ -5,7 +5,7 @@ import { FertilizationProductsTable } from '@/components/admin/FertilizationProd
 
 export default async function AdminFertilizationProductsPage() {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Check admin role
   const { data: profile } = await supabase

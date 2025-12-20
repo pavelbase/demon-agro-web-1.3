@@ -5,7 +5,7 @@ import { PortalImagesManager } from '@/components/admin/PortalImagesManager'
 
 export default async function AdminPortalImagesPage() {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Check admin role
   const { data: profile } = await supabase

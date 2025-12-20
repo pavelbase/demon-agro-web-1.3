@@ -86,10 +86,12 @@ export default async function DashboardPage() {
 
   // Process parcels to get latest analysis for each
   const parcelsWithLatestAnalysis: ParcelWithAnalysis[] = (parcels || []).map(parcel => {
-    const analyses = parcel.soil_analyses || []
-    const latestAnalysis = analyses.sort((a, b) => 
-      new Date(b.analysis_date).getTime() - new Date(a.analysis_date).getTime()
-    )[0]
+    const analyses = (parcel.soil_analyses || []) as any[]
+    const latestAnalysis = analyses.length > 0 
+      ? analyses.sort((a: any, b: any) => 
+          new Date(b.analysis_date).getTime() - new Date(a.analysis_date).getTime()
+        )[0]
+      : null
     return {
       ...parcel,
       latest_analysis: latestAnalysis || null
@@ -136,7 +138,7 @@ export default async function DashboardPage() {
 
     const analysis = parcel.latest_analysis
     const analysisAge = Math.floor(
-      (new Date().getTime() - new Date(analysis.analysis_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+      (new Date().getTime() - new Date(analysis.date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
     )
 
     // pH < 5.5
@@ -159,13 +161,17 @@ export default async function DashboardPage() {
 
     // Low nutrient categories (N or VH)
     const lowNutrients = []
-    if (analysis.p_category === 'N' || analysis.p_category === 'VH') {
+    const pCat = (analysis as any).p_category || (analysis as any).phosphorus_category
+    const kCat = (analysis as any).k_category || (analysis as any).potassium_category
+    const mgCat = (analysis as any).mg_category || (analysis as any).magnesium_category
+    
+    if (pCat === 'N' || pCat === 'VH') {
       lowNutrients.push('P')
     }
-    if (analysis.k_category === 'N' || analysis.k_category === 'VH') {
+    if (kCat === 'N' || kCat === 'VH') {
       lowNutrients.push('K')
     }
-    if (analysis.mg_category === 'N' || analysis.mg_category === 'VH') {
+    if (mgCat === 'N' || mgCat === 'VH') {
       lowNutrients.push('Mg')
     }
 

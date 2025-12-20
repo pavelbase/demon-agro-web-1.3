@@ -11,7 +11,7 @@ export default async function LimingRequestsPage({
   searchParams: { success?: string; id?: string }
 }) {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch user's liming requests with items count
   const { data: requests } = await supabase

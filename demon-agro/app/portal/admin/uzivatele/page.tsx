@@ -5,7 +5,7 @@ import { UsersTable } from '@/components/admin/UsersTable'
 
 export default async function AdminUsersPage() {
   const user = await requireAuth()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Check admin role
   const { data: profile } = await supabase
