@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KalkulackaInputs, TypPudy } from "@/lib/kalkulace-types";
+import { KalkulackaInputs, TypPudy, VysledekKalkulace } from "@/lib/kalkulace-types";
 import { vypocetKalkulace, ulozitKalkulaci, zkontrolujDuplicitniEmail } from "@/lib/kalkulace";
 import { Calculator, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
