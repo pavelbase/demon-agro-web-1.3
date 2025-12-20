@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
+import { sendWelcomeEmail } from '@/lib/utils/email'
 
 // Generate random password
 function generatePassword(length: number = 12): string {
@@ -88,16 +89,25 @@ export async function POST(request: NextRequest) {
       new_data: { email, company_name, ico, district },
     })
 
-    // TODO: Send welcome email with password via EmailJS
-    // For now, return password in response (in production, send email)
-    console.log('New user password:', password)
+    // Send welcome email with password
+    const emailResult = await sendWelcomeEmail(
+      email,
+      company_name, // Use company name as display name
+      password
+    )
+
+    if (!emailResult.success) {
+      console.warn('Failed to send welcome email:', emailResult.error)
+      // Don't fail the user creation, just log the error
+    }
 
     return NextResponse.json({
       success: true,
       userId: authData.user.id,
       message: 'Uživatel byl vytvořen',
-      // TODO: Remove password from response in production
-      temporaryPassword: password,
+      emailSent: emailResult.success,
+      // For admin UI - show password if email failed
+      temporaryPassword: emailResult.success ? undefined : password,
     })
   } catch (error) {
     console.error('Create user error:', error)
