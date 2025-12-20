@@ -27,7 +27,7 @@ export default function AdminPage() {
   const [imageFilter, setImageFilter] = useState<string>("all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("/logo.svg");
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [articles, setArticles] = useState<Article[]>([]);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [isAddingArticle, setIsAddingArticle] = useState(false);

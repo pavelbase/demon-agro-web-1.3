@@ -6,7 +6,7 @@ import { Mail, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Footer() {
-  const logoUrl = "/logo.svg";
+  const logoUrl = "/logo.png";
 
   return (
     <footer className="bg-[#2C2C2C] text-white pt-16 pb-8">

@@ -1,8 +1,8 @@
 # Instrukce pro nahrazení loga
 
 ## Aktuální stav
-- Momentálně se používá dočasné SVG logo s textem "Démon agro - pH Management"
-- Logo se nachází v `/public/logo.svg`
+- Logo ve formátu PNG je správně nastaveno a nachází se v `/public/logo.png`
+- Logo má rozměry 860x374 px a je použito ve všech komponentách (Navigation, Footer, Admin)
 
 ## Jak nahrát skutečné logo
 
@@ -24,13 +24,10 @@
    cp /cesta/k/vasemu/logo.png demon-agro/public/logo.png
    ```
 
-4. Aktualizujte cestu v komponentách:
-   - `components/Navigation.tsx` - řádek 13
-   - `components/Footer.tsx` - řádek 9
-   - `app/admin/page.tsx` - řádek 30
-   
-   Změňte: `const logoUrl = "/logo.svg";`
-   Na: `const logoUrl = "/logo.png";` (nebo `.jpg`, `.svg` podle vašeho formátu)
+4. Aktualizujte cestu v komponentách (již nastaveno):
+   - `components/Navigation.tsx` - řádek 13: `const logoUrl = "/logo.png";`
+   - `components/Footer.tsx` - řádek 9: `const logoUrl = "/logo.png";`
+   - `app/admin/page.tsx` - řádek 30: `const [logoUrl, setLogoUrl] = useState("/logo.png");`
 
 ### Metoda 2: Přes Admin Panel (Budoucí feature)
 
@@ -48,10 +45,12 @@ Pro nejlepší výsledky by logo mělo splňovat:
 - **Čitelnost**: Logo musí být čitelné i v menších velikostech (min. 150px šířka)
 - **Pozadí**: Transparentní nebo bílé
 
-## Placeholder logo.jpg
+## Aktuální logo soubory
 
-Soubor `/public/logo.jpg` je momentálně jen 1x1 pixel placeholder. 
-**Je třeba ho nahradit skutečným logem nebo jej smazat.**
+- `/public/logo.png` - Hlavní logo aplikace (860x374 px, PNG formát)
+- `/public/logo/demon-agro-logo.svg` - SVG varianta pro speciální použití
+- `/public/logo/demon-agro-icon.svg` - Icon verze loga
+- `/public/logo/demon-agro-favicon.svg` - Favicon
 
 ## Troubleshooting
 
