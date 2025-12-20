@@ -90,7 +90,7 @@ export default function PrihlaseniPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
             <Image
-              src="/logo/demon-agro-logo.svg"
+              src="/logo.png"
               alt="Démon Agro"
               width={180}
               height={60}
