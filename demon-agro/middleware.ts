@@ -65,9 +65,6 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/portal', '/portal/prihlaseni', '/portal/reset-hesla', '/portal/onboarding']
   const isPublicRoute = publicRoutes.includes(path)
 
-  // Admin routes - require admin role
-  const isAdminRoute = path.startsWith('/portal/admin')
-
   // Portal routes (excluding public routes)
   const isPortalRoute = path.startsWith('/portal')
 
@@ -88,24 +85,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // If it's an admin route, check for admin role
-  if (isAdminRoute && user) {
-    // Check if user has admin role from the database
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    // Check metadata as fallback
-    const userRole = profile?.role || user.user_metadata?.role || user.app_metadata?.role
-
-    if (userRole !== 'admin') {
-      // Non-admin user trying to access admin route - redirect to dashboard
-      return NextResponse.redirect(new URL('/portal/dashboard', request.url))
-    }
-  }
-
+  // User is authenticated - let them through
+  // Role checking is handled in the respective layouts (e.g., admin layout)
   return response
 }
 
