@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NextImage from "next/image";
 import { Upload, X, Image as ImageIcon, Check } from "lucide-react";
 import { 
   ImageCategory, 
@@ -239,11 +240,12 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
           {previewUrl && (
             <div className="border border-gray-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-900 mb-3">NÁHLED:</h3>
-              <div className="relative">
-                <img
+              <div className="relative w-full h-96">
+                <NextImage
                   src={previewUrl}
                   alt="Preview"
-                  className="w-full h-auto rounded-lg max-h-96 object-contain bg-gray-100"
+                  fill
+                  className="rounded-lg object-contain bg-gray-100"
                 />
               </div>
               {selectedFile && (

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Product } from "@/lib/types";
 import { useProductImage } from "@/hooks/useImage";
 
@@ -12,9 +13,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-105">
       <div className="aspect-video bg-gray-200 relative overflow-hidden">
-        <img
+        <Image
           src={productImage}
           alt={product.nazev}
+          width={400}
+          height={300}
           className="w-full h-full object-cover"
         />
       </div>

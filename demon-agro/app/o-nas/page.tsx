@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getPageContent, defaultContent } from "@/lib/content";
 import { useImage } from "@/hooks/useImage";
 
@@ -54,9 +55,11 @@ export default function ONasPage() {
               </p>
             </div>
             <div className="rounded-lg overflow-hidden shadow-xl">
-              <img
+              <Image
                 src={kdoJsmeImage}
                 alt="Kdo jsme"
+                width={800}
+                height={600}
                 className="w-full h-auto"
               />
             </div>

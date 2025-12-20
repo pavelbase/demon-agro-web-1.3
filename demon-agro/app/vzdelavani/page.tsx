@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, Clock, ArrowRight } from "lucide-react";
 import { getPublishedArticles } from "@/lib/articles";
 import { Article } from "@/lib/types";
@@ -111,11 +112,12 @@ export default function VzdelavaniPage() {
                   className="bg-white shadow-lg rounded-xl overflow-hidden hover:shadow-2xl hover:scale-105 transition-all duration-300"
                 >
                   {/* Image */}
-                  <div className="aspect-video bg-gray-200 overflow-hidden">
-                    <img
+                  <div className="aspect-video bg-gray-200 overflow-hidden relative">
+                    <Image
                       src={article.obrazek_url}
                       alt={article.nadpis}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80";
                       }}

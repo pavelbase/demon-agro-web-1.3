@@ -10,6 +10,7 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReseniaOpen, setIsReseniaOpen] = useState(false);
   const [isKalkulackaOpen, setIsKalkulackaOpen] = useState(false);
+  const logoUrl = "/logo.png";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,17 +41,13 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center py-2">
-            {/* Desktop & Tablet: Full logo */}
-            <img
-              src="/logo/demon-agro-logo.svg"
+            <Image
+              src={logoUrl}
               alt="Démon agro"
-              className="hidden sm:block h-12 w-auto"
-            />
-            {/* Mobile: Icon only */}
-            <img
-              src="/logo/demon-agro-icon.svg"
-              alt="Démon agro"
-              className="sm:hidden h-10 w-auto"
+              width={280}
+              height={80}
+              className="max-h-16 sm:max-h-20 w-auto max-w-[200px] sm:max-w-[280px] object-contain"
+              priority
             />
           </Link>
 

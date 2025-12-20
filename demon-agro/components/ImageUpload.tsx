@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, DragEvent } from "react";
+import Image from "next/image";
 import { Upload, X, Check, AlertCircle } from "lucide-react";
 
 interface ImageUploadProps {
@@ -121,11 +122,12 @@ export default function ImageUpload({ onUploadSuccess, currentUrl, productName }
         />
 
         {preview && (
-          <div className="mb-4">
-            <img
+          <div className="mb-4 relative h-48 w-full max-w-md mx-auto">
+            <Image
               src={preview}
               alt="Preview"
-              className="max-h-48 mx-auto rounded-lg"
+              fill
+              className="object-contain rounded-lg"
             />
           </div>
         )}
