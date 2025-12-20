@@ -69,7 +69,7 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
       <div className="p-6 border-b border-gray-200 flex items-center justify-between">
         <Link href="/portal/dashboard" className="block" onClick={onClose}>
           <Image
-            src="/logo/demon-agro-logo.svg"
+            src="/logo.png"
             alt="Démon Agro"
             width={140}
             height={48}
