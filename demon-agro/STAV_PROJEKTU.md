@@ -595,7 +595,7 @@
 
 ## 📊 Celková statistika HOTOVO
 
-### Fáze 1-7.1
+### Fáze 1-7
 | Fáze | Popis | Řádky kódu | Soubory |
 |------|-------|------------|---------|
 | 1.1-1.5 | Auth základy | ~800 | 6 |
@@ -613,7 +613,12 @@
 | 6.2 | Košík & Nová poptávka | 1,300 | 6 |
 | 6.3 | Seznam poptávek | 555 | 3 |
 | 7.1 | Admin Layout & Dashboard | 650 | 7 |
-| **CELKEM** | **Fáze 1-7.1** | **~13,935** | **54** |
+| 7.2a+b | Správa uživatelů | 2,005 | 17 |
+| 7.3 | Správa produktů | 1,400 | 13 |
+| 7.4 | Správa poptávek | 705 | 5 |
+| 7.5 | Správa obrázků | 805 | 8 |
+| 7.6 | Audit log | 290 | 2 |
+| **CELKEM** | **Fáze 1-7** | **~19,140** | **99** |
 
 ### Databázové tabulky (implementované)
 - `profiles` (extended, with role)
@@ -624,13 +629,22 @@
 - `liming_products` ✨
 - `liming_requests` ✨
 - `liming_request_items` ✨
+- `fertilization_products` ✨ **NOVÁ**
 - `portal_images`
 - `audit_logs`
 
 ### API Routes
+**Portal:**
 - `/api/portal/upload-pdf`
 - `/api/portal/extract-soil-data`
 - `/api/portal/save-soil-analysis`
+
+**Admin:**
+- `/api/admin/users/*` (create, update, [userId]/data)
+- `/api/admin/fertilization-products/*` (create, update, delete)
+- `/api/admin/liming-products/*` (create, update, delete)
+- `/api/admin/requests/*` (update, count)
+- `/api/admin/portal-images/*` (upload, update, delete, reorder)
 
 ### External Services
 - Supabase Auth
@@ -704,12 +718,33 @@ Plán vápnění → "Přidat do poptávky" →
 ```
 Admin user → /portal/admin →
 → Role check (layout) →
-→ AdminSidebar + Header →
+→ AdminSidebar (8 položek) + Header →
 → Dashboard:
   - 6 statistických karet
   - Graf registrací (30 dní)
   - Poslední poptávky (5)
   - Poslední registrace (5)
+
+→ Uživatelé:
+  - Seznam (filtry, export)
+  - Detail (5 tabů, READ-ONLY)
+  - CRUD operace
+  
+→ Produkty:
+  - Hnojiva (CRUD)
+  - Vápnění (CRUD)
+  
+→ Poptávky:
+  - Seznam (filtry, NEW badge)
+  - Detail + admin akce
+  
+→ Obrázky:
+  - Upload (Storage)
+  - Reorder, CRUD
+  
+→ Audit log:
+  - Všechny admin akce
+  - GDPR compliance
 ```
 
 ### 8. Operace s pozemky
@@ -724,12 +759,14 @@ Detail pozemku → "Archivovat" →
 
 ---
 
-## 🚧 CO ZATÍM NENÍ (budoucí fáze)
+## 🚧 CO ZATÍM NENÍ (volitelné budoucí fáze)
 
-- ❌ **Fáze 7.2+:** Admin stránky (uživatelé, produkty, poptávky detail)
 - ❌ **Fáze 8:** Osevní postup (formulář, CRUD)
 - ❌ **Fáze 9:** Historie hnojení (formulář, CRUD)
 - ❌ **Fáze 10:** Export PDF (plány, reporty)
+- ❌ **Admin:** Detailní statistiky (grafy, reporty)
+- ❌ **Admin:** Email actions (reset password, welcome)
+- ❌ **Admin:** User actions (deactivate, delete)
 - ❌ Mapové zobrazení
 
 ---
@@ -785,7 +822,7 @@ Detail pozemku → "Archivovat" →
 
 7. **Admin Layout & Dashboard** ✅
    - Role check (server-side, redirect)
-   - AdminSidebar (7 navigačních položek)
+   - AdminSidebar (8 navigačních položek)
    - Admin header s "Admin" badge
    - 6 statistických karet
    - Graf registrací (Recharts, 30 dní)
@@ -793,14 +830,53 @@ Detail pozemku → "Archivovat" →
    - Poslední registrace (5 karet)
    - Privacy compliance (no user data)
 
+8. **Admin - Správa uživatelů** ✅
+   - Seznam uživatelů (9 sloupců, filtry)
+   - Export Excel
+   - CRUD modály (create, edit)
+   - Detail uživatele (READ-ONLY, 5 tabů)
+   - Supabase Auth Admin API
+   - Audit logging
+
+9. **Admin - Správa produktů** ✅
+   - Produkty hnojení (CRUD + 6 seed)
+   - Produkty vápnění (CRUD + 6 seed)
+   - Composition fields (JSONB)
+   - Acidification factor
+   - Active/Inactive toggle
+
+10. **Admin - Správa poptávek** ✅
+    - Seznam poptávek (filtry)
+    - Detail modal
+    - Admin akce (status, notes, price)
+    - Badge v sidebaru (NEW count)
+    - Export Excel
+
+11. **Admin - Správa obrázků** ✅
+    - Upload (drag & drop, Supabase Storage)
+    - Grid layout (3 columns)
+    - Reorder (šipky)
+    - CRUD operations
+    - File validation
+
+12. **Admin - Audit log** ✅
+    - Tabulka všech admin akcí
+    - Filtry (admin, search)
+    - Expandable detaily (JSON)
+    - Export Excel
+    - Pagination (50/page)
+    - GDPR compliance
+
 ### 🎯 Připraveno k testování
 
-Všech 7 fází (1-6 + 7.1) je implementováno a připraveno k:
+Všech 7 fází (1-7 kompletní) je implementováno a připraveno k:
 - Manuálnímu testování
 - Unit testům
 - Integration testům
 - User acceptance testing (UAT)
 - Produkčnímu nasazení
+
+**Portál má kompletní funkcionalnost pro uživatele i administrátory!** 🎉
 
 ---
 

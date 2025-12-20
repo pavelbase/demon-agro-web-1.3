@@ -11,6 +11,7 @@ import {
   ShoppingCart, 
   Image as ImageIcon,
   BarChart3,
+  Shield,
   ArrowLeft
 } from 'lucide-react'
 
@@ -44,6 +45,11 @@ const navigation = [
     name: 'Obrázky portálu',
     href: '/portal/admin/obrazky-portalu',
     icon: ImageIcon,
+  },
+  {
+    name: 'Audit log',
+    href: '/portal/admin/audit-log',
+    icon: Shield,
   },
   {
     name: 'Statistiky',
