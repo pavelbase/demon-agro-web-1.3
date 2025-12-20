@@ -26,6 +26,7 @@ import { FertilizationPlanChart } from '@/components/portal/FertilizationPlanCha
 import { PlanRecommendationsTable } from '@/components/portal/PlanRecommendationsTable'
 import { PlanDecisionAssistant } from '@/components/portal/PlanDecisionAssistant'
 import { ExportPlanPDFButton } from '@/components/portal/ExportPlanPDFButton'
+import { ExportPlanExcelButton } from '@/components/portal/ExportPlanExcelButton'
 
 interface PlanHnojeniPageProps {
   params: { id: string }
@@ -493,6 +494,13 @@ export default async function PlanHnojeniPage({ params }: PlanHnojeniPageProps) 
             <div className="space-y-3">
               {/* Export PDF */}
               <ExportPlanPDFButton 
+                plan={plan}
+                parcel={parcel}
+                analysis={latestAnalysis}
+              />
+
+              {/* Export Excel */}
+              <ExportPlanExcelButton 
                 plan={plan}
                 parcel={parcel}
                 analysis={latestAnalysis}
