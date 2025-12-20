@@ -25,7 +25,7 @@ export default function Footer() {
               alt="Démon agro"
               width={150}
               height={40}
-              className="max-h-10 w-auto max-w-[150px] object-contain mb-4"
+              className="max-h-10 w-auto max-w-[150px] object-contain mb-4 brightness-0 invert"
             />
             <h3 className="text-xl font-bold mb-4">O nás</h3>
             <p className="text-gray-300 mb-4">
