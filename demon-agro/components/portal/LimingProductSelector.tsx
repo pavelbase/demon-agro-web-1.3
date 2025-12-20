@@ -59,13 +59,28 @@ export function LimingProductSelector({
     const selectedProduct = products.find(p => p.id === selectedProductId)
     if (!selectedProduct) return
 
-    const quantity = calculateProductQuantity(selectedProduct)
+    const quantityProduct = calculateProductQuantity(selectedProduct)
+    const quantityCao = (limeNeedKgHa * parcelArea) / 1000
+
+    // Determine recommended type from product
+    let recommendedType: 'calcitic' | 'dolomite' | 'either' = 'either'
+    if (selectedProduct.type === 'calcitic') {
+      recommendedType = 'calcitic'
+    } else if (selectedProduct.type === 'dolomite') {
+      recommendedType = 'dolomite'
+    }
 
     addItem({
-      id: `${parcelId}-${selectedProductId}-${Date.now()}`,
-      fieldId: parcelId,
-      productId: selectedProductId,
-      quantity: quantity,
+      parcel_id: parcelId,
+      parcel_name: parcelName,
+      area_ha: parcelArea,
+      recommended_type: recommendedType,
+      product_id: selectedProduct.id,
+      product_name: selectedProduct.name,
+      cao_content: selectedProduct.cao_content,
+      quantity_cao_t: quantityCao,
+      quantity_product_t: quantityProduct,
+      reason: `Doporučeno: ${selectedProduct.name} (${selectedProduct.cao_content}% CaO)`,
     })
 
     setShowSuccessMessage(true)
