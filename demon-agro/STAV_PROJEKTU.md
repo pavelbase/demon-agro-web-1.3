@@ -422,6 +422,111 @@
 
 **~1,030 řádků kódu**
 
+#### 6.2: Poptávkový systém (košík) ✅
+**Soubory:**
+- `lib/contexts/LimingCartContext.tsx` (přepsáno, 150 řádků)
+- `components/portal/LimingCartButton.tsx` (220 řádků)
+- `app/portal/poptavky/nova/page.tsx` (120 řádků)
+- `components/portal/NewLimingRequestForm.tsx` (380 řádků)
+- `lib/actions/liming-requests.ts` (310 řádků)
+- `lib/supabase/sql/create_liming_request_items_table.sql` (120 řádků)
+
+**Funkce:**
+
+**LimingCart Context:**
+- Extended LimingCartItem (9 polí)
+- LocalStorage persistence
+- 6 akcí (add, remove, update, clear, getTotalArea, getTotalQuantity)
+- Auto-hydration on mount
+
+**Floating Cart Button:**
+- Fixed bottom-right
+- Badge s počtem položek
+- Slide-in panel (right)
+- Seznam položek (parcel, product, množství)
+- Remove button na každou položku
+- Totals (plocha, množství)
+- "Odeslat poptávku" link
+
+**Stránka /portal/poptavky/nova:**
+- Server Component (auth + profile fetch)
+- NewLimingRequestForm client component
+- Pre-filled contact details
+
+**Formulář:**
+- Souhrn položek z košíku
+- Delivery period selector (5 options)
+- Notes textarea
+- Contact information (editable)
+- Submit button (loading state)
+- Validation (empty cart, contact details)
+
+**Server Action:**
+- createLimingRequest()
+- Insert liming_requests
+- Insert liming_request_items (všechny)
+- Audit log
+- EmailJS notification → base@demonagro.cz
+- Clear cart
+- Redirect → /portal/poptavky?success=true
+
+**Database:**
+- liming_request_items table
+- Foreign keys (CASCADE/SET NULL)
+- RLS policies
+
+**~1,300 řádků kódu**
+
+#### 6.3: Seznam poptávek uživatele ✅
+**Soubory:**
+- `app/portal/poptavky/page.tsx` (95 řádků)
+- `components/portal/LimingRequestsTable.tsx` (180 řádků)
+- `components/portal/LimingRequestDetailModal.tsx` (280 řádků)
+
+**Funkce:**
+
+**Stránka /portal/poptavky:**
+- Server Component (auth + fetch requests)
+- Nested query (requests + items)
+- Success message (po vytvoření)
+- Empty state (2 CTA buttons)
+- LimingRequestsTable component
+
+**Tabulka poptávek:**
+- Desktop: 6 sloupců
+  - Datum vytvoření
+  - Počet pozemků
+  - Celková výměra (ha)
+  - Celkové množství (t)
+  - Status badge
+  - Akce (Detail)
+- Mobile: Karty (responsive < md)
+- Hover efekty
+- Click → otevře detail modal
+
+**Status badges:**
+- new: Nová (modrá)
+- in_progress: Zpracovává se (žlutá)
+- quoted: Nacenéno (zelená)
+- completed: Dokončeno (šedá)
+- cancelled: Zrušeno (červená)
+
+**Detail modal:**
+- Backdrop (click → zavře)
+- Sticky header & footer
+- Basic info (3 karty)
+- Seznam pozemků a produktů
+- Kontaktní údaje
+- Preferovaný termín dodání
+- Poznámka uživatele
+- Cenová nabídka (if quoted):
+  - Quote amount (česky formátováno)
+  - PDF download (if exists)
+- Admin poznámka (if exists)
+- Responsive, scrollable
+
+**~555 řádků kódu**
+
 ---
 
 ## 📊 Celková statistika HOTOVO
@@ -441,7 +546,9 @@
 | 5.1-5.3 | Kalkulace | 1,760 | 1 |
 | 5.4 | UI Plánu hnojení | 1,216 | 4 |
 | 6.1 | Plán vápnění | 1,030 | 4 |
-| **CELKEM** | **Fáze 1-6** | **~11,430** | **38** |
+| 6.2 | Košík & Nová poptávka | 1,300 | 6 |
+| 6.3 | Seznam poptávek | 555 | 3 |
+| **CELKEM** | **Fáze 1-6** | **~13,285** | **47** |
 
 ### Databázové tabulky (implementované)
 - `profiles` (extended)
@@ -449,8 +556,9 @@
 - `soil_analyses`
 - `fertilization_history`
 - `crop_rotation`
-- `liming_products` ✨ **NOVÁ**
-- `liming_requests`
+- `liming_products` ✨
+- `liming_requests` ✨
+- `liming_request_items` ✨ **NOVÁ**
 - `portal_images`
 - `audit_logs`
 
@@ -512,7 +620,19 @@ Detail pozemku → Tab "Plán vápnění" →
 → Doporučení typu vápence →
 → Výběr produktu →
 → Kalkulace množství →
-→ Přidání do poptávky
+→ Přidání do košíku
+```
+
+### 6. Poptávky vápnění
+```
+Plán vápnění → "Přidat do poptávky" →
+→ Položka v košíku (floating button) →
+→ Košík panel → "Odeslat poptávku" →
+→ /portal/poptavky/nova →
+→ Formulář (delivery, notes, contact) →
+→ Odeslání (DB + email) →
+→ /portal/poptavky (seznam) →
+→ Detail poptávky (modal)
 ```
 
 ### 6. Operace s pozemky
@@ -529,15 +649,12 @@ Detail pozemku → "Archivovat" →
 
 ## 🚧 CO ZATÍM NENÍ (budoucí fáze)
 
-### 🚧 CO ZATÍM NENÍ (budoucí fáze)
-
 - ❌ **Fáze 7:** Osevní postup (formulář, CRUD)
 - ❌ **Fáze 8:** Historie hnojení (formulář, CRUD)
-- ❌ **Fáze 9:** Poptávky vápnění (košík, workflow)
-- ❌ **Fáze 10:** Admin plná funkcionalita
-- ❌ Export PDF (plány, reporty)
-- ❌ Email notifikace
+- ❌ **Fáze 9:** Admin plná funkcionalita (správa poptávek)
+- ❌ **Fáze 10:** Export PDF (plány, reporty)
 - ❌ Mapové zobrazení
+- ❌ LimingCartButton v portal layoutu (globální viditelnost)
 
 ---
 
@@ -577,12 +694,18 @@ Detail pozemku → "Archivovat" →
    - UI s grafy
    - Asistent rozhodování
 
-6. **Plány vápnění** ✅
+6. **Plány vápnění & Poptávky** ✅
    - Výpočet potřeby vápnění
    - Doporučení typu vápence
    - 6 produktů v DB
    - Výběr produktu s kalkulací
-   - Přidání do košíku
+   - Košík poptávek (context + localStorage)
+   - Floating cart button
+   - Nová poptávka (formulář)
+   - Server action (DB + EmailJS)
+   - Seznam poptávek (tabulka)
+   - Detail poptávky (modal)
+   - 5 statusů (new, in_progress, quoted, completed, cancelled)
 
 ### 🎯 Připraveno k testování
 
