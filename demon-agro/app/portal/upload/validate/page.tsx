@@ -39,7 +39,7 @@ export default async function ValidatePage({ searchParams }: ValidatePageProps) 
     <div className="max-w-4xl mx-auto">
       <ExtractionValidator
         extractedData={extractedData}
-        parcel={parcel}
+        parcel={parcel as any}
         userId={user.id}
       />
     </div>

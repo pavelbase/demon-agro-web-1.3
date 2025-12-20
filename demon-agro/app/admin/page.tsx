@@ -383,6 +383,7 @@ export default function AdminPage() {
                 <option value="mg">Hořčík</option>
                 <option value="analyza">Analýza</option>
                 <option value="onas">O nás</option>
+                <option value="kontakt">Kontakt</option>
                 <option value="privacy-policy">Zásady ochrany osobních údajů</option>
               </select>
             </div>
@@ -1265,7 +1266,7 @@ function ContentForm({
         </p>
       </div>
 
-      {pageKey !== "privacy-policy" && (
+      {pageKey !== "privacy-policy" && pageKey !== "kontakt" && (
         <div>
           <label className="block font-semibold text-gray-900 mb-2">
             Hero podnadpis (max 500 znaků)
@@ -1283,7 +1284,37 @@ function ContentForm({
         </div>
       )}
 
-      {pageKey !== "home" && pageKey !== "onas" && pageKey !== "privacy-policy" && (
+      {pageKey === "kontakt" && (
+        <>
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">
+              Facebook URL
+            </label>
+            <input
+              type="text"
+              value={content.facebook_url || ""}
+              onChange={(e) => handleChange("facebook_url", e.target.value)}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+              placeholder="https://facebook.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-900 mb-2">
+              Instagram URL
+            </label>
+            <input
+              type="text"
+              value={content.instagram_url || ""}
+              onChange={(e) => handleChange("instagram_url", e.target.value)}
+              className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none"
+              placeholder="https://instagram.com/..."
+            />
+          </div>
+        </>
+      )}
+
+      {pageKey !== "home" && pageKey !== "onas" && pageKey !== "privacy-policy" && pageKey !== "kontakt" && (
         <>
           <div>
             <label className="block font-semibold text-gray-900 mb-2">

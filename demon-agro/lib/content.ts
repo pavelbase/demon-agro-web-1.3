@@ -3,7 +3,7 @@ import { PageContent, PageKey } from "./types";
 export const defaultContent: Record<PageKey, PageContent> = {
   home: {
     hero_nadpis: "Komplexní řešení pro zdravou a výnosnou půdu",
-    hero_podnadpis: "pH management, výživa půdy a GPS mapování pro zemědělce v severních a západních Čechách",
+    hero_podnadpis: "pH management, výživa půdy a GPS mapování pro zemědělce v západních, severních a středních Čechách",
   },
   ph: {
     hero_nadpis: "pH půdy a vápnění",
@@ -59,11 +59,17 @@ export const defaultContent: Record<PageKey, PageContent> = {
     hero_nadpis: "O společnosti Démon agro",
     hero_podnadpis: "Moderní přístup k péči o půdu",
     kdo_jsme_nadpis: "Kdo jsme",
-    kdo_jsme_text: "Démon agro je nová firma specializující se na komplexní pH management a výživu půdy pro zemědělce v severních a západních Čechách. Kombinujeme nejnovější GPS technologie s osobním přístupem ke každému zákazníkovi. Pomáháme zemědělcům optimalizovat pH půdy, řešit nedostatek živin a maximalizovat výnosy.",
+    kdo_jsme_text: "Démon agro je nová firma specializující se na komplexní pH management a výživu půdy pro zemědělce v západních, severních a středních Čechách. Kombinujeme nejnovější GPS technologie s osobním přístupem ke každému zákazníkovi. Pomáháme zemědělcům optimalizovat pH půdy, řešit nedostatek živin a maximalizovat výnosy.",
     nase_mise_nadpis: "Naše mise",
     nase_mise_text: "Věříme, že zdravá půda je základem úspěšného zemědělství. Proto nabízíme komplexní řešení - od přesné analýzy přes doporučení až po aplikaci živin. Chceme být partnerem, který pomáhá zemědělcům dosahovat lepších výsledků prostřednictvím moderních technologií a odborného přístupu.",
     cta_nadpis: "Začněme spolupracovat",
     cta_text: "Kontaktujte nás pro nezávaznou konzultaci",
+  },
+  kontakt: {
+    hero_nadpis: "Kontaktujte nás",
+    hero_podnadpis: "Jsme tu pro vás",
+    facebook_url: "#",
+    instagram_url: "#",
   },
   "privacy-policy": {
     hero_nadpis: "Zásady ochrany osobních údajů",

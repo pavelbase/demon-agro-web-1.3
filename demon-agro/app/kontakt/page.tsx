@@ -10,7 +10,7 @@ export default function KontaktPage() {
     name: "",
     email: "",
     phone: "",
-    farmSize: "",
+    farmLocation: "",
     message: "",
   });
 
@@ -55,37 +55,24 @@ export default function KontaktPage() {
 
     setStatus("sending");
 
-    // EmailJS configuration
-    // NOTE: Configure these values in .env.local file
-    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
-    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
-
-    if (!serviceId || !templateId || !publicKey) {
-      console.error("EmailJS not configured. Please set up environment variables.");
-      // For demo purposes, simulate success
-      setTimeout(() => {
-        setStatus("success");
-        setFormData({ name: "", email: "", phone: "", farmSize: "", message: "" });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 1000);
-      return;
-    }
+    // Hardcoded credentials for reliability
+    const serviceId = "service_xrx301a";
+    const templateId = "template_kogwumm";
+    const publicKey = "xL_Khx5Gcnt-lEvUl";
 
     try {
       const templateParams = {
-        from_name: formData.name,
-        from_email: formData.email,
-        phone: formData.phone,
-        farm_size: formData.farmSize || "Neuvedeno",
+        user_name: formData.name,
+        user_email: formData.email,
+        user_phone: formData.phone,
+        farm_location: formData.farmLocation || "Neuvedeno",
         message: formData.message,
-        to_email: "base@demonagro.cz",
       };
 
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
 
       setStatus("success");
-      setFormData({ name: "", email: "", phone: "", farmSize: "", message: "" });
+      setFormData({ name: "", email: "", phone: "", farmLocation: "", message: "" });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("Email send error:", error);
@@ -156,7 +143,7 @@ export default function KontaktPage() {
                       Oblast působnosti
                     </h3>
                     <p className="text-gray-600">
-                      Severní a západní Čechy
+                      Plzeňský, Karlovarský, Ústecký, Liberecký, Královéhradecký a Středočeský kraj
                     </p>
                   </div>
                 </div>
@@ -164,20 +151,20 @@ export default function KontaktPage() {
 
               <div className="mt-12 bg-[#F5F1E8] p-6 rounded-lg shadow-md">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Otevírací doba
+                  Telefonická dostupnost
                 </h3>
                 <div className="space-y-2 text-gray-700">
                   <div className="flex justify-between">
                     <span>Pondělí - Pátek:</span>
-                    <span className="font-semibold">8:00 - 17:00</span>
+                    <span className="font-semibold">8:00 - 18:00</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Sobota:</span>
-                    <span className="font-semibold">9:00 - 12:00</span>
+                    <span className="font-semibold">Dle individuální domluvy</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Neděle:</span>
-                    <span className="font-semibold">Zavřeno</span>
+                    <span className="font-semibold">Dle individuální domluvy</span>
                   </div>
                 </div>
               </div>
@@ -280,18 +267,18 @@ export default function KontaktPage() {
                   )}
                 </div>
 
-                {/* Velikost farmy */}
+                {/* Lokalita / Okres */}
                 <div>
-                  <label htmlFor="farmSize" className="block font-semibold text-gray-900 mb-2">
-                    Velikost farmy (ha)
+                  <label htmlFor="farmLocation" className="block font-semibold text-gray-900 mb-2">
+                    Lokalita / Okres
                   </label>
                   <input
-                    type="number"
-                    id="farmSize"
-                    value={formData.farmSize}
-                    onChange={(e) => setFormData({ ...formData, farmSize: e.target.value })}
+                    type="text"
+                    id="farmLocation"
+                    value={formData.farmLocation}
+                    onChange={(e) => setFormData({ ...formData, farmLocation: e.target.value })}
                     className="w-full px-4 py-3 bg-white shadow-sm rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:outline-none transition-all"
-                    placeholder="např. 100"
+                    placeholder="např. Louny, Plzeň-sever, Žatecko..."
                   />
                 </div>
 

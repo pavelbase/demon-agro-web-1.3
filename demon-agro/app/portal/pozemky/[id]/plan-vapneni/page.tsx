@@ -80,23 +80,37 @@ export default async function LimingPlanPage({
 
   // Calculate liming need
   const targetPh = parcel.culture === 'orna' ? 6.5 : 6.0
-  const limeNeedKgHa = calculateLimeNeed(
+  const limeNeedResult = calculateLimeNeed(
     latestAnalysis.ph,
     parcel.soil_type,
     parcel.culture,
     targetPh
   )
+  const limeNeedKgHa = limeNeedResult.amount
 
   // Calculate total need for parcel
-  const totalLimeNeedTons = (limeNeedKgHa * parcel.area) / 1000
+  const totalLimeNeedTons = (limeNeedKgHa * Number(parcel.area)) / 1000
 
   // Select lime type recommendation
-  const limeTypeRecommendation = selectLimeType(
-    latestAnalysis.magnesium,
-    latestAnalysis.magnesium_category,
-    latestAnalysis.potassium,
-    latestAnalysis.potassium_category
-  )
+  const limeTypeRecommendation = selectLimeType(latestAnalysis)
+  
+  // Generate recommendation text based on type
+  const getLimeTypeLabel = (type: string) => {
+    if (type === 'calcitic') return 'Vápenatý (kalcitický) vápenec'
+    if (type === 'dolomite') return 'Dolomitický vápenec'
+    return 'Libovolný typ vápence'
+  }
+  
+  const getLimeTypeReason = (type: string) => {
+    const kmgRatio = latestAnalysis.potassium / latestAnalysis.magnesium
+    if (type === 'dolomite') {
+      return `Doporučen dolomitický vápenec kvůli nízkému obsahu hořčíku (${latestAnalysis.magnesium} mg/kg, kategorie ${latestAnalysis.magnesium_category}) a nevyváženému poměru K:Mg (${kmgRatio.toFixed(2)}:1).`
+    }
+    if (type === 'calcitic') {
+      return `Doporučen kalcitický vápenec. Obsah hořčíku je dostatečný (${latestAnalysis.magnesium} mg/kg, kategorie ${latestAnalysis.magnesium_category}).`
+    }
+    return 'Lze použít libovolný typ vápence podle dostupnosti a ceny.'
+  }
 
   // Fetch liming products
   const { data: allProducts } = await supabase
@@ -109,9 +123,9 @@ export default async function LimingPlanPage({
 
   // Filter products by recommended type
   let recommendedProducts = products
-  if (limeTypeRecommendation.recommended_type === 'calcitic') {
+  if (limeTypeRecommendation === 'calcitic') {
     recommendedProducts = products.filter(p => p.type === 'calcitic' || p.type === 'both')
-  } else if (limeTypeRecommendation.recommended_type === 'dolomite') {
+  } else if (limeTypeRecommendation === 'dolomite') {
     recommendedProducts = products.filter(p => p.type === 'dolomite' || p.type === 'both')
   }
 
@@ -252,22 +266,20 @@ export default async function LimingPlanPage({
                 <div className="flex items-start">
                   <div className={`
                     flex-shrink-0 w-24 h-24 rounded-lg flex items-center justify-center text-3xl font-bold text-white
-                    ${limeTypeRecommendation.recommended_type === 'calcitic' ? 'bg-blue-500' : 
-                      limeTypeRecommendation.recommended_type === 'dolomite' ? 'bg-purple-500' : 
+                    ${limeTypeRecommendation === 'calcitic' ? 'bg-blue-500' : 
+                      limeTypeRecommendation === 'dolomite' ? 'bg-purple-500' : 
                       'bg-gray-500'}
                   `}>
-                    {limeTypeRecommendation.recommended_type === 'calcitic' ? 'Ca' :
-                     limeTypeRecommendation.recommended_type === 'dolomite' ? 'Ca+Mg' : '?'}
+                    {limeTypeRecommendation === 'calcitic' ? 'Ca' :
+                     limeTypeRecommendation === 'dolomite' ? 'Ca+Mg' : '?'}
                   </div>
                   
                   <div className="ml-4 flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {limeTypeRecommendation.recommended_type === 'calcitic' && 'Vápenatý (kalcitický) vápenec'}
-                      {limeTypeRecommendation.recommended_type === 'dolomite' && 'Dolomitický vápenec'}
-                      {limeTypeRecommendation.recommended_type === 'either' && 'Libovolný typ vápence'}
+                      {getLimeTypeLabel(limeTypeRecommendation)}
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      {limeTypeRecommendation.reason}
+                      {getLimeTypeReason(limeTypeRecommendation)}
                     </p>
                     
                     <div className="bg-gray-50 rounded-lg p-4">

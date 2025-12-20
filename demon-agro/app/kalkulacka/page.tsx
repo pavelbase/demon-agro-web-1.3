@@ -5,6 +5,7 @@ import { KalkulackaInputs, TypPudy, VysledekKalkulace } from "@/lib/kalkulace-ty
 import { vypocetKalkulace, ulozitKalkulaci, zkontrolujDuplicitniEmail } from "@/lib/kalkulace";
 import { Calculator, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import emailjs from "@emailjs/browser";
 
 const TYPYPUDY = {
   'piscita': {
@@ -121,8 +122,34 @@ export default function KalkulackaPage() {
     // Uložení
     ulozitKalkulaci(vypocet);
     
-    // Simulace odeslání emailu (EmailJS by šel přidat)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Odeslání emailu - Hardcoded keys for reliability
+    const serviceId = "service_xrx301a";
+    const templateId = "template_grgltnp";
+    const publicKey = "xL_Khx5Gcnt-lEvUl";
+
+    try {
+      const nutrients_summary = Object.entries(vypocet.ziviny)
+        .map(([key, val]) => `${key}: ${val.aktualni} mg/kg (${val.tridaNazev})`)
+        .join(", ");
+
+      const templateParams = {
+        soil_type: TYPYPUDY[vypocet.vstup.typPudy].nazev,
+        ph_current: vypocet.vstup.pH,
+        ph_target: vypocet.vapneni.optimalniPhRozmezi,
+        cao_need: vypocet.vapneni.celkovaPotrebaCaO_t,
+        limestone_suggestion: vypocet.vapneni.prepocetyHnojiva.mletyVapenec_t,
+        nutrients_summary: nutrients_summary,
+        user_email: formData.email,
+        user_name: formData.jmeno,
+      };
+
+      console.log("Email params:", templateParams);
+
+      await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      alert("Výsledky odeslány na váš email");
+    } catch (error) {
+      console.error("Email send error:", error);
+    }
     
     setVysledek(vypocet);
     setOdesila(false);
