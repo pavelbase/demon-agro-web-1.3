@@ -40,13 +40,17 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center py-2">
-            <Image
-              src="/logo.png"
+            {/* Desktop & Tablet: Full logo */}
+            <img
+              src="/logo/demon-agro-logo.svg"
               alt="Démon agro"
-              width={200}
-              height={80}
-              priority
-              className="w-32 md:w-40 h-auto object-contain"
+              className="hidden sm:block h-12 w-auto"
+            />
+            {/* Mobile: Icon only */}
+            <img
+              src="/logo/demon-agro-icon.svg"
+              alt="Démon agro"
+              className="sm:hidden h-10 w-auto"
             />
           </Link>
 
