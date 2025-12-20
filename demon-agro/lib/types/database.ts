@@ -20,6 +20,9 @@ export type NutrientCategory = 'N' | 'VH' | 'D' | 'V' | 'VV' // Nízký, Velmi H
 export type PhCategory = 'EK' | 'SK' | 'N' | 'SZ' | 'EZ' // Extrémně Kyselý, Silně Kyselý, Neutrální, Slabě Zásaditý, Extrémně Zásaditý
 export type RequestStatus = 'new' | 'in_progress' | 'quoted' | 'completed' | 'cancelled'
 export type LimeType = 'calcitic' | 'dolomite' | 'either' // Vápenatý, Dolomitový, Libovolný
+export type LimeProductType = 'calcitic' | 'dolomite' | 'both' // Pro liming_products tabulku
+export type Reactivity = 'low' | 'medium' | 'high' | 'very_high'
+export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'on_order'
 
 // ============================================================================
 // DATABASE INTERFACE
@@ -437,6 +440,69 @@ export interface Database {
           is_active?: boolean
           display_order?: number | null
           image_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      // ======================================================================
+      // LIMING PRODUCTS (Produkty vápnění)
+      // ======================================================================
+      liming_products: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          type: LimeProductType
+          cao_content: number
+          mgo_content: number
+          reactivity: Reactivity | null
+          granulation: string | null
+          form: string | null
+          is_active: boolean
+          stock_status: StockStatus
+          display_order: number
+          image_url: string | null
+          notes: string | null
+          application_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          type: LimeProductType
+          cao_content: number
+          mgo_content?: number
+          reactivity?: Reactivity | null
+          granulation?: string | null
+          form?: string | null
+          is_active?: boolean
+          stock_status?: StockStatus
+          display_order?: number
+          image_url?: string | null
+          notes?: string | null
+          application_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          type?: LimeProductType
+          cao_content?: number
+          mgo_content?: number
+          reactivity?: Reactivity | null
+          granulation?: string | null
+          form?: string | null
+          is_active?: boolean
+          stock_status?: StockStatus
+          display_order?: number
+          image_url?: string | null
+          notes?: string | null
+          application_notes?: string | null
           created_at?: string
           updated_at?: string
         }

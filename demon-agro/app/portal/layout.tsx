@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/supabase/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { PortalLayoutClient } from '@/components/portal/PortalLayoutClient'
+import { LimingCartProvider } from '@/lib/contexts/LimingCartContext'
 import type { Profile } from '@/lib/types/database'
 
 export default async function PortalLayout({
@@ -34,8 +35,10 @@ export default async function PortalLayout({
 
   // Render authenticated layout with sidebar
   return (
-    <PortalLayoutClient user={userData} isAdmin={isAdmin}>
-      {children}
-    </PortalLayoutClient>
+    <LimingCartProvider>
+      <PortalLayoutClient user={userData} isAdmin={isAdmin}>
+        {children}
+      </PortalLayoutClient>
+    </LimingCartProvider>
   )
 }
