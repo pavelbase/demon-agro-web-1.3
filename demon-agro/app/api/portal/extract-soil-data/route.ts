@@ -7,6 +7,34 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 })
 
+// Helper function to extract filename from Supabase Storage URL
+function extractFilenameFromUrl(url: string): string {
+  try {
+    // Supabase storage URLs have format: 
+    // https://[project].supabase.co/storage/v1/object/public/soil-documents/[filepath]
+    const urlObj = new URL(url)
+    const pathParts = urlObj.pathname.split('/')
+    
+    // Find 'soil-documents' in the path and get everything after it
+    const bucketIndex = pathParts.indexOf('soil-documents')
+    if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+      return pathParts.slice(bucketIndex + 1).join('/')
+    }
+    
+    // Fallback: try to get the last parts of the path
+    // Looking for pattern like: userId/temp/filename.pdf
+    const lastThreeParts = pathParts.slice(-3).join('/')
+    if (lastThreeParts.includes('.pdf')) {
+      return lastThreeParts
+    }
+    
+    return ''
+  } catch (error) {
+    console.error('Error extracting filename from URL:', error)
+    return ''
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -20,11 +48,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { pdfUrl, documentType, userId } = await request.json()
+    const { pdfUrl, filename, documentType, userId } = await request.json()
 
-    if (!pdfUrl) {
+    if (!pdfUrl && !filename) {
       return NextResponse.json(
-        { error: 'PDF URL není poskytnuto' },
+        { error: 'PDF URL nebo filename není poskytnuto' },
         { status: 400 }
       )
     }
@@ -46,13 +74,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Download PDF from Supabase Storage
-    const pdfResponse = await fetch(pdfUrl)
-    if (!pdfResponse.ok) {
-      throw new Error('Nelze stáhnout PDF soubor')
+    // Download PDF from Supabase Storage using the correct bucket
+    let pdfBuffer: ArrayBuffer
+    
+    // Try to extract filename from pdfUrl if filename not provided
+    const filePathToDownload = filename || extractFilenameFromUrl(pdfUrl)
+    
+    if (filePathToDownload) {
+      // Use Supabase Storage API to download from soil-documents bucket
+      const { data: downloadData, error: downloadError } = await supabase.storage
+        .from('soil-documents')
+        .download(filePathToDownload)
+      
+      if (downloadError || !downloadData) {
+        console.error('Supabase storage download error:', downloadError)
+        // Fallback to fetch if storage download fails
+        const pdfResponse = await fetch(pdfUrl)
+        if (!pdfResponse.ok) {
+          throw new Error('Nelze stáhnout PDF soubor')
+        }
+        pdfBuffer = await pdfResponse.arrayBuffer()
+      } else {
+        pdfBuffer = await downloadData.arrayBuffer()
+      }
+    } else {
+      // Fallback to direct fetch if we can't determine the filename
+      const pdfResponse = await fetch(pdfUrl)
+      if (!pdfResponse.ok) {
+        throw new Error('Nelze stáhnout PDF soubor')
+      }
+      pdfBuffer = await pdfResponse.arrayBuffer()
     }
 
-    const pdfBuffer = await pdfResponse.arrayBuffer()
     const base64Pdf = Buffer.from(pdfBuffer).toString('base64')
 
     // Prepare extraction prompt based on document type
