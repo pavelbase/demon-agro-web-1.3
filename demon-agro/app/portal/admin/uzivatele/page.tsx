@@ -8,18 +8,25 @@ export default async function AdminUsersPage() {
   const supabase = await createClient()
 
   // Check admin role
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, email')
     .eq('id', user.id)
     .single()
+
+  console.log('=== Admin Check Debug ===')
+  console.log('Current user ID:', user.id)
+  console.log('Current user email:', user.email)
+  console.log('Profile data:', profile)
+  console.log('Profile error:', profileError)
+  console.log('========================')
 
   if (!profile || profile.role !== 'admin') {
     redirect('/portal/dashboard')
   }
 
   // Fetch all users with their stats
-  const { data: users } = await supabase
+  const { data: users, error: usersError } = await supabase
     .from('profiles')
     .select(`
       id,
@@ -30,12 +37,25 @@ export default async function AdminUsersPage() {
       district,
       phone,
       address,
+      role,
       ai_extractions_limit,
       ai_extractions_used_today,
       created_at,
       last_sign_in_at
     `)
     .order('created_at', { ascending: false })
+
+  // Debug logging
+  console.log('=== Admin Users Page Debug ===')
+  console.log('Fetched users count:', users?.length || 0)
+  console.log('Users error:', usersError)
+  if (users && users.length > 0) {
+    console.log('Sample user:', users[0])
+  }
+  if (users) {
+    console.log('All user emails:', users.map(u => u.email))
+  }
+  console.log('===============================')
 
   // Fetch parcel counts and areas for each user
   const usersWithStats = await Promise.all(
