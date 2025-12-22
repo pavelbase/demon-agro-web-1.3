@@ -25,25 +25,10 @@ export default async function AdminUsersPage() {
     redirect('/portal/dashboard')
   }
 
-  // Fetch all users with their stats
+  // Fetch all users with their stats - SIMPLIFIED FOR DEBUG
   const { data: users, error: usersError } = await supabase
     .from('profiles')
-    .select(`
-      id,
-      email,
-      full_name,
-      company_name,
-      ico,
-      district,
-      phone,
-      address,
-      role,
-      ai_extractions_limit,
-      ai_extractions_used_today,
-      created_at,
-      last_sign_in_at
-    `)
-    .order('created_at', { ascending: false })
+    .select('*')
 
   // Debug logging
   console.log('=== Admin Users Page Debug ===')
