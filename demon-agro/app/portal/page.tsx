@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Upload, 
@@ -15,8 +16,20 @@ import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 
 export default async function PortalLandingPage() {
-  // Fetch portal images for gallery
+  // Kontrola přihlášení - rozcestník
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  // Přesměrování podle stavu přihlášení
+  if (user) {
+    // Přihlášený uživatel -> dashboard
+    redirect('/portal/dashboard')
+  } else {
+    // Nepřihlášený uživatel -> login
+    redirect('/portal/prihlaseni')
+  }
+  
+  // Fetch portal images for gallery (tento kód se již nikdy nevykoná kvůli redirectu výše)
   const { data: images } = await supabase
     .from('portal_images')
     .select('*')
