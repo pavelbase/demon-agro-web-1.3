@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { pdfUrl, documentType, parcelId, userId } = await request.json()
+    const { pdfUrl, documentType, userId } = await request.json()
 
     if (!pdfUrl) {
       return NextResponse.json(
@@ -114,7 +114,6 @@ export async function POST(request: NextRequest) {
 
     // Add metadata
     extractedData.pdfUrl = pdfUrl
-    extractedData.parcelId = parcelId
     extractedData.extractedAt = new Date().toISOString()
     extractedData.documentType = documentType
 
@@ -153,29 +152,50 @@ DŮLEŽITÉ:
 }
 
 function getUserPrompt(documentType: string): string {
-  return `Extrahuj následující data z tohoto půdního rozboru a vrať je jako JSON objekt:
+  return `Extrahuj data z tohoto půdního rozboru. Dokument může obsahovat jeden nebo více rozborů (pozemků).
+
+Vrať JSON ve formátu:
 
 {
-  "analysis_date": "YYYY-MM-DD",
-  "ph": number,
-  "ph_category": "EK" | "SK" | "N" | "SZ" | "EZ" | null,
-  "phosphorus": number,
-  "phosphorus_category": "N" | "VH" | "D" | "V" | "VV" | null,
-  "potassium": number,
-  "potassium_category": "N" | "VH" | "D" | "V" | "VV" | null,
-  "magnesium": number,
-  "magnesium_category": "N" | "VH" | "D" | "V" | "VV" | null,
-  "calcium": number | null,
-  "calcium_category": "N" | "VH" | "D" | "V" | "VV" | null,
-  "nitrogen": number | null,
-  "lab_name": string | null,
-  "cadastral_number": string | null,
-  "parcel_name": string | null,
-  "notes": string | null,
+  "analyses": [
+    {
+      "parcel_name": string | null,
+      "cadastral_number": string | null,
+      "area_ha": number | null,
+      "soil_type": string | null,
+      "analysis_date": "YYYY-MM-DD",
+      "ph": number,
+      "ph_category": "EK" | "SK" | "N" | "SZ" | "EZ" | null,
+      "phosphorus": number,
+      "phosphorus_category": "N" | "VH" | "D" | "V" | "VV" | null,
+      "potassium": number,
+      "potassium_category": "N" | "VH" | "D" | "V" | "VV" | null,
+      "magnesium": number,
+      "magnesium_category": "N" | "VH" | "D" | "V" | "VV" | null,
+      "calcium": number | null,
+      "calcium_category": "N" | "VH" | "D" | "V" | "VV" | null,
+      "nitrogen": number | null,
+      "methodology": string | null,
+      "notes": string | null
+    }
+  ],
+  "laboratory": string | null,
+  "document_type": "AZZP" | "lab" | "other",
+  "document_date": "YYYY-MM-DD" | null,
   "confidence": "high" | "medium" | "low"
 }
 
-PRAVIDLA:
+PRAVIDLA PRO EXTRAKCI:
+1. VŽDY vrať pole "analyses", i když je jen jeden rozbor
+2. Pro každý rozbor/pozemek v dokumentu vytvoř samostatný objekt v poli
+3. AZZP zprávy typicky obsahují 10-50+ pozemků - extrahuj všechny
+4. Laboratorní protokoly typicky obsahují 1-5 rozborů
+
+PRAVIDLA PRO HODNOTY:
+- parcel_name: Název pozemku/dílu (např. "Za humny", "Pole 1", "Díl 123/4")
+- cadastral_number: Katastrální číslo pozemku (např. "1234/5")
+- area_ha: Výměra pozemku v hektarech
+- soil_type: Typ půdy (např. "hlinitá", "písčitá", "jílovitá")
 - analysis_date: Datum odběru vzorku nebo datum analýzy
 - ph: Hodnota pH (CaCl2 nebo KCl, pokud obě, preferuj CaCl2)
 - phosphorus: Fosfor (P) v mg/kg (může být označen jako P2O5)
@@ -183,11 +203,16 @@ PRAVIDLA:
 - magnesium: Hořčík (Mg) v mg/kg (může být označen jako MgO)
 - calcium: Vápník (Ca) v mg/kg (může být označen jako CaO) - pokud dostupný
 - nitrogen: Dusík (N) v mg/kg - pokud dostupný
-- lab_name: Název laboratoře
-- cadastral_number: Katastrální číslo pozemku (pokud uvedeno)
-- parcel_name: Název pozemku (pokud uveden)
-- notes: Jakékoliv důležité poznámky nebo doporučení z rozboru
-- confidence: Jak si jsi jistý extrakcí (high/medium/low)
+- methodology: Metoda analýzy (např. "Mehlich III", "Egner-Riehm")
+- laboratory: Název laboratoře (např. "ÚKZÚZ Brno", "ZEPOS")
+- document_type: Typ dokumentu
+- confidence: Celková jistota extrakce (high/medium/low)
+
+DŮLEŽITÉ:
+- Extrahuj VŠECHNY rozbory z dokumentu
+- Každý pozemek/díl/rozbor = jeden objekt v poli analyses
+- Pokud hodnota není v dokumentu, použij null
+- Všechna čísla zaokrouhli na 2 desetinná místa
 
 Vrať POUZE JSON objekt bez dalšího textu nebo vysvětlení.`
 }
@@ -195,41 +220,60 @@ Vrať POUZE JSON objekt bez dalšího textu nebo vysvětlení.`
 function validateExtractedData(data: any): string[] {
   const errors: string[] = []
 
-  // Required fields
-  if (!data.analysis_date) {
-    errors.push('Chybí datum analýzy')
-  } else {
-    // Validate date format
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!dateRegex.test(data.analysis_date)) {
-      errors.push('Neplatný formát data')
+  // Check for analyses array
+  if (!data.analyses || !Array.isArray(data.analyses)) {
+    errors.push('Chybí pole rozborů (analyses)')
+    return errors
+  }
+
+  if (data.analyses.length === 0) {
+    errors.push('Nebyly extrahovány žádné rozbory')
+    return errors
+  }
+
+  // Validate each analysis
+  data.analyses.forEach((analysis: any, index: number) => {
+    const prefix = data.analyses.length > 1 ? `Rozbor ${index + 1}: ` : ''
+
+    // Required fields
+    if (!analysis.analysis_date) {
+      errors.push(`${prefix}Chybí datum analýzy`)
+    } else {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(analysis.analysis_date)) {
+        errors.push(`${prefix}Neplatný formát data`)
+      }
     }
-  }
 
-  if (typeof data.ph !== 'number' || data.ph < 4 || data.ph > 9) {
-    errors.push('Neplatná hodnota pH (očekáváno 4-9)')
-  }
+    if (typeof analysis.ph !== 'number' || analysis.ph < 4 || analysis.ph > 9) {
+      errors.push(`${prefix}Neplatná hodnota pH (očekáváno 4-9)`)
+    }
 
-  if (typeof data.phosphorus !== 'number' || data.phosphorus < 0 || data.phosphorus > 1000) {
-    errors.push('Neplatná hodnota P (očekáváno 0-1000 mg/kg)')
-  }
+    if (typeof analysis.phosphorus !== 'number' || analysis.phosphorus < 0 || analysis.phosphorus > 1000) {
+      errors.push(`${prefix}Neplatná hodnota P (očekáváno 0-1000 mg/kg)`)
+    }
 
-  if (typeof data.potassium !== 'number' || data.potassium < 0 || data.potassium > 1000) {
-    errors.push('Neplatná hodnota K (očekáváno 0-1000 mg/kg)')
-  }
+    if (typeof analysis.potassium !== 'number' || analysis.potassium < 0 || analysis.potassium > 1000) {
+      errors.push(`${prefix}Neplatná hodnota K (očekáváno 0-1000 mg/kg)`)
+    }
 
-  if (typeof data.magnesium !== 'number' || data.magnesium < 0 || data.magnesium > 1000) {
-    errors.push('Neplatná hodnota Mg (očekáváno 0-1000 mg/kg)')
-  }
+    if (typeof analysis.magnesium !== 'number' || analysis.magnesium < 0 || analysis.magnesium > 1000) {
+      errors.push(`${prefix}Neplatná hodnota Mg (očekáváno 0-1000 mg/kg)`)
+    }
 
-  // Optional fields validation
-  if (data.calcium !== null && (typeof data.calcium !== 'number' || data.calcium < 0)) {
-    errors.push('Neplatná hodnota Ca')
-  }
+    // Optional fields validation
+    if (analysis.calcium !== null && (typeof analysis.calcium !== 'number' || analysis.calcium < 0)) {
+      errors.push(`${prefix}Neplatná hodnota Ca`)
+    }
 
-  if (data.nitrogen !== null && (typeof data.nitrogen !== 'number' || data.nitrogen < 0)) {
-    errors.push('Neplatná hodnota N')
-  }
+    if (analysis.nitrogen !== null && (typeof analysis.nitrogen !== 'number' || analysis.nitrogen < 0)) {
+      errors.push(`${prefix}Neplatná hodnota N`)
+    }
+
+    if (analysis.area_ha !== null && (typeof analysis.area_ha !== 'number' || analysis.area_ha <= 0)) {
+      errors.push(`${prefix}Neplatná výměra pozemku`)
+    }
+  })
 
   return errors
 }

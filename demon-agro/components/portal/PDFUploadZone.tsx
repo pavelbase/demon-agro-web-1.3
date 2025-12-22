@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Upload, X, FileText, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 import type { Parcel } from '@/lib/types/database'
 
 interface PDFUploadZoneProps {
   parcels: Parcel[]
-  preselectedParcelId?: string
   userId: string
   remainingExtractions: number
 }
@@ -23,21 +22,13 @@ interface UploadedFile {
   error?: string
 }
 
-export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingExtractions }: PDFUploadZoneProps) {
-  const [selectedParcel, setSelectedParcel] = useState<string>(preselectedParcelId || '')
+export function PDFUploadZone({ parcels, userId, remainingExtractions }: PDFUploadZoneProps) {
   const [documentType, setDocumentType] = useState<DocumentType>('auto')
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null)
   const [status, setStatus] = useState<UploadStatus>('idle')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Set preselected parcel on mount
-  useEffect(() => {
-    if (preselectedParcelId && parcels.some(p => p.id === preselectedParcelId)) {
-      setSelectedParcel(preselectedParcelId)
-    }
-  }, [preselectedParcelId, parcels])
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault()
@@ -87,12 +78,6 @@ export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingE
       return
     }
 
-    // Validate parcel selection
-    if (!selectedParcel) {
-      alert('Prosím vyberte pozemek')
-      return
-    }
-
     // Create file object
     const fileObj: UploadedFile = {
       file,
@@ -114,7 +99,6 @@ export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingE
       const formData = new FormData()
       formData.append('file', file)
       formData.append('userId', userId)
-      formData.append('parcelId', selectedParcel)
 
       const uploadResponse = await fetch('/api/portal/upload-pdf', {
         method: 'POST',
@@ -142,7 +126,6 @@ export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingE
         body: JSON.stringify({
           pdfUrl,
           documentType,
-          parcelId: selectedParcel,
           userId,
         }),
       })
@@ -161,7 +144,6 @@ export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingE
       window.location.href = `/portal/upload/validate?data=${encodeURIComponent(JSON.stringify({
         ...extractedData,
         pdfUrl,
-        parcelId: selectedParcel,
       }))}`
 
     } catch (error) {
@@ -184,56 +166,15 @@ export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingE
   }
 
   const handleClickUpload = () => {
-    if (!selectedParcel) {
-      alert('Prosím nejprve vyberte pozemek')
-      return
-    }
     fileInputRef.current?.click()
   }
 
   return (
     <div className="space-y-6">
-      {/* Parcel Selection */}
-      <div>
-        <label htmlFor="parcel" className="block text-sm font-medium text-gray-700 mb-2">
-          1. Vyberte pozemek <span className="text-red-500">*</span>
-        </label>
-        {parcels.length === 0 ? (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-orange-900 font-medium">Nemáte žádné pozemky</p>
-              <p className="text-orange-700 text-sm mt-1">
-                Před nahráním rozboru musíte nejprve vytvořit pozemek.{' '}
-                <a href="/portal/pozemky" className="underline hover:text-orange-900 font-medium">
-                  Přidat pozemek
-                </a>
-              </p>
-            </div>
-          </div>
-        ) : (
-          <select
-            id="parcel"
-            value={selectedParcel}
-            onChange={(e) => setSelectedParcel(e.target.value)}
-            disabled={status !== 'idle'}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
-            <option value="">-- Vyberte pozemek --</option>
-            {parcels.map((parcel) => (
-              <option key={parcel.id} value={parcel.id}>
-                {parcel.name} ({parcel.area} ha)
-                {parcel.cadastral_number && ` - ${parcel.cadastral_number}`}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
       {/* Document Type Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          2. Typ dokumentu
+          1. Typ dokumentu
         </label>
         <div className="grid grid-cols-3 gap-3">
           <button
@@ -278,18 +219,17 @@ export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingE
       {/* Upload Area */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          3. Nahrajte PDF dokument
+          2. Nahrajte PDF dokument
         </label>
 
         {!uploadedFile ? (
           <div
             className={`
-              relative border-2 border-dashed rounded-lg p-12 text-center transition-all
+              relative border-2 border-dashed rounded-lg p-12 text-center transition-all cursor-pointer
               ${isDragging
                 ? 'border-primary-green bg-green-50 scale-105'
                 : 'border-gray-300 hover:border-primary-green hover:bg-gray-50'
               }
-              ${!selectedParcel || parcels.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             `}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
@@ -303,7 +243,6 @@ export function PDFUploadZone({ parcels, preselectedParcelId, userId, remainingE
               accept="application/pdf"
               onChange={handleFileInput}
               className="hidden"
-              disabled={!selectedParcel || parcels.length === 0}
             />
 
             <Upload className={`h-16 w-16 mx-auto mb-4 transition-transform ${

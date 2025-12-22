@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const userId = formData.get('userId') as string
-    const parcelId = formData.get('parcelId') as string
 
     if (!file) {
       return NextResponse.json(
@@ -43,17 +42,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user owns the parcel
-    const { data: parcel, error: parcelError } = await supabase
-      .from('parcels')
-      .select('id, user_id')
-      .eq('id', parcelId)
-      .eq('user_id', userId)
-      .single()
-
-    if (parcelError || !parcel) {
+    // Verify userId matches authenticated user
+    if (userId !== user.id) {
       return NextResponse.json(
-        { error: 'Pozemek nenalezen nebo nemáte oprávnění' },
+        { error: 'Unauthorized' },
         { status: 403 }
       )
     }
@@ -69,7 +61,7 @@ export async function POST(request: NextRequest) {
       .replace(/^-+|-+$/g, '')
       .substring(0, 50)
 
-    const filename = `${userId}/${parcelId}/${sanitizedName}-${timestamp}.pdf`
+    const filename = `${userId}/temp/${sanitizedName}-${timestamp}.pdf`
 
     // Convert File to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer()
