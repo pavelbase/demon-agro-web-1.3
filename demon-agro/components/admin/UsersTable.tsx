@@ -27,6 +27,7 @@ interface User {
   district: string | null
   phone: string | null
   address: string | null
+  role: string
   ai_extractions_limit: number
   ai_extractions_used_today: number
   created_at: string
