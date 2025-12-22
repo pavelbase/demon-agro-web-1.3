@@ -18,6 +18,7 @@ interface UploadedFile {
   name: string
   size: number
   pdfUrl?: string
+  filename?: string
   extractedData?: any
   error?: string
 }
@@ -113,9 +114,9 @@ export function PDFUploadZone({ parcels, userId, remainingExtractions }: PDFUplo
         throw new Error(error.error || 'Chyba při nahrávání souboru')
       }
 
-      const { pdfUrl } = await uploadResponse.json()
+      const { pdfUrl, filename } = await uploadResponse.json()
 
-      setUploadedFile(prev => prev ? { ...prev, pdfUrl } : null)
+      setUploadedFile(prev => prev ? { ...prev, pdfUrl, filename } : null)
       setStatus('extracting')
       setUploadProgress(0)
 
@@ -125,6 +126,7 @@ export function PDFUploadZone({ parcels, userId, remainingExtractions }: PDFUplo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pdfUrl,
+          filename,
           documentType,
           userId,
         }),
