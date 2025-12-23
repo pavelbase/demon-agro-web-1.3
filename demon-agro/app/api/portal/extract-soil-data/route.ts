@@ -19,10 +19,19 @@ export async function POST(request: NextRequest) {
     if (!pdfUrl) return NextResponse.json({ error: 'No PDF URL' }, { status: 400 })
 
     console.log("Stahuji PDF:", pdfUrl)
-    const pdfResponse = await fetch(pdfUrl)
-    if (!pdfResponse.ok) throw new Error('Failed to fetch PDF')
     
-    const pdfBuffer = await pdfResponse.arrayBuffer()
+    // Extrakce cesty k souboru z URL
+    const storagePath = pdfUrl.split('/soil-documents/')[1]
+    console.log("Storage path:", storagePath)
+    
+    // Stažení souboru ze Supabase Storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('soil-documents')
+      .download(storagePath)
+    
+    if (downloadError) throw new Error(`Chyba stahování ze Supabase: ${downloadError.message}`)
+    
+    const pdfBuffer = await fileData.arrayBuffer()
     const base64Pdf = Buffer.from(pdfBuffer).toString('base64')
 
     console.log("Volám Gemini...")
