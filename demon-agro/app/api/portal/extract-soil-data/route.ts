@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-})
+// Initialize Google Generative AI client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '')
 
 // Helper function to extract filename from Supabase Storage URL
 function extractFilenameFromUrl(url: string): string {
@@ -112,35 +110,31 @@ export async function POST(request: NextRequest) {
     const systemPrompt = getSystemPrompt(documentType)
     const userPrompt = getUserPrompt(documentType)
 
-    // Call Anthropic API with PDF
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4096,
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: base64Pdf,
-              },
-            },
-            {
-              type: 'text',
-              text: userPrompt,
-            },
-          ],
-        },
-      ],
-      system: systemPrompt,
+    // Call Google Gemini API with PDF
+    const model = genAI.getModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 4096,
+      },
+      systemInstruction: systemPrompt,
     })
 
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          data: base64Pdf,
+          mimeType: 'application/pdf',
+        },
+      },
+      {
+        text: userPrompt,
+      },
+    ])
+
     // Extract JSON from response
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
+    const response = await result.response
+    const responseText = response.text()
     
     // Parse JSON response
     let extractedData
