@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     const userPrompt = getUserPrompt(documentType)
 
     // Call Google Gemini API with PDF
-    const model = genAI.getModel({ 
+    const model = genAI.getGenerativeModel({ 
       model: 'gemini-1.5-flash',
       generationConfig: {
         temperature: 0.2,
