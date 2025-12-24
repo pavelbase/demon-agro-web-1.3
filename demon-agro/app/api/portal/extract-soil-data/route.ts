@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // VÁŠ KLÍČ
-const API_KEY = "AIzaSyCamLqh5Ys8ji8JPZ_PndtPWsfbri-nHgg";
+const API_KEY = "AIzaSyBuK6mmpjzh7Ft6JLbfZ-jFRHj1u-H23zA";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export async function POST(request: NextRequest) {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     // 5. Gemini Call
     console.log("Volám Gemini 1.5 Pro...")
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash-001',
+      model: 'gemini-1.5-flash',
       generationConfig: { responseMimeType: "application/json" },
       systemInstruction: systemPrompt
     })
