@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     // 5. Gemini Call
     console.log("Volám Gemini 1.5 Pro...")
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash-001',
+      model: 'gemini-pro',
       generationConfig: { responseMimeType: "application/json" },
       systemInstruction: systemPrompt
     })
