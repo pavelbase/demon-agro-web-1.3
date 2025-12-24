@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// ZDE JE MÍSTO PRO VÁŠ NOVÝ KLÍČ Z PROJEKTU DemonAgro-AI
+// ZDE SI UŽIVATEL DOPLNÍ SVŮJ NOVÝ KLÍČ RUČNĚ
 const API_KEY = "AIzaSyCxy7KtycmhjXN6DFa0vMi6M-cnqJgRFbA"; 
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
-    console.log(">>> START: Soil Extraction (New Clean File) <<<")
+    console.log(">>> START: Soil Extraction (RECOVERY MODE) <<<")
     const supabase = await createClient()
 
     // 1. Auth check
@@ -17,22 +17,16 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // 2. Request parsing
-    const { pdfUrl, documentType, parcelId } = await request.json()
+    const { pdfUrl } = await request.json()
     if (!pdfUrl) return NextResponse.json({ error: 'No PDF URL' }, { status: 400 })
 
-    // 3. Download PDF (Supabase Internal)
-    console.log("Stahuji PDF interně:", pdfUrl)
+    // 3. Download PDF
     const storagePath = pdfUrl.split('/soil-documents/')[1]
-    
-    if (!storagePath) {
-        throw new Error("Nepodařilo se získat cestu k souboru z URL");
-    }
-
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('soil-documents')
       .download(storagePath)
 
-    if (downloadError) throw new Error(`Chyba stahování ze Supabase: ${downloadError.message}`)
+    if (downloadError) throw new Error(`Chyba stahování: ${downloadError.message}`)
     
     const pdfBuffer = await fileData.arrayBuffer()
     const base64Pdf = Buffer.from(pdfBuffer).toString('base64')
@@ -62,16 +56,12 @@ export async function POST(request: NextRequest) {
     ])
 
     const text = result.response.text()
-    console.log("Gemini odpověděl (úspěch)!")
+    console.log("Gemini odpověděl úspěšně!")
 
     const cleanedText = text.replace(/```json|```/g, '').trim()
     const extractedData = JSON.parse(cleanedText)
 
-    return NextResponse.json({ 
-        ...extractedData, 
-        pdfUrl, 
-        extractedAt: new Date().toISOString() 
-    })
+    return NextResponse.json({ ...extractedData, pdfUrl })
 
   } catch (error) {
     console.error('CRITICAL ERROR:', error)
