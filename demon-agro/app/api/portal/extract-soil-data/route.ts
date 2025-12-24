@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
     const base64Pdf = Buffer.from(pdfBuffer).toString('base64')
 
     // 4. Gemini Call
-    console.log("Volám Gemini 1.5 Flash...")
+    console.log("Volám Gemini 1.5 Pro...")
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-pro',
       generationConfig: { responseMimeType: "application/json" }
     })
 
