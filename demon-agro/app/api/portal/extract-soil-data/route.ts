@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // VÁŠ KLÍČ
-const API_KEY = "ZDE_VLOZTE_VAS_NOVY_KLIC_Z_DEMON_AGRO_AI";
+const API_KEY = "AIzaSyBuK6mmpjzh7Ft6JLbfZ-jFRHj1u-H23zA";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export async function POST(request: NextRequest) {
