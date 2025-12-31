@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// ZDE SI UŽIVATEL DOPLNÍ SVŮJ NOVÝ KLÍČ RUČNĚ
-const API_KEY = "AIzaSyCxy7KtycmhjXN6DFa0vMi6M-cnqJgRFbA"; 
+// Load API key from environment variables
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-const genAI = new GoogleGenerativeAI(API_KEY);
+if (!GEMINI_API_KEY) {
+  console.error('❌ GEMINI_API_KEY is not set in environment variables')
+  throw new Error('Konfigurace API není nastavena. Kontaktujte správce.')
+}
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
