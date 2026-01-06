@@ -5,10 +5,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 // ============================================================================
 // KONFIGURACE
 // ============================================================================
- 
-// ZDE SI UŽIVATEL DOPLNÍ SVŮJ FUNKČNÍ KLÍČ
-const GEMINI_API_KEY = "AIzaSyB1d6Iktd6p2Tr-o3adDbbjPR828tEW6Gc"
- 
+
+// Načtení API klíče z prostředí (bezpečné)
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""
+
 // Model, který funguje (ověřeno)
 const GEMINI_MODEL = "gemini-flash-latest"
  
@@ -396,6 +396,18 @@ export async function POST(request: NextRequest) {
     
     console.log('🤖 Volám Gemini API...')
     console.log('   Model:', GEMINI_MODEL)
+    
+    // Kontrola, zda je API klíč nastaven
+    if (!GEMINI_API_KEY) {
+      console.error('❌ GEMINI_API_KEY není nastaven')
+      return NextResponse.json(
+        { 
+          error: 'Chyba konfigurace serveru', 
+          details: 'GEMINI_API_KEY není nastaven v prostředí' 
+        },
+        { status: 500 }
+      )
+    }
     
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
     
