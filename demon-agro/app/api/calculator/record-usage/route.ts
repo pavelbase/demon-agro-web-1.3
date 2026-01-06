@@ -20,13 +20,14 @@ const supabaseAdmin = createClient(
  * 
  * Body: { 
  *   email: string, 
- *   calculationData?: object (optional, for analytics)
+ *   calculationData?: object (optional, for analytics),
+ *   calculationResults?: object (optional, complete results for admin)
  * }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, calculationData } = body;
+    const { email, calculationData, calculationResults } = body;
 
     if (!email) {
       return NextResponse.json(
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
     // Get user agent
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    // Record usage
-    const { data, error } = await supabaseAdmin
+    // Record usage with RPC function
+    const { data: usageId, error: rpcError } = await supabaseAdmin
       .rpc('record_calculator_usage', {
         user_email: email,
         user_ip: ip,
@@ -53,17 +54,30 @@ export async function POST(request: NextRequest) {
         calc_data: calculationData || null
       });
 
-    if (error) {
-      console.error('Error recording calculator usage:', error);
+    if (rpcError) {
+      console.error('Error recording calculator usage:', rpcError);
       return NextResponse.json(
         { error: 'Chyba při záznamu použití' },
         { status: 500 }
       );
     }
 
+    // Update the record with full calculation results if provided
+    if (calculationResults && usageId) {
+      const { error: updateError } = await supabaseAdmin
+        .from('calculator_usage')
+        .update({ calculation_results: calculationResults })
+        .eq('id', usageId);
+
+      if (updateError) {
+        console.error('Error updating calculator results:', updateError);
+        // Don't fail the request, just log the error
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      id: data
+      id: usageId
     });
 
   } catch (error) {

@@ -84,8 +84,12 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
+  // Filter only active parcels (not archived)
+  // If status column doesn't exist or is null, treat as active
+  const activeParcels = (parcels || []).filter(p => !p.status || p.status === 'active')
+
   // Process parcels to get latest analysis for each
-  const parcelsWithLatestAnalysis: ParcelWithAnalysis[] = (parcels || []).map(parcel => {
+  const parcelsWithLatestAnalysis: ParcelWithAnalysis[] = activeParcels.map(parcel => {
     const analyses = (parcel.soil_analyses || []) as any[]
     const latestAnalysis = analyses.length > 0 
       ? analyses.sort((a: any, b: any) => 

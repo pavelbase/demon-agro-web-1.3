@@ -38,7 +38,6 @@ async function ParcelsContent() {
       )
     `)
     .eq('user_id', user.id)
-    .eq('status', 'active')
     .order('created_at', { ascending: false })
 
   // Fetch liming plans for all parcels
@@ -52,8 +51,12 @@ async function ParcelsContent() {
     (limingPlans || []).map(plan => [plan.parcel_id, plan.id])
   )
 
+  // Filter only active parcels (not archived)
+  // If status column doesn't exist or is null, treat as active
+  const activeParcels = (parcels || []).filter(p => !p.status || p.status === 'active')
+
   // Process parcels to get latest analysis and status
-  const parcelsWithStatus: ParcelWithAnalysis[] = (parcels || []).map(parcel => {
+  const parcelsWithStatus: ParcelWithAnalysis[] = activeParcels.map(parcel => {
     const analyses = parcel.soil_analyses || []
     
     // Group and average analyses by date (AZZP methodology)

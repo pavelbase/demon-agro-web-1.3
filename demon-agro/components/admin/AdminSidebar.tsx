@@ -9,7 +9,7 @@ import {
   Package,
   Beaker,
   ShoppingCart,
-  Image as ImageIcon,
+  Calculator,
   BarChart3,
   Shield,
   ArrowLeft,
@@ -42,9 +42,9 @@ const navigation = [
     icon: ShoppingCart,
   },
   {
-    name: 'Obrázky portálu',
-    href: '/portal/admin/obrazky-portalu',
-    icon: ImageIcon,
+    name: 'Kalkulace',
+    href: '/portal/admin/kalkulace',
+    icon: Calculator,
   },
   {
     name: 'Audit log',

@@ -168,8 +168,9 @@ export default function KalkulackaPage() {
               firma: formData.firma,
               telefon: formData.telefon,
               marketing_consent: formData.souhlas,
-              // Neukládáme citlivé výsledky, jen metadata pro analytics
-            }
+            },
+            // Ukládáme kompletní výsledky pro admin panel
+            calculationResults: vypocet
           }),
         });
       } catch (recordError) {
