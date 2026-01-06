@@ -18,7 +18,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, type, cao_content, mgo_content, reactivity, is_active } = body
+    const { 
+      name, 
+      type, 
+      cao_content, 
+      mgo_content, 
+      reactivity, 
+      is_active,
+      moisture_content,
+      particles_over_1mm,
+      particles_under_05mm,
+      particles_009_05mm,
+      price_per_ton
+    } = body
 
     const { data, error } = await supabase
       .from('liming_products')
@@ -29,6 +41,11 @@ export async function POST(request: NextRequest) {
         mgo_content,
         reactivity,
         is_active,
+        moisture_content,
+        particles_over_1mm,
+        particles_under_05mm,
+        particles_009_05mm,
+        price_per_ton,
       })
       .select()
       .single()

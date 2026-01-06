@@ -16,8 +16,8 @@ export type Json =
 export type UserRole = 'admin' | 'user'
 export type SoilType = 'L' | 'S' | 'T' // Lehká, Střední, Těžká
 export type Culture = 'orna' | 'ttp' // Orná půda, Travní trvalý porost
-export type NutrientCategory = 'N' | 'VH' | 'D' | 'V' | 'VV' // Nízký, Velmi Hluboký, Dobrý, Vysoký, Velmi Vysoký
-export type PhCategory = 'EK' | 'SK' | 'N' | 'SZ' | 'EZ' // Extrémně Kyselý, Silně Kyselý, Neutrální, Slabě Zásaditý, Extrémně Zásaditý
+export type NutrientCategory = 'nizky' | 'vyhovujici' | 'dobry' | 'vysoky' | 'velmi_vysoky' // Nízký, Vyhovující, Dobrý, Vysoký, Velmi Vysoký
+export type PhCategory = 'extremne_kysela' | 'silne_kysela' | 'slabe_kysela' | 'neutralni' | 'slabe_alkalicka' | 'alkalicka' // Extrémně kyselá, Silně kyselá, Slabě kyselá, Neutrální, Slabě alkalická, Alkalická
 export type RequestStatus = 'new' | 'in_progress' | 'quoted' | 'completed' | 'cancelled'
 export type LimeType = 'calcitic' | 'dolomite' | 'either' // Vápenatý, Dolomitový, Libovolný
 export type LimeProductType = 'calcitic' | 'dolomite' | 'both' // Pro liming_products tabulku
@@ -38,7 +38,6 @@ export interface Database {
         Row: {
           id: string
           email: string
-          full_name: string | null
           company_name: string | null
           ico: string | null
           address: string | null
@@ -54,7 +53,6 @@ export interface Database {
         Insert: {
           id: string
           email: string
-          full_name?: string | null
           company_name?: string | null
           ico?: string | null
           address?: string | null
@@ -70,7 +68,6 @@ export interface Database {
         Update: {
           id?: string
           email?: string
-          full_name?: string | null
           company_name?: string | null
           ico?: string | null
           address?: string | null
@@ -109,8 +106,8 @@ export interface Database {
           name: string
           area: number
           cadastral_number?: string | null
-          soil_type: SoilType
-          culture: Culture
+          soil_type?: SoilType | null
+          culture?: Culture
           notes?: string | null
           status?: 'active' | 'archived'
           source_parcel_id?: string | null
@@ -123,7 +120,7 @@ export interface Database {
           name?: string
           area?: number
           cadastral_number?: string | null
-          soil_type?: SoilType
+          soil_type?: SoilType | null
           culture?: Culture
           notes?: string | null
           status?: 'active' | 'archived'
@@ -140,21 +137,29 @@ export interface Database {
         Row: {
           id: string
           parcel_id: string
-          user_id: string
-          date: string
+          analysis_date: string
+          methodology: string | null
           ph: number
           ph_category: PhCategory | null
-          phosphorus: number
-          phosphorus_category: NutrientCategory | null
-          potassium: number
-          potassium_category: NutrientCategory | null
-          magnesium: number
-          magnesium_category: NutrientCategory | null
-          calcium: number | null
-          calcium_category: NutrientCategory | null
-          nitrogen: number | null
-          pdf_url: string | null
-          lab_name: string | null
+          p: number
+          p_category: NutrientCategory | null
+          k: number
+          k_category: NutrientCategory | null
+          mg: number
+          mg_category: NutrientCategory | null
+          ca: number | null
+          ca_category: NutrientCategory | null
+          s: number | null
+          s_category: NutrientCategory | null
+          k_mg_ratio: number | null
+          source_document: string | null
+          ai_extracted: boolean
+          user_validated: boolean
+          is_current: boolean
+          kvk: number | null
+          base_saturation: number | null
+          version_number: number | null
+          extraction_confidence: number | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -162,21 +167,29 @@ export interface Database {
         Insert: {
           id?: string
           parcel_id: string
-          user_id: string
-          date: string
+          analysis_date: string
+          methodology?: string | null
           ph: number
           ph_category?: PhCategory | null
-          phosphorus: number
-          phosphorus_category?: NutrientCategory | null
-          potassium: number
-          potassium_category?: NutrientCategory | null
-          magnesium: number
-          magnesium_category?: NutrientCategory | null
-          calcium?: number | null
-          calcium_category?: NutrientCategory | null
-          nitrogen?: number | null
-          pdf_url?: string | null
-          lab_name?: string | null
+          p: number
+          p_category?: NutrientCategory | null
+          k: number
+          k_category?: NutrientCategory | null
+          mg: number
+          mg_category?: NutrientCategory | null
+          ca?: number | null
+          ca_category?: NutrientCategory | null
+          s?: number | null
+          s_category?: NutrientCategory | null
+          k_mg_ratio?: number | null
+          source_document?: string | null
+          ai_extracted?: boolean
+          user_validated?: boolean
+          is_current?: boolean
+          kvk?: number | null
+          base_saturation?: number | null
+          version_number?: number | null
+          extraction_confidence?: number | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -184,21 +197,29 @@ export interface Database {
         Update: {
           id?: string
           parcel_id?: string
-          user_id?: string
-          date?: string
+          analysis_date?: string
+          methodology?: string | null
           ph?: number
           ph_category?: PhCategory | null
-          phosphorus?: number
-          phosphorus_category?: NutrientCategory | null
-          potassium?: number
-          potassium_category?: NutrientCategory | null
-          magnesium?: number
-          magnesium_category?: NutrientCategory | null
-          calcium?: number | null
-          calcium_category?: NutrientCategory | null
-          nitrogen?: number | null
-          pdf_url?: string | null
-          lab_name?: string | null
+          p?: number
+          p_category?: NutrientCategory | null
+          k?: number
+          k_category?: NutrientCategory | null
+          mg?: number
+          mg_category?: NutrientCategory | null
+          ca?: number | null
+          ca_category?: NutrientCategory | null
+          s?: number | null
+          s_category?: NutrientCategory | null
+          k_mg_ratio?: number | null
+          source_document?: string | null
+          ai_extracted?: boolean
+          user_validated?: boolean
+          is_current?: boolean
+          kvk?: number | null
+          base_saturation?: number | null
+          version_number?: number | null
+          extraction_confidence?: number | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -457,6 +478,10 @@ export interface Database {
           cao_content: number
           mgo_content: number
           reactivity: Reactivity | null
+          moisture_content: number | null
+          particles_over_1mm: number | null
+          particles_under_05mm: number | null
+          particles_009_05mm: number | null
           granulation: string | null
           form: string | null
           is_active: boolean
@@ -465,6 +490,7 @@ export interface Database {
           image_url: string | null
           notes: string | null
           application_notes: string | null
+          price_per_ton: number | null
           created_at: string
           updated_at: string
         }
@@ -476,6 +502,10 @@ export interface Database {
           cao_content: number
           mgo_content?: number
           reactivity?: Reactivity | null
+          moisture_content?: number | null
+          particles_over_1mm?: number | null
+          particles_under_05mm?: number | null
+          particles_009_05mm?: number | null
           granulation?: string | null
           form?: string | null
           is_active?: boolean
@@ -484,6 +514,7 @@ export interface Database {
           image_url?: string | null
           notes?: string | null
           application_notes?: string | null
+          price_per_ton?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -495,6 +526,10 @@ export interface Database {
           cao_content?: number
           mgo_content?: number
           reactivity?: Reactivity | null
+          moisture_content?: number | null
+          particles_over_1mm?: number | null
+          particles_under_05mm?: number | null
+          particles_009_05mm?: number | null
           granulation?: string | null
           form?: string | null
           is_active?: boolean
@@ -503,6 +538,7 @@ export interface Database {
           image_url?: string | null
           notes?: string | null
           application_notes?: string | null
+          price_per_ton?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -581,6 +617,11 @@ export interface Database {
           quantity: number
           unit: string
           notes: string | null
+          // Nové: vazba na plán vápnění
+          liming_plan_id: string | null
+          liming_application_id: string | null
+          application_year: number | null
+          application_season: 'jaro' | 'leto' | 'podzim' | null
           created_at: string
         }
         Insert: {
@@ -592,6 +633,11 @@ export interface Database {
           quantity: number
           unit?: string
           notes?: string | null
+          // Nové: vazba na plán vápnění
+          liming_plan_id?: string | null
+          liming_application_id?: string | null
+          application_year?: number | null
+          application_season?: 'jaro' | 'leto' | 'podzim' | null
           created_at?: string
         }
         Update: {
@@ -603,6 +649,11 @@ export interface Database {
           quantity?: number
           unit?: string
           notes?: string | null
+          // Nové: vazba na plán vápnění
+          liming_plan_id?: string | null
+          liming_application_id?: string | null
+          application_year?: number | null
+          application_season?: 'jaro' | 'leto' | 'podzim' | null
           created_at?: string
         }
       }

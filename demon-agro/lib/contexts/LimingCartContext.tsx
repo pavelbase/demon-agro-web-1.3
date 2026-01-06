@@ -6,6 +6,7 @@ import type { LimeType } from '@/lib/types/database'
 export interface LimingCartItem {
   parcel_id: string
   parcel_name: string
+  parcel_code?: string
   area_ha: number
   recommended_type: LimeType
   product_id?: string
@@ -14,6 +15,19 @@ export interface LimingCartItem {
   quantity_cao_t: number
   quantity_product_t: number
   reason: string
+  // Nové položky pro víceleté plány
+  applications?: LimingCartApplication[]
+}
+
+export interface LimingCartApplication {
+  year: number
+  season: 'jaro' | 'podzim'
+  product_name: string
+  dose_per_ha: number
+  total_tons: number
+  cao_per_ha: number
+  plan_id?: string
+  application_id?: string
 }
 
 interface LimingCartContextType {
@@ -21,6 +35,7 @@ interface LimingCartContextType {
   addItem: (item: LimingCartItem) => void
   removeItem: (parcelId: string) => void
   updateItem: (parcelId: string, updates: Partial<LimingCartItem>) => void
+  removeApplication: (parcelId: string, applicationId: string) => void
   clearCart: () => void
   getTotalArea: () => number
   getTotalQuantity: () => number
@@ -89,6 +104,43 @@ export function LimingCartProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const removeApplication = (parcelId: string, applicationId: string) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.parcel_id !== parcelId || !item.applications) {
+          return item
+        }
+
+        // Filter out the application
+        const updatedApplications = item.applications.filter(
+          (app) => app.application_id !== applicationId
+        )
+
+        // If no applications left, remove the entire item
+        if (updatedApplications.length === 0) {
+          return null
+        }
+
+        // Recalculate totals
+        const newQuantityProduct = updatedApplications.reduce(
+          (sum, app) => sum + app.total_tons,
+          0
+        )
+        const newQuantityCao = updatedApplications.reduce(
+          (sum, app) => sum + (app.total_tons * (app.cao_per_ha / app.dose_per_ha)),
+          0
+        )
+
+        return {
+          ...item,
+          applications: updatedApplications,
+          quantity_product_t: newQuantityProduct,
+          quantity_cao_t: newQuantityCao,
+        }
+      }).filter((item): item is LimingCartItem => item !== null)
+    )
+  }
+
   const clearCart = () => {
     setItems([])
     try {
@@ -117,6 +169,7 @@ export function LimingCartProvider({ children }: { children: ReactNode }) {
         addItem,
         removeItem,
         updateItem,
+        removeApplication,
         clearCart,
         getTotalArea,
         getTotalQuantity,

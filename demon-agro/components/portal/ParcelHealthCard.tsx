@@ -2,7 +2,9 @@
 
 import { AlertTriangle, Info } from 'lucide-react'
 import { useState } from 'react'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import type { Parcel, SoilAnalysis, PhCategory, NutrientCategory } from '@/lib/types/database'
+import type { GroupedAnalysis } from '@/lib/utils/soil-analysis-helpers'
 import {
   PH_CATEGORY_LABELS,
   PH_CATEGORY_DESCRIPTIONS,
@@ -11,10 +13,11 @@ import {
   SOIL_TYPE_LABELS,
   CULTURE_LABELS,
 } from '@/lib/constants/database'
+import { evaluatePhForSoilType, getLimingStatusLabel } from '@/lib/utils/soil-categories'
 
 interface ParcelHealthCardProps {
   parcel: Parcel
-  analysis: SoilAnalysis | null
+  analysis: SoilAnalysis | GroupedAnalysis | null
   compact?: boolean
 }
 
@@ -27,16 +30,18 @@ function getPhCategoryColor(category: PhCategory | null): string {
   if (!category) return 'bg-gray-400'
   
   switch (category) {
-    case 'EK':
+    case 'extremne_kysela':
       return 'bg-[#ef4444]' // Red
-    case 'SK':
+    case 'silne_kysela':
       return 'bg-[#f97316]' // Orange
-    case 'N':
-      return 'bg-[#eab308]' // Yellow
-    case 'SZ':
-      return 'bg-[#84cc16]' // Lime
-    case 'EZ':
-      return 'bg-[#06b6d4]' // Cyan
+    case 'slabe_kysela':
+      return 'bg-[#fb923c]' // Light Orange
+    case 'neutralni':
+      return 'bg-[#22c55e]' // Green
+    case 'slabe_alkalicka':
+      return 'bg-[#3b82f6]' // Blue
+    case 'alkalicka':
+      return 'bg-[#8b5cf6]' // Purple
     default:
       return 'bg-gray-400'
   }
@@ -47,16 +52,18 @@ function getPhTextColor(category: PhCategory | null): string {
   if (!category) return 'text-gray-600'
   
   switch (category) {
-    case 'EK':
+    case 'extremne_kysela':
       return 'text-[#ef4444]'
-    case 'SK':
+    case 'silne_kysela':
       return 'text-[#f97316]'
-    case 'N':
-      return 'text-[#eab308]'
-    case 'SZ':
-      return 'text-[#84cc16]'
-    case 'EZ':
-      return 'text-[#06b6d4]'
+    case 'slabe_kysela':
+      return 'text-[#fb923c]'
+    case 'neutralni':
+      return 'text-[#22c55e]'
+    case 'slabe_alkalicka':
+      return 'text-[#3b82f6]'
+    case 'alkalicka':
+      return 'text-[#8b5cf6]'
     default:
       return 'text-gray-600'
   }
@@ -67,15 +74,15 @@ function getNutrientCategoryColor(category: NutrientCategory | null): string {
   if (!category) return 'bg-gray-400'
   
   switch (category) {
-    case 'VH':
-      return 'bg-[#ef4444]' // Red - Very Low
-    case 'N':
-      return 'bg-[#f97316]' // Orange - Low
-    case 'D':
+    case 'nizky':
+      return 'bg-[#ef4444]' // Red - Low
+    case 'vyhovujici':
+      return 'bg-[#f97316]' // Orange - Adequate
+    case 'dobry':
       return 'bg-[#22c55e]' // Green - Good
-    case 'V':
+    case 'vysoky':
       return 'bg-[#3b82f6]' // Blue - High
-    case 'VV':
+    case 'velmi_vysoky':
       return 'bg-[#8b5cf6]' // Purple - Very High
     default:
       return 'bg-gray-400'
@@ -87,15 +94,15 @@ function getNutrientTextColor(category: NutrientCategory | null): string {
   if (!category) return 'text-gray-600'
   
   switch (category) {
-    case 'VH':
+    case 'nizky':
       return 'text-[#ef4444]'
-    case 'N':
+    case 'vyhovujici':
       return 'text-[#f97316]'
-    case 'D':
+    case 'dobry':
       return 'text-[#22c55e]'
-    case 'V':
+    case 'vysoky':
       return 'text-[#3b82f6]'
-    case 'VV':
+    case 'velmi_vysoky':
       return 'text-[#8b5cf6]'
     default:
       return 'text-gray-600'
@@ -107,15 +114,15 @@ function getNutrientProgress(category: NutrientCategory | null): number {
   if (!category) return 0
   
   switch (category) {
-    case 'VH':
+    case 'nizky':
       return 10
-    case 'N':
+    case 'vyhovujici':
       return 30
-    case 'D':
+    case 'dobry':
       return 60
-    case 'V':
+    case 'vysoky':
       return 85
-    case 'VV':
+    case 'velmi_vysoky':
       return 100
     default:
       return 0
@@ -173,7 +180,7 @@ function isAnalysisOld(date: string): boolean {
 
 // Check if phosphorus is too high (legislative limit)
 function isPhosphorusTooHigh(phosphorus: number, category: NutrientCategory | null): boolean {
-  return category === 'VV' || phosphorus > 300 // Example threshold
+  return category === 'velmi_vysoky' || phosphorus > 300 // Example threshold
 }
 
 // ============================================================================
@@ -186,26 +193,24 @@ interface TooltipProps {
 }
 
 function Tooltip({ content, children }: TooltipProps) {
-  const [isVisible, setIsVisible] = useState(false)
-
   return (
-    <div className="relative inline-block">
-      <div
-        onMouseEnter={() => setIsVisible(true)}
-        onMouseLeave={() => setIsVisible(false)}
-        className="cursor-help"
-      >
-        {children}
-      </div>
-      {isVisible && (
-        <div className="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg whitespace-nowrap">
+    <TooltipPrimitive.Root delayDuration={200}>
+      <TooltipPrimitive.Trigger asChild>
+        <span className="cursor-help inline-flex">
+          {children}
+        </span>
+      </TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content
+          className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm max-w-xs z-50 shadow-lg"
+          sideOffset={5}
+          collisionPadding={10}
+        >
           {content}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
-            <div className="border-4 border-transparent border-t-gray-900" />
-          </div>
-        </div>
-      )}
-    </div>
+          <TooltipPrimitive.Arrow className="fill-gray-900" />
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
   )
 }
 
@@ -399,12 +404,20 @@ export function ParcelHealthCard({ parcel, analysis, compact = false }: ParcelHe
               Pozemek <strong>{parcel.name}</strong> zatím nemá žádný rozbor půdy. 
               Pro zobrazení zdravotní karty a doporučení je nutné nahrát výsledky rozboru.
             </p>
-            <a
-              href={`/portal/upload?parcel=${parcel.id}`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A7C59] hover:bg-[#5C4033] text-white font-medium rounded-lg transition-colors"
-            >
-              Nahrát rozbor
-            </a>
+            <div className="flex gap-3">
+              <a
+                href={`/portal/upload?parcel=${parcel.id}`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A7C59] hover:bg-[#5C4033] text-white font-medium rounded-lg transition-colors"
+              >
+                Nahrát rozbor
+              </a>
+              <a
+                href={`/portal/pozemky/${parcel.id}?action=add-analysis`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Zadat ručně
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -412,10 +425,10 @@ export function ParcelHealthCard({ parcel, analysis, compact = false }: ParcelHe
   }
 
   // Check warnings
-  const isOld = isAnalysisOld(analysis.date)
+  const isOld = isAnalysisOld(analysis.analysis_date)
   const hasLowPh = analysis.ph < 5.5
-  const hasHighP = isPhosphorusTooHigh(analysis.phosphorus, analysis.phosphorus_category)
-  const kmgRatio = getKMgRatio(analysis.potassium, analysis.magnesium)
+  const hasHighP = isPhosphorusTooHigh(analysis.p, analysis.p_category)
+  const kmgRatio = getKMgRatio(analysis.k, analysis.mg)
   const hasUnbalancedKMg = kmgRatio.status !== 'good'
 
   const warnings: WarningBadgeProps[] = []
@@ -444,30 +457,114 @@ export function ParcelHealthCard({ parcel, analysis, compact = false }: ParcelHe
     })
   }
 
-  const analysisDate = new Date(analysis.date).toLocaleDateString('cs-CZ', {
+  const analysisDate = new Date(analysis.analysis_date).toLocaleDateString('cs-CZ', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   })
 
-  // COMPACT VERSION
-  if (compact) {
-    return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">{parcel.name}</h3>
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span>{parcel.area.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} ha</span>
-              <span>•</span>
-              <span>{SOIL_TYPE_LABELS[parcel.soil_type]}</span>
-              <span>•</span>
-              <span>{CULTURE_LABELS[parcel.culture]}</span>
+  // Wrap everything in TooltipProvider
+  return (
+    <TooltipPrimitive.Provider delayDuration={200}>
+      {renderContent()}
+    </TooltipPrimitive.Provider>
+  )
+
+  function renderContent() {
+    // COMPACT VERSION
+    if (compact) {
+      return (
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">{parcel.name}</h3>
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span>{parcel.area.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} ha</span>
+                <span>•</span>
+                <span>{SOIL_TYPE_LABELS[parcel.soil_type]}</span>
+                <span>•</span>
+                <span>{CULTURE_LABELS[parcel.culture]}</span>
+              </div>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <NutrientBar
+              label="pH"
+              value={analysis.ph}
+              unit=""
+              category={analysis.ph_category}
+              categoryLabel={analysis.ph_category ? PH_CATEGORY_LABELS[analysis.ph_category] : '-'}
+              categoryDescription={analysis.ph_category ? PH_CATEGORY_DESCRIPTIONS[analysis.ph_category] : ''}
+              isPh={true}
+              compact={true}
+            />
+            <NutrientBar
+              label="P"
+              value={analysis.p}
+              unit="mg/kg"
+              category={analysis.p_category}
+              categoryLabel={analysis.p_category ? NUTRIENT_CATEGORY_LABELS[analysis.p_category] : '-'}
+              categoryDescription={analysis.p_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.p_category] : ''}
+              compact={true}
+            />
+            <NutrientBar
+              label="K"
+              value={analysis.k}
+              unit="mg/kg"
+              category={analysis.k_category}
+              categoryLabel={analysis.k_category ? NUTRIENT_CATEGORY_LABELS[analysis.k_category] : '-'}
+              categoryDescription={analysis.k_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.k_category] : ''}
+              compact={true}
+            />
+            <NutrientBar
+              label="Mg"
+              value={analysis.mg}
+              unit="mg/kg"
+              category={analysis.mg_category}
+              categoryLabel={analysis.mg_category ? NUTRIENT_CATEGORY_LABELS[analysis.mg_category] : '-'}
+              categoryDescription={analysis.mg_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.mg_category] : ''}
+              compact={true}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+            <RatioIndicator potassium={analysis.k} magnesium={analysis.mg} compact />
+            <span>{analysisDate}</span>
+          </div>
+
+          {warnings.length > 0 && (
+            <div className="space-y-1">
+              {warnings.slice(0, 2).map((warning, idx) => (
+                <WarningBadge key={idx} {...warning} compact />
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // FULL VERSION
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Zdravotní karta půdy</h2>
+          <div className="text-sm text-gray-600">
+            Poslední rozbor: <strong>{analysisDate}</strong>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        {/* Warning Badges */}
+        {warnings.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            {warnings.map((warning, idx) => (
+              <WarningBadge key={idx} {...warning} />
+            ))}
+          </div>
+        )}
+
+        {/* pH Progress Bar */}
+        <div className="mb-6">
           <NutrientBar
             label="pH"
             value={analysis.ph}
@@ -476,160 +573,107 @@ export function ParcelHealthCard({ parcel, analysis, compact = false }: ParcelHe
             categoryLabel={analysis.ph_category ? PH_CATEGORY_LABELS[analysis.ph_category] : '-'}
             categoryDescription={analysis.ph_category ? PH_CATEGORY_DESCRIPTIONS[analysis.ph_category] : ''}
             isPh={true}
-            compact={true}
           />
-          <NutrientBar
-            label="P"
-            value={analysis.phosphorus}
-            unit="mg/kg"
-            category={analysis.phosphorus_category}
-            categoryLabel={analysis.phosphorus_category ? NUTRIENT_CATEGORY_LABELS[analysis.phosphorus_category] : '-'}
-            categoryDescription={analysis.phosphorus_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.phosphorus_category] : ''}
-            compact={true}
-          />
-          <NutrientBar
-            label="K"
-            value={analysis.potassium}
-            unit="mg/kg"
-            category={analysis.potassium_category}
-            categoryLabel={analysis.potassium_category ? NUTRIENT_CATEGORY_LABELS[analysis.potassium_category] : '-'}
-            categoryDescription={analysis.potassium_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.potassium_category] : ''}
-            compact={true}
-          />
-          <NutrientBar
-            label="Mg"
-            value={analysis.magnesium}
-            unit="mg/kg"
-            category={analysis.magnesium_category}
-            categoryLabel={analysis.magnesium_category ? NUTRIENT_CATEGORY_LABELS[analysis.magnesium_category] : '-'}
-            categoryDescription={analysis.magnesium_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.magnesium_category] : ''}
-            compact={true}
-          />
+          
+          {/* pH Evaluation for Soil Type */}
+          {(() => {
+            const phEval = evaluatePhForSoilType(analysis.ph, parcel.soil_type, parcel.culture)
+            return (
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      Status pro {SOIL_TYPE_LABELS[parcel.soil_type]} {CULTURE_LABELS[parcel.culture]}:
+                    </span>
+                    {phEval.isOptimal ? (
+                      <span className="text-sm font-semibold text-green-600">
+                        ✓ Optimální pH
+                      </span>
+                    ) : (
+                      <span className="text-sm font-semibold text-orange-600">
+                        {getLimingStatusLabel(phEval.status)}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    Cíl: pH {phEval.targetPh}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">{phEval.recommendation}</p>
+              </div>
+            )
+          })()}
         </div>
 
-        <div className="mb-3">
-          <RatioIndicator
-            potassium={analysis.potassium}
-            magnesium={analysis.magnesium}
-            compact={true}
+        {/* Nutrients Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Phosphorus (P) */}
+          <NutrientBar
+            label="Fosfor (P)"
+            value={analysis.p}
+            unit="mg/kg"
+            category={analysis.p_category}
+            categoryLabel={analysis.p_category ? NUTRIENT_CATEGORY_LABELS[analysis.p_category] : '-'}
+            categoryDescription={analysis.p_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.p_category] : ''}
           />
+
+          {/* Potassium (K) */}
+          <NutrientBar
+            label="Draslík (K)"
+            value={analysis.k}
+            unit="mg/kg"
+            category={analysis.k_category}
+            categoryLabel={analysis.k_category ? NUTRIENT_CATEGORY_LABELS[analysis.k_category] : '-'}
+            categoryDescription={analysis.k_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.k_category] : ''}
+          />
+
+          {/* Magnesium (Mg) */}
+          <NutrientBar
+            label="Hořčík (Mg)"
+            value={analysis.mg}
+            unit="mg/kg"
+            category={analysis.mg_category}
+            categoryLabel={analysis.mg_category ? NUTRIENT_CATEGORY_LABELS[analysis.mg_category] : '-'}
+            categoryDescription={analysis.mg_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.mg_category] : ''}
+          />
+
+          {/* Calcium (Ca) - Optional */}
+          {analysis.ca && (
+            <NutrientBar
+              label="Vápník (Ca)"
+              value={analysis.ca}
+              unit="mg/kg"
+              category={analysis.ca_category}
+              categoryLabel={analysis.ca_category ? NUTRIENT_CATEGORY_LABELS[analysis.ca_category] : '-'}
+              categoryDescription={analysis.ca_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.ca_category] : 'Vápník je klíčový pro strukturu buněčných stěn a stabilitu půdy'}
+            />
+          )}
+
+          {/* Sulfur (S) - Optional */}
+          {analysis.s && (
+            <NutrientBar
+              label="Síra (S)"
+              value={analysis.s}
+              unit="mg/kg"
+              category={analysis.s_category}
+              categoryLabel={analysis.s_category ? NUTRIENT_CATEGORY_LABELS[analysis.s_category] : '-'}
+              categoryDescription={analysis.s_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.s_category] : 'Síra je důležitá pro syntézu bílkovin a kvalitu plodin'}
+            />
+          )}
         </div>
 
-        {warnings.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {warnings.slice(0, 2).map((warning, idx) => (
-              <span
-                key={idx}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-50 text-orange-700"
-              >
-                <AlertTriangle className="w-3 h-3" />
-                {warning.type === 'low-ph' && 'Nízké pH'}
-                {warning.type === 'high-p' && 'Vysoké P'}
-                {warning.type === 'unbalanced-kmg' && 'K:Mg'}
-                {warning.type === 'old-analysis' && 'Starý rozbor'}
-              </span>
-            ))}
-            {warnings.length > 2 && (
-              <span className="text-xs text-gray-600">+{warnings.length - 2}</span>
-            )}
+        {/* K:Mg Ratio */}
+        <RatioIndicator potassium={analysis.k} magnesium={analysis.mg} />
+
+        {/* Lab info if available */}
+        {analysis.lab_name && (
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-xs text-gray-600">
+              Laboratoř: <strong>{analysis.lab_name}</strong>
+            </p>
           </div>
         )}
-
-        <div className="text-xs text-gray-500 mt-2">
-          Rozbor: {analysisDate}
-        </div>
       </div>
     )
   }
-
-  // FULL VERSION
-  return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-gray-900">Zdravotní karta půdy</h2>
-        <div className="text-sm text-gray-600">
-          Poslední rozbor: <strong>{analysisDate}</strong>
-        </div>
-      </div>
-
-      {/* Warning Badges */}
-      {warnings.length > 0 && (
-        <div className="mb-6 flex flex-wrap gap-2">
-          {warnings.map((warning, idx) => (
-            <WarningBadge key={idx} {...warning} />
-          ))}
-        </div>
-      )}
-
-      {/* pH Progress Bar */}
-      <div className="mb-6">
-        <NutrientBar
-          label="pH"
-          value={analysis.ph}
-          unit=""
-          category={analysis.ph_category}
-          categoryLabel={analysis.ph_category ? PH_CATEGORY_LABELS[analysis.ph_category] : '-'}
-          categoryDescription={analysis.ph_category ? PH_CATEGORY_DESCRIPTIONS[analysis.ph_category] : ''}
-          isPh={true}
-        />
-      </div>
-
-      {/* Nutrients Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Phosphorus (P) */}
-        <NutrientBar
-          label="Fosfor (P)"
-          value={analysis.phosphorus}
-          unit="mg/kg"
-          category={analysis.phosphorus_category}
-          categoryLabel={analysis.phosphorus_category ? NUTRIENT_CATEGORY_LABELS[analysis.phosphorus_category] : '-'}
-          categoryDescription={analysis.phosphorus_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.phosphorus_category] : ''}
-        />
-
-        {/* Potassium (K) */}
-        <NutrientBar
-          label="Draslík (K)"
-          value={analysis.potassium}
-          unit="mg/kg"
-          category={analysis.potassium_category}
-          categoryLabel={analysis.potassium_category ? NUTRIENT_CATEGORY_LABELS[analysis.potassium_category] : '-'}
-          categoryDescription={analysis.potassium_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.potassium_category] : ''}
-        />
-
-        {/* Magnesium (Mg) */}
-        <NutrientBar
-          label="Hořčík (Mg)"
-          value={analysis.magnesium}
-          unit="mg/kg"
-          category={analysis.magnesium_category}
-          categoryLabel={analysis.magnesium_category ? NUTRIENT_CATEGORY_LABELS[analysis.magnesium_category] : '-'}
-          categoryDescription={analysis.magnesium_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.magnesium_category] : ''}
-        />
-
-        {/* Calcium (Ca) - Optional */}
-        {analysis.calcium && (
-          <NutrientBar
-            label="Vápník (Ca)"
-            value={analysis.calcium}
-            unit="mg/kg"
-            category={analysis.calcium_category}
-            categoryLabel={analysis.calcium_category ? NUTRIENT_CATEGORY_LABELS[analysis.calcium_category] : '-'}
-            categoryDescription={analysis.calcium_category ? NUTRIENT_CATEGORY_DESCRIPTIONS[analysis.calcium_category] : ''}
-          />
-        )}
-      </div>
-
-      {/* K:Mg Ratio */}
-      <RatioIndicator potassium={analysis.potassium} magnesium={analysis.magnesium} />
-
-      {/* Lab info if available */}
-      {analysis.lab_name && (
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-xs text-gray-600">
-            Laboratoř: <strong>{analysis.lab_name}</strong>
-          </p>
-        </div>
-      )}
-    </div>
-  )
 }

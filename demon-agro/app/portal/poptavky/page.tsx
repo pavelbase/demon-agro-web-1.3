@@ -4,6 +4,7 @@ import { Plus, Package, Calendar, CheckCircle } from 'lucide-react'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { LimingRequestsTable } from '@/components/portal/LimingRequestsTable'
+import { EmptyRequestsState } from '@/components/portal/EmptyRequestsState'
 
 export default async function LimingRequestsPage({
   searchParams,
@@ -13,7 +14,7 @@ export default async function LimingRequestsPage({
   const user = await requireAuth()
   const supabase = await createClient()
 
-  // Fetch user's liming requests with items count
+  // Fetch user's liming requests with items count and parcel details
   const { data: requests } = await supabase
     .from('liming_requests')
     .select(`
@@ -23,7 +24,11 @@ export default async function LimingRequestsPage({
         parcel_id,
         product_name,
         quantity,
-        unit
+        unit,
+        parcels (
+          cadastral_number,
+          name
+        )
       )
     `)
     .eq('user_id', user.id)
@@ -79,32 +84,7 @@ export default async function LimingRequestsPage({
 
         {/* Requests List or Empty State */}
         {limingRequests.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <Package className="h-20 w-20 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Zatím nemáte žádné poptávky
-            </h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Vytvořte poptávku vápnění pro své pozemky. Vypočítáme potřebu,
-              doporučíme produkt a připravíme cenovou nabídku.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/portal/pozemky"
-                className="inline-flex items-center justify-center px-6 py-3 border-2 border-primary-green text-primary-green rounded-lg hover:bg-primary-green hover:text-white transition-colors"
-              >
-                <Calendar className="h-5 w-5 mr-2" />
-                Přejít na pozemky
-              </Link>
-              <Link
-                href="/portal/poptavky/nova"
-                className="inline-flex items-center justify-center px-6 py-3 bg-primary-green text-white rounded-lg hover:bg-primary-brown transition-colors"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Nová poptávka
-              </Link>
-            </div>
-          </div>
+          <EmptyRequestsState />
         ) : (
           <LimingRequestsTable requests={limingRequests} />
         )}

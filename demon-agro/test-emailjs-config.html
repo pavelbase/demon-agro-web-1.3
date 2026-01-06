@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EmailJS Config Test</title>
+</head>
+<body>
+    <h1>EmailJS Configuration Test</h1>
+    <button id="testBtn">Test EmailJS</button>
+    <div id="result"></div>
+
+    <script type="module">
+        // Test EmailJS configuration
+        import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/+esm';
+
+        // Get config from .env.local (you'll need to replace these manually)
+        const SERVICE_ID = 'service_xrx301a';
+        const TEMPLATE_ID = 'YOUR_WELCOME_TEMPLATE_ID'; // Replace with actual template ID
+        const PUBLIC_KEY = 'xL_Khx5Gcnt-lEvUl';
+
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Sending test email...</p>';
+
+            try {
+                const templateParams = {
+                    to_email: 'test@example.com',
+                    to_name: 'Test User',
+                    user_email: 'test@example.com',
+                    temporary_password: 'Test123!',
+                    portal_url: 'http://localhost:3000/portal/prihlaseni',
+                };
+
+                const response = await emailjs.send(
+                    SERVICE_ID,
+                    TEMPLATE_ID,
+                    templateParams,
+                    PUBLIC_KEY
+                );
+
+                resultDiv.innerHTML = `<p style="color: green;">✅ Success! Status: ${response.status}, Text: ${response.text}</p>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ Error: ${error.message || JSON.stringify(error)}</p>`;
+                console.error('EmailJS Error:', error);
+            }
+        });
+
+        resultDiv.innerHTML = `
+            <p><strong>Config:</strong></p>
+            <p>Service ID: ${SERVICE_ID}</p>
+            <p>Template ID: ${TEMPLATE_ID}</p>
+            <p>Public Key: ${PUBLIC_KEY}</p>
+        `;
+    </script>
+</body>
+</html>
+

@@ -210,7 +210,7 @@ export function SoilAnalysisUpload({ parcels }: SoilAnalysisUploadProps) {
             {parcels.map((parcel) => (
               <option key={parcel.id} value={parcel.id}>
                 {parcel.name} ({parcel.area} ha)
-                {parcel.cadastral_number && ` - ${parcel.cadastral_number}`}
+                {parcel.code && ` - ${parcel.code}`}
               </option>
             ))}
           </select>

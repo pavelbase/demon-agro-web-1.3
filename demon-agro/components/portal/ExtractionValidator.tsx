@@ -7,7 +7,7 @@ import type { Parcel } from '@/lib/types/database'
 
 interface Analysis {
   parcel_name: string | null
-  cadastral_number: string | null
+  parcel_code: string | null
   area_ha: number | null
   soil_type: string | null
   analysis_date: string
@@ -21,7 +21,7 @@ interface Analysis {
   magnesium_category?: string | null
   calcium: number | null
   calcium_category?: string | null
-  nitrogen: number | null
+  sulfur: number | null
   methodology: string | null
   notes: string | null
 }
@@ -51,7 +51,7 @@ interface AnalysisState extends Analysis {
   // For new parcel creation
   newParcelName: string
   newParcelArea: number | ''
-  newParcelCadastralNumber: string
+  newParcelCode: string
   newParcelSoilType: string
   newParcelCulture: 'orna' | 'ttp'
   // Editable analysis fields
@@ -61,7 +61,7 @@ interface AnalysisState extends Analysis {
   editedPotassium: number | ''
   editedMagnesium: number | ''
   editedCalcium: number | ''
-  editedNitrogen: number | ''
+  editedSulfur: number | ''
   editedMethodology: string
   editedNotes: string
 }
@@ -81,7 +81,7 @@ export function ExtractionValidator({ extractedData, parcels, userId }: Extracti
       // Pre-fill new parcel data from extracted info
       newParcelName: analysis.parcel_name || '',
       newParcelArea: analysis.area_ha || '',
-      newParcelCadastralNumber: analysis.cadastral_number || '',
+      newParcelCode: analysis.parcel_code || '',
       newParcelSoilType: analysis.soil_type || '',
       newParcelCulture: 'orna',
       // Editable analysis fields
@@ -91,7 +91,7 @@ export function ExtractionValidator({ extractedData, parcels, userId }: Extracti
       editedPotassium: analysis.potassium,
       editedMagnesium: analysis.magnesium,
       editedCalcium: analysis.calcium || '',
-      editedNitrogen: analysis.nitrogen || '',
+      editedSulfur: analysis.sulfur || '',
       editedMethodology: analysis.methodology || '',
       editedNotes: analysis.notes || '',
     }))
@@ -162,11 +162,12 @@ export function ExtractionValidator({ extractedData, parcels, userId }: Extracti
       if (analysis.parcelAction === 'select' && !analysis.selectedParcelId) {
         newErrors[`${analysis.id}.selectedParcelId`] = 'Vyberte pozemek'
       } else if (analysis.parcelAction === 'create') {
-        if (!analysis.newParcelName) {
-          newErrors[`${analysis.id}.newParcelName`] = 'Název je povinný'
-        }
+        // Název je volitelný - pokud není, použije se kód pozemku
         if (!analysis.newParcelArea || analysis.newParcelArea <= 0) {
           newErrors[`${analysis.id}.newParcelArea`] = 'Výměra musí být větší než 0'
+        }
+        if (!analysis.newParcelCode && !analysis.newParcelName) {
+          newErrors[`${analysis.id}.newParcelName`] = 'Vyplňte název nebo kód pozemku'
         }
       }
 
@@ -209,9 +210,9 @@ export function ExtractionValidator({ extractedData, parcels, userId }: Extracti
       const analysesToSave = selectedAnalyses.map(analysis => ({
         parcelId: analysis.parcelAction === 'select' ? analysis.selectedParcelId : undefined,
         createNewParcel: analysis.parcelAction === 'create',
-        parcelName: analysis.newParcelName,
+        parcelName: analysis.newParcelName || analysis.newParcelCode || 'Nový pozemek',
         parcelArea: typeof analysis.newParcelArea === 'number' ? analysis.newParcelArea : parseFloat(String(analysis.newParcelArea)),
-        parcelCadastralNumber: analysis.newParcelCadastralNumber || null,
+        parcelCode: analysis.newParcelCode || null,
         parcelSoilType: analysis.newParcelSoilType || null,
         parcelCulture: analysis.newParcelCulture,
         analysis_date: analysis.editedAnalysisDate,
@@ -220,7 +221,7 @@ export function ExtractionValidator({ extractedData, parcels, userId }: Extracti
         potassium: typeof analysis.editedPotassium === 'number' ? analysis.editedPotassium : parseFloat(String(analysis.editedPotassium)),
         magnesium: typeof analysis.editedMagnesium === 'number' ? analysis.editedMagnesium : parseFloat(String(analysis.editedMagnesium)),
         calcium: analysis.editedCalcium ? (typeof analysis.editedCalcium === 'number' ? analysis.editedCalcium : parseFloat(String(analysis.editedCalcium))) : null,
-        nitrogen: analysis.editedNitrogen ? (typeof analysis.editedNitrogen === 'number' ? analysis.editedNitrogen : parseFloat(String(analysis.editedNitrogen))) : null,
+        sulfur: analysis.editedSulfur ? (typeof analysis.editedSulfur === 'number' ? analysis.editedSulfur : parseFloat(String(analysis.editedSulfur))) : null,
         lab_name: extractedData.laboratory,
         methodology: analysis.editedMethodology || null,
         notes: analysis.editedNotes || null,
@@ -429,10 +430,10 @@ function AnalysisCard({ analysis, index, parcels, errors, onChange }: AnalysisCa
             </button>
             <div>
               <h3 className="font-semibold text-gray-900">
-                Rozbor #{index + 1}: {analysis.parcel_name || analysis.cadastral_number || 'Bez názvu'}
+                Rozbor #{index + 1}: {analysis.parcel_name || analysis.parcel_code || 'Bez názvu'}
               </h3>
               <p className="text-sm text-gray-600 mt-0.5">
-                {analysis.cadastral_number && `K.č. ${analysis.cadastral_number}`}
+                {analysis.parcel_code && `Kód: ${analysis.parcel_code}`}
                 {analysis.area_ha && ` • ${analysis.area_ha} ha`}
                 {analysis.soil_type && ` • ${analysis.soil_type}`}
               </p>
@@ -511,7 +512,7 @@ function AnalysisCard({ analysis, index, parcels, errors, onChange }: AnalysisCa
                   <option value="">-- Vyberte pozemek --</option>
                   {parcels.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.area} ha) {p.cadastral_number && `- ${p.cadastral_number}`}
+                      {p.name} ({p.area} ha) {p.code && `- ${p.code}`}
                     </option>
                   ))}
                 </select>
@@ -527,12 +528,13 @@ function AnalysisCard({ analysis, index, parcels, errors, onChange }: AnalysisCa
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Název <span className="text-red-500">*</span>
+                      Název (volitelné)
                     </label>
                     <input
                       type="text"
                       value={analysis.newParcelName}
                       onChange={(e) => onChange('newParcelName', e.target.value)}
+                      placeholder="např. U lesa"
                       className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent ${
                         errors[`${analysis.id}.newParcelName`] ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -560,12 +562,13 @@ function AnalysisCard({ analysis, index, parcels, errors, onChange }: AnalysisCa
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Katastrální číslo
+                      Kód pozemku (LPIS)
                     </label>
                     <input
                       type="text"
-                      value={analysis.newParcelCadastralNumber}
-                      onChange={(e) => onChange('newParcelCadastralNumber', e.target.value)}
+                      value={analysis.newParcelCode}
+                      onChange={(e) => onChange('newParcelCode', e.target.value)}
+                      placeholder="např. 0701/27"
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
                     />
                   </div>
@@ -669,6 +672,19 @@ function AnalysisCard({ analysis, index, parcels, errors, onChange }: AnalysisCa
                   step="0.01"
                   value={analysis.editedCalcium}
                   onChange={(e) => onChange('editedCalcium', e.target.value ? parseFloat(e.target.value) : '')}
+                  placeholder="Volitelné"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  S (mg/kg)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={analysis.editedSulfur}
+                  onChange={(e) => onChange('editedSulfur', e.target.value ? parseFloat(e.target.value) : '')}
                   placeholder="Volitelné"
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
                 />

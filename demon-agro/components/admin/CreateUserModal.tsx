@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { CZECH_DISTRICTS } from '@/lib/constants/districts'
+import { sendWelcomeEmailClient } from '@/lib/utils/email-client'
 
 interface CreateUserModalProps {
   onClose: () => void
@@ -40,6 +41,27 @@ export function CreateUserModal({ onClose }: CreateUserModalProps) {
 
       if (!response.ok) {
         throw new Error(result.error || 'Nepodařilo se vytvořit uživatele')
+      }
+
+      // Send welcome email from client-side (EmailJS requires browser)
+      if (result.temporaryPassword) {
+        const emailResult = await sendWelcomeEmailClient(
+          result.email,
+          result.displayName,
+          result.temporaryPassword
+        )
+
+        if (!emailResult.success) {
+          console.warn('Failed to send welcome email:', emailResult.error)
+          alert(
+            `Uživatel byl vytvořen, ale email se nepodařilo odeslat.\n\n` +
+            `Email: ${result.email}\n` +
+            `Dočasné heslo: ${result.temporaryPassword}\n\n` +
+            `Poznamenejte si heslo a sdělte ho uživateli!`
+          )
+        } else {
+          alert('Uživatel byl úspěšně vytvořen a přihlašovací údaje byly odeslány emailem.')
+        }
       }
 
       // Success

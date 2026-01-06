@@ -10,31 +10,21 @@ import {
   Mail,
   CheckCircle2
 } from 'lucide-react'
-import { PortalGallery } from '@/components/portal/PortalGallery'
-import type { PortalImage } from '@/lib/types/database'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
+import { ScreenshotGallery } from '@/components/portal/ScreenshotGallery'
 
 export default async function PortalLandingPage() {
   // Kontrola přihlášení - rozcestník
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
-  // Přesměrování podle stavu přihlášení
+  // Přihlášený uživatel jde rovnou na dashboard
   if (user) {
-    // Přihlášený uživatel -> dashboard
     redirect('/portal/dashboard')
-  } else {
-    // Nepřihlášený uživatel -> login
-    redirect('/portal/prihlaseni')
   }
   
-  // Fetch portal images for gallery (tento kód se již nikdy nevykoná kvůli redirectu výše)
-  const { data: images } = await supabase
-    .from('portal_images')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
+  // Nepřihlášený uživatel vidí landing page
 
   const features = [
     {
@@ -60,10 +50,30 @@ export default async function PortalLandingPage() {
   ]
 
   const benefits = [
-    'Úspora času při zpracování rozborů',
-    'Přehled všech pozemků na jednom místě',
-    'Profesionální reporty pro jednání s úřady',
-    'Historie hnojení a osevních postupů',
+    {
+      title: 'Flexibilita',
+      description: 'Systém sám vybere nejvhodnější produkt podle aktuální zásoby živin'
+    },
+    {
+      title: 'Respektuje limity',
+      description: 'Automatické rozdělení velkých dávek do více let'
+    },
+    {
+      title: 'Ekonomická optimalizace',
+      description: 'Díky přesnému výpočtu neutralizační účinnosti šetříme materiál'
+    },
+    {
+      title: 'Okamžitá kalkulace',
+      description: 'Kompletní plán nápravy pH i udržovacího vápnění během vteřiny'
+    },
+    {
+      title: 'Vidíme do budoucnosti',
+      description: 'Neřešíme jen aktuální problém. Systém modeluje přirozenou degradaci pH v čase a automaticky naplánuje udržovací dávky na roky dopředu. Díky přesným predikcím a včasné prevenci váš pozemek už nikdy nespadne zpět do rizikové kyselé zóny.'
+    },
+    {
+      title: 'Digitální agronom v kapse',
+      description: 'Zapomeňte na ruční přepisování rozborů. Stačí nahrát PDF z laboratoře a AI okamžitě analyzuje data, přiřadí je k pozemkům a spočítá ideální strategii. To, co dříve trvalo hodiny v tabulkách, teď zvládnete na jedno kliknutí s nulovou chybovostí.'
+    },
   ]
 
   return (
@@ -72,12 +82,12 @@ export default async function PortalLandingPage() {
       <main className="flex-1">
         <div className="min-h-screen bg-white">
           {/* Hero Section */}
-          <section className="relative bg-gradient-to-br from-primary-green via-primary-green to-primary-brown text-white py-20 md:py-32">
+          <section className="relative bg-gradient-to-br from-primary-green via-primary-green to-primary-brown text-white pt-32 pb-20 md:pt-40 md:pb-32">
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="max-w-3xl mx-auto text-center">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                  Portál pro správu půdních rozborů
+                  Strategické řízení půdní úrodnosti
                 </h1>
                 <p className="text-xl md:text-2xl mb-8 text-white/90">
                   Nahrajte PDF rozbory, nechte AI vytáhnout data a generujte plány hnojení na míru vašim pozemkům. 
@@ -107,13 +117,16 @@ export default async function PortalLandingPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="max-w-3xl mx-auto">
                 <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-                  Proč používat náš portál?
+                  Proč používat portál?
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {benefits.map((benefit, index) => (
                     <div key={index} className="flex items-start gap-3">
                       <CheckCircle2 className="h-6 w-6 text-primary-green flex-shrink-0 mt-0.5" />
-                      <p className="text-gray-700 text-lg">{benefit}</p>
+                      <div>
+                        <p className="text-gray-900 text-lg font-semibold">{benefit.title}:</p>
+                        <p className="text-gray-700">{benefit.description}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -154,23 +167,21 @@ export default async function PortalLandingPage() {
             </div>
           </section>
 
-          {/* Gallery Section (only if images exist) */}
-          {images && images.length > 0 && (
-            <section className="py-16 md:py-24 bg-primary-cream">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-12">
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    Ukázka portálu
-                  </h2>
-                  <p className="text-xl text-gray-600">
-                    Podívejte se, jak vypadá portál v praxi
-                  </p>
-                </div>
-
-                <PortalGallery images={images as PortalImage[]} />
+          {/* Screenshots Gallery Section */}
+          <section className="py-16 md:py-24 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  Podívejte se na portál v akci
+                </h2>
+                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                  Ukázky reálného rozhraní portálu a jeho funkcí
+                </p>
               </div>
-            </section>
-          )}
+
+              <ScreenshotGallery />
+            </div>
+          </section>
 
           {/* CTA Section */}
           <section className="py-16 md:py-24 bg-gradient-to-br from-primary-green to-primary-brown text-white">

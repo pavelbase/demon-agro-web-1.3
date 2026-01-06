@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
-import { sendWelcomeEmail } from '@/lib/utils/email'
 
 // Generate random password
 function generatePassword(length: number = 12): string {
@@ -43,8 +43,11 @@ export async function POST(request: NextRequest) {
     // Generate random password
     const password = generatePassword()
 
-    // Create user in Supabase Auth (using admin client)
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Create admin client for admin operations
+    const adminClient = createAdminClient()
+
+    // Create user in Supabase Auth (using admin client with service role key)
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       // Rollback: delete auth user
-      await supabase.auth.admin.deleteUser(authData.user.id)
+      await adminClient.auth.admin.deleteUser(authData.user.id)
       throw new Error(`Nepodařilo se vytvořit profil: ${profileError.message}`)
     }
 
@@ -89,25 +92,15 @@ export async function POST(request: NextRequest) {
       new_data: { email, company_name, ico, district },
     })
 
-    // Send welcome email with password
-    const emailResult = await sendWelcomeEmail(
-      email,
-      company_name, // Use company name as display name
-      password
-    )
-
-    if (!emailResult.success) {
-      console.warn('Failed to send welcome email:', emailResult.error)
-      // Don't fail the user creation, just log the error
-    }
-
+    // Return user data and password for client-side email sending
+    // EmailJS needs to be called from browser, not from server
     return NextResponse.json({
       success: true,
       userId: authData.user.id,
+      email,
+      displayName: company_name,
+      temporaryPassword: password,
       message: 'Uživatel byl vytvořen',
-      emailSent: emailResult.success,
-      // For admin UI - show password if email failed
-      temporaryPassword: emailResult.success ? undefined : password,
     })
   } catch (error) {
     console.error('Create user error:', error)

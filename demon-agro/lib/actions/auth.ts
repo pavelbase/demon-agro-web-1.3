@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import type { LoginFormData, ResetPasswordFormData } from '@/lib/utils/validations'
+import type { LoginFormData, ResetPasswordFormData, ChangePasswordFormData } from '@/lib/utils/validations'
 
 export type AuthActionResult = {
   success: boolean
@@ -177,6 +177,60 @@ export async function updatePassword(newPassword: string): Promise<AuthActionRes
     }
   } catch (error) {
     console.error('Update password error:', error)
+    return {
+      success: false,
+      error: 'Došlo k neočekávané chybě. Zkuste to prosím znovu.',
+    }
+  }
+}
+
+/**
+ * Change password for authenticated user
+ */
+export async function changePassword(data: ChangePasswordFormData): Promise<AuthActionResult> {
+  try {
+    const supabase = await createClient()
+
+    // Získání aktuálního uživatele
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      return {
+        success: false,
+        error: 'Nejste přihlášeni',
+      }
+    }
+
+    // Ověření současného hesla pokusem o přihlášení
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: data.currentPassword,
+    })
+
+    if (verifyError) {
+      return {
+        success: false,
+        error: 'Současné heslo není správné',
+      }
+    }
+
+    // Změna hesla
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: data.newPassword,
+    })
+
+    if (updateError) {
+      return {
+        success: false,
+        error: 'Nepodařilo se změnit heslo. Zkuste to prosím znovu.',
+      }
+    }
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    console.error('Change password error:', error)
     return {
       success: false,
       error: 'Došlo k neočekávané chybě. Zkuste to prosím znovu.',

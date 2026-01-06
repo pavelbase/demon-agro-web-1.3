@@ -16,6 +16,7 @@ import {
 import { CreateUserModal } from './CreateUserModal'
 import { EditUserModal } from './EditUserModal'
 import { UserDetailModal } from './UserDetailModal'
+import { sendPasswordResetEmailClient } from '@/lib/utils/email-client'
 import * as XLSX from 'xlsx'
 
 interface User {
@@ -28,6 +29,7 @@ interface User {
   phone: string | null
   address: string | null
   role: string
+  is_active: boolean
   ai_extractions_limit: number
   ai_extractions_used_today: number
   created_at: string
@@ -47,6 +49,7 @@ export function UsersTable({ users }: UsersTableProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [viewingUser, setViewingUser] = useState<User | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   // Get unique districts
   const districts = useMemo(() => {
@@ -69,11 +72,8 @@ export function UsersTable({ users }: UsersTableProps) {
 
       // Status filter
       if (statusFilter !== 'all') {
-        const isActive = user.last_sign_in_at && 
-          new Date(user.last_sign_in_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        
-        if (statusFilter === 'active' && !isActive) return false
-        if (statusFilter === 'inactive' && isActive) return false
+        if (statusFilter === 'active' && !user.is_active) return false
+        if (statusFilter === 'inactive' && user.is_active) return false
       }
 
       // District filter
@@ -92,10 +92,107 @@ export function UsersTable({ users }: UsersTableProps) {
     })
   }
 
-  const isActive = (user: User) => {
-    if (!user.last_sign_in_at) return false
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    return new Date(user.last_sign_in_at) > thirtyDaysAgo
+  const isActive = (user: User) => user.is_active
+
+  const handleResetPassword = async (user: User) => {
+    if (!confirm(`Opravdu chcete resetovat heslo uživateli ${user.email}?`)) return
+    
+    setActionLoading(user.id)
+    try {
+      const response = await fetch('/api/admin/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Nepodařilo se resetovat heslo')
+      }
+
+      // Send password reset email from client-side
+      if (result.newPassword) {
+        const displayName = result.fullName || user.company_name || user.email
+        const emailResult = await sendPasswordResetEmailClient(
+          result.email,
+          displayName,
+          result.newPassword
+        )
+
+        if (!emailResult.success) {
+          console.warn('Failed to send password reset email:', emailResult.error)
+          alert(
+            `Heslo bylo resetováno, ale email se nepodařilo odeslat.\n\n` +
+            `Email: ${result.email}\n` +
+            `Nové heslo: ${result.newPassword}\n\n` +
+            `Poznamenejte si heslo a sdělte ho uživateli!`
+          )
+        } else {
+          alert('Heslo bylo úspěšně resetováno a odesláno emailem uživateli.')
+        }
+      }
+
+      window.location.reload()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Došlo k chybě')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleToggleActive = async (user: User) => {
+    const action = user.is_active ? 'deaktivovat' : 'aktivovat'
+    if (!confirm(`Opravdu chcete ${action} uživatele ${user.email}?`)) return
+    
+    setActionLoading(user.id)
+    try {
+      const response = await fetch('/api/admin/users/toggle-active', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Nepodařilo se změnit stav')
+      }
+
+      alert(result.message)
+      window.location.reload()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Došlo k chybě')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleDeleteUser = async (user: User) => {
+    if (!confirm(`VAROVÁNÍ: Opravdu chcete SMAZAT uživatele ${user.email}?\n\nTato akce je nevratná!`)) return
+    if (!confirm('Jste si opravdu jistí? Tato akce je nevratná!')) return
+    
+    setActionLoading(user.id)
+    try {
+      const response = await fetch('/api/admin/users/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Nepodařilo se smazat uživatele')
+      }
+
+      alert('Uživatel byl úspěšně smazán.')
+      window.location.reload()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Došlo k chybě')
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const handleExport = () => {
@@ -291,20 +388,26 @@ export function UsersTable({ users }: UsersTableProps) {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        className="text-yellow-600 hover:text-yellow-900"
+                        onClick={() => handleResetPassword(user)}
+                        disabled={actionLoading === user.id}
+                        className="text-yellow-600 hover:text-yellow-900 disabled:opacity-50"
                         title="Resetovat heslo"
                       >
                         <Key className="h-4 w-4" />
                       </button>
                       <button
-                        className="text-orange-600 hover:text-orange-900"
+                        onClick={() => handleToggleActive(user)}
+                        disabled={actionLoading === user.id}
+                        className="text-orange-600 hover:text-orange-900 disabled:opacity-50"
                         title={isActive(user) ? "Deaktivovat" : "Aktivovat"}
                       >
                         <Power className="h-4 w-4" />
                       </button>
                       {user.parcel_count === 0 && (
                         <button
-                          className="text-red-600 hover:text-red-900"
+                          onClick={() => handleDeleteUser(user)}
+                          disabled={actionLoading === user.id}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
                           title="Smazat"
                         >
                           <Trash2 className="h-4 w-4" />

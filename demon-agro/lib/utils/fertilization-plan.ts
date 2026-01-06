@@ -256,11 +256,11 @@ export function generateSimplePlan(
   if (analysis.sulfur && analysis.sulfur > 0) {
     // Estimate sulfur category based on measured value
     // Low < 10, Medium 10-20, High > 20 mg/kg
-    const sCategory = analysis.sulfur < 10 ? 'N' : analysis.sulfur < 20 ? 'D' : 'V'
+    const sCategory = analysis.sulfur < 10 ? 'nizky' : analysis.sulfur < 20 ? 'dobry' : 'vysoky'
     sNeed = calculateNutrientNeed('S', sCategory, validYieldFactor, isArable)
   } else {
     // Default S dose based on P category as proxy
-    sNeed = analysis.phosphorus_category === 'N' || analysis.phosphorus_category === 'VH' ? 25 : 15
+    sNeed = analysis.phosphorus_category === 'nizky' || analysis.phosphorus_category === 'vyhovujici' ? 25 : 15
     notes.push('Síra nebyla měřena - doporučení je orientační')
   }
   
@@ -324,7 +324,7 @@ export function generateSimplePlan(
   // =========================================================================
   
   // High P content - legislative restrictions
-  if (analysis.phosphorus_category === 'VV' || analysis.phosphorus > 300) {
+  if (analysis.phosphorus_category === 'velmi_vysoky' || analysis.phosphorus > 300) {
     warnings.push({
       type: 'high_p_legislative',
       severity: 'error',
@@ -332,7 +332,7 @@ export function generateSimplePlan(
       recommendation: 'Aplikace P hnojiv je zakázána dle vyhlášky 377/2013 Sb. § 12',
     })
     pNeed = 0 // No P fertilization allowed
-  } else if (analysis.phosphorus_category === 'V') {
+  } else if (analysis.phosphorus_category === 'vysoky') {
     warnings.push({
       type: 'high_p_restriction',
       severity: 'warning',
@@ -342,7 +342,7 @@ export function generateSimplePlan(
   }
   
   // Very low nutrient content
-  if (analysis.phosphorus_category === 'N') {
+  if (analysis.phosphorus_category === 'nizky') {
     warnings.push({
       type: 'very_low_p',
       severity: 'warning',
@@ -351,7 +351,7 @@ export function generateSimplePlan(
     })
   }
   
-  if (analysis.potassium_category === 'N') {
+  if (analysis.potassium_category === 'nizky') {
     warnings.push({
       type: 'very_low_k',
       severity: 'warning',
@@ -360,7 +360,7 @@ export function generateSimplePlan(
     })
   }
   
-  if (analysis.magnesium_category === 'N') {
+  if (analysis.magnesium_category === 'nizky') {
     warnings.push({
       type: 'very_low_mg',
       severity: 'warning',
@@ -803,7 +803,7 @@ export function generateAdvancedPlan(
   }
   
   // Legislative warnings
-  if (analysis.phosphorus_category === 'VV' || analysis.phosphorus > 300) {
+  if (analysis.phosphorus_category === 'velmi_vysoky' || analysis.phosphorus > 300) {
     warnings.push({
       type: 'high_p_legislative',
       severity: 'error',

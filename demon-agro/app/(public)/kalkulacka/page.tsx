@@ -7,22 +7,22 @@ import { Calculator, CheckCircle, AlertCircle, AlertTriangle } from "lucide-reac
 import Link from "next/link";
 import emailjs from "@emailjs/browser";
 
+// Sjednoceno s portálem - 3 typy půd podle české metodiky ÚKZÚZ
 const TYPYPUDY = {
-  'piscita': {
-    nazev: 'Písčitá (lehká)',
-    popis: 'Lehké půdy s nízkým obsahem jílu'
+  'L': {
+    nazev: 'Lehká (písčitá)',
+    popis: 'Lehké půdy s nízkým obsahem jílu - sypké, snadno zpracovatelné',
+    kategorie: 'L'
   },
-  'hlinito_piscita': {
-    nazev: 'Hlinito-písčitá',
-    popis: 'Přechodné půdy mezi lehkými a středními'
+  'S': {
+    nazev: 'Střední (hlinitá)',
+    popis: 'Střední půdy, nejběžnější typ v ČR - optimální struktura',
+    kategorie: 'S'
   },
-  'hlinita': {
-    nazev: 'Hlinitá (střední)',
-    popis: 'Střední půdy, nejběžnější typ v ČR'
-  },
-  'jilovita': {
-    nazev: 'Jílovitá (těžká)',
-    popis: 'Těžké půdy s vysokým obsahem jílu'
+  'T': {
+    nazev: 'Těžká (jílovitá)',
+    popis: 'Těžké půdy s vysokým obsahem jílu - lepivé, náročné na zpracování',
+    kategorie: 'T'
   }
 };
 
@@ -32,7 +32,7 @@ export default function KalkulackaPage() {
   const [odesila, setOdesila] = useState(false);
   
   const [formData, setFormData] = useState<KalkulackaInputs>({
-    typPudy: 'hlinita',
+    typPudy: 'S', // Střední půda jako výchozí (nejběžnější)
     pH: 0,
     P: 0,
     K: 0,
@@ -79,23 +79,50 @@ export default function KalkulackaPage() {
     return Object.keys(novéChyby).length === 0;
   };
 
-  const validovatKrok3 = (): boolean => {
+  const validovatKrok3 = async (): Promise<boolean> => {
     const novéChyby: Record<string, string> = {};
     
     if (formData.jmeno.length < 2) {
       novéChyby.jmeno = 'Zadejte jméno (min 2 znaky)';
     }
-    if (!formData.email.includes('@')) {
-      novéChyby.email = 'Zadejte platný email';
+    
+    // Důkladnější validace emailu
+    const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/;
+    if (!emailRegex.test(formData.email)) {
+      novéChyby.email = 'Zadejte platnou emailovou adresu (např. jmeno@domena.cz)';
     }
+    
     if (formData.telefon.length < 9) {
       novéChyby.telefon = 'Zadejte platné telefonní číslo';
     }
     
     // Checkbox 'souhlas' is now optional for marketing, so we don't validate it here.
     
-    // Kontrola duplicitního emailu
-    if (formData.email && zkontrolujDuplicitniEmail(formData.email)) {
+    // Server-side kontrola použití kalkulačky (email + IP rate limiting)
+    if (formData.email && emailRegex.test(formData.email)) {
+      try {
+        const response = await fetch('/api/calculator/check-usage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: formData.email }),
+        });
+
+        const data = await response.json();
+
+        if (!data.allowed) {
+          novéChyby.email = data.message;
+        }
+      } catch (error) {
+        console.error('Error checking calculator usage:', error);
+        // V případě chyby API necháme uživatele pokračovat (fail-open)
+        // ale logujeme chybu pro monitoring
+      }
+    }
+    
+    // Fallback: lokální kontrola duplicitního emailu (pro případ výpadku API)
+    if (formData.email && !novéChyby.email && zkontrolujDuplicitniEmail(formData.email)) {
       novéChyby.email = 'Na tento email již byl odeslán výsledek kalkulace. Pro další výpočty nás prosím kontaktujte přímo.';
     }
     
@@ -112,54 +139,93 @@ export default function KalkulackaPage() {
   };
 
   const handleVypocet = async () => {
-    if (!validovatKrok3()) return;
+    // Validace s async kontrolou
+    const isValid = await validovatKrok3();
+    if (!isValid) return;
 
     setOdesila(true);
 
-    // Výpočet
-    const vypocet = vypocetKalkulace(formData);
-    
-    // Uložení
-    ulozitKalkulaci(vypocet);
-    
-    // Odeslání emailu - Hardcoded keys for reliability
-    const serviceId = "service_xrx301a";
-    const templateId = "template_grgltnp";
-    const publicKey = "xL_Khx5Gcnt-lEvUl";
-
     try {
-      const nutrients_summary = Object.entries(vypocet.ziviny)
-        .map(([key, val]) => `${key}: ${val.aktualni} mg/kg (${val.tridaNazev})`)
-        .join(", ");
+      // Výpočet
+      const vypocet = vypocetKalkulace(formData);
+      
+      // Uložení lokálně
+      ulozitKalkulaci(vypocet);
+      
+      // Záznam použití do databáze (server-side tracking)
+      try {
+        await fetch('/api/calculator/record-usage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            calculationData: {
+              typPudy: vypocet.vstup.typPudy,
+              pH: vypocet.vstup.pH,
+              jmeno: formData.jmeno,
+              firma: formData.firma,
+              telefon: formData.telefon,
+              marketing_consent: formData.souhlas,
+              // Neukládáme citlivé výsledky, jen metadata pro analytics
+            }
+          }),
+        });
+      } catch (recordError) {
+        console.error('Error recording usage:', recordError);
+        // Pokračujeme i při chybě záznamu
+      }
+      
+      // Odeslání emailu - Hardcoded keys for reliability
+      // Obaleno v try-catch, aby selhání emailu nezablokovalo zobrazení výsledků
+      try {
+        const serviceId = "service_xrx301a";
+        const templateId = "template_grgltnp";
+        const publicKey = "xL_Khx5Gcnt-lEvUl";
 
-      const templateParams = {
-        soil_type: TYPYPUDY[vypocet.vstup.typPudy].nazev,
-        ph_current: vypocet.vstup.pH,
-        ph_target: vypocet.vapneni.optimalniPhRozmezi,
-        cao_need: vypocet.vapneni.celkovaPotrebaCaO_t,
-        limestone_suggestion: vypocet.vapneni.prepocetyHnojiva.mletyVapenec_t,
-        nutrients_summary: nutrients_summary,
-        user_email: formData.email,
-        user_name: formData.jmeno,
-      };
+        // Sestavení nutrients_summary pro email
+        const nutrients_summary = Object.entries(vypocet.ziviny)
+          .map(([key, val]) => `${key}: ${val.aktualni} mg/kg (${val.tridaNazev})`)
+          .join(", ");
 
-      console.log("Email params:", templateParams);
+        // EmailJS template params - POUZE pole, která jsou v template!
+        // Template obsahuje: user_name, soil_type, ph_current, ph_target, cao_need, limestone_suggestion, nutrients_summary
+        const templateParams = {
+          user_name: formData.jmeno || '',
+          soil_type: TYPYPUDY[vypocet.vstup.typPudy]?.nazev || 'Neznámá',
+          ph_current: vypocet.vstup.pH?.toFixed(1) || '0',
+          ph_target: vypocet.vapneni?.optimalniPhRozmezi || 'N/A',
+          cao_need: vypocet.vapneni?.celkovaPotrebaCaO_t?.toFixed(1) || '0',
+          limestone_suggestion: vypocet.vapneni?.prepocetyHnojiva?.mletyVapenec_t?.toFixed(1) || '0',
+          nutrients_summary: nutrients_summary || 'Není k dispozici',
+        };
 
-      await emailjs.send(serviceId, templateId, templateParams, publicKey);
-      alert("Výsledky odeslány na váš email");
+        console.log("Email params:", templateParams);
+
+        await emailjs.send(serviceId, templateId, templateParams, publicKey);
+        alert("Výsledky odeslány na váš email");
+      } catch (emailError) {
+        console.error("Email send error:", emailError);
+        // Pokračujeme i když email selže - výsledek se zobrazí
+        alert("Výpočet byl dokončen, ale odeslání emailu selhalo. Výsledky si můžete prohlédnout níže.");
+      }
+      
+      // Zobrazíme výsledek i když email selhal
+      setVysledek(vypocet);
     } catch (error) {
-      console.error("Email send error:", error);
+      console.error("Calculation error:", error);
+      alert("Došlo k chybě při zpracování kalkulace. Zkuste to prosím znovu.");
+    } finally {
+      setOdesila(false);
     }
-    
-    setVysledek(vypocet);
-    setOdesila(false);
   };
 
   const handleNovaKalkulace = () => {
     setKrok(1);
     setVysledek(null);
     setFormData({
-      typPudy: 'hlinita',
+      typPudy: 'S', // Střední půda jako výchozí
       pH: 0,
       P: 0,
       K: 0,
@@ -191,7 +257,7 @@ export default function KalkulackaPage() {
             Kalkulačka vápnění
           </h1>
           <p className="text-lg text-gray-600 mb-1">
-            Metodika VDLUFA pro střední Evropu
+            Metodika ÚKZÚZ (Mehlich 3) pro ornou půdu
           </p>
           <p className="text-sm text-gray-500">
             Výpočet potřeby vápnění a živin na 1 hektar
@@ -258,9 +324,14 @@ export default function KalkulackaPage() {
               </div>
 
               <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-blue-900">
-                  💡 <strong>Tip:</strong> Typ půdy zjistíte z rozboru nebo orientačně podle zpracovatelnosti (lehká = sypká, těžká = lepivá)
+                <p className="text-sm text-blue-900 mb-2">
+                  💡 <strong>Tip:</strong> Typ půdy zjistíte z rozboru nebo orientačně podle zpracovatelnosti:
                 </p>
+                <ul className="text-xs text-blue-800 ml-4 space-y-1">
+                  <li>• <strong>Lehká (L):</strong> Sypká, snadno se zpracovává, rychle vysychá</li>
+                  <li>• <strong>Střední (S):</strong> Optimální struktura, nejběžnější v ČR</li>
+                  <li>• <strong>Těžká (T):</strong> Lepivá, náročná na zpracování, dobře drží vodu</li>
+                </ul>
               </div>
 
               <button
@@ -281,8 +352,8 @@ export default function KalkulackaPage() {
 
               <div className="bg-blue-50 p-4 rounded-lg mb-6">
                 <p className="text-sm text-blue-900">
-                  💡 <strong>Tip:</strong> Hodnoty najdete ve výsledcích laboratorního rozboru půdy (AZZP nebo soukromá laboratoř, metoda Mehlich III).
-                  Zadávejte hodnoty v <strong>mg/kg</strong>.
+                  💡 <strong>Tip:</strong> Hodnoty najdete ve výsledcích laboratorního rozboru půdy (AZZP nebo soukromá laboratoř).
+                  Zadávejte hodnoty v <strong>mg/kg podle metody Mehlich 3</strong>.
                 </p>
               </div>
 
@@ -507,12 +578,14 @@ export default function KalkulackaPage() {
 
 // Komponenta pro zobrazení výsledků
 function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNova: () => void }) {
+  // Ikony pro kategorie živin - sjednoceno s portálem
   const getIconForTrida = (trida: string) => {
-    if (trida === 'A') return '🔴';
-    if (trida === 'B') return '⚠️';
-    if (trida === 'C') return '✅';
-    if (trida === 'D') return '📊';
-    return '📈';
+    if (trida === 'nizky') return '🔴';
+    if (trida === 'vyhovujici') return '⚠️';
+    if (trida === 'dobry') return '✅';
+    if (trida === 'vysoky') return '📊';
+    if (trida === 'velmi_vysoky') return '📈';
+    return '✅'; // výchozí
   };
 
   return (
@@ -532,7 +605,7 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
         {/* Vápnění */}
         <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            📊 POTŘEBA VÁPNĚNÍ (na 1 hektar)
+            📊 ORIENTAČNÍ POTŘEBA VÁPNĚNÍ
           </h2>
           
           <div className="space-y-3 mb-4">
@@ -551,7 +624,7 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
               <span className="font-semibold text-[#4A7C59]">{vysledek.vapneni.optimalniPhRozmezi}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Popis:</span>
+              <span className="text-gray-700">Doporučení:</span>
               <span className="text-sm text-gray-600">{vysledek.vapneni.phTridaPopis}</span>
             </div>
           </div>
@@ -561,27 +634,94 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
               <div className="text-3xl font-bold text-[#4A7C59]">
                 {vysledek.vapneni.celkovaPotrebaCaO_t} t CaO/ha
               </div>
-              <div className="text-sm text-gray-600">Celková potřeba vápníku</div>
-            </div>
-            
-            <div className="text-center mt-3 pt-3 border-t border-green-200">
-              <div className="text-xl font-bold text-[#2D5016]">
-                {vysledek.vapneni.prepocetyHnojiva.mletyVapenec_t} t/ha
-              </div>
-              <div className="text-sm text-gray-600">Mletý vápenec (48% CaO)</div>
+              <div className="text-sm text-gray-600">Celková potřeba pro nápravu deficitu (cca 4 roky)</div>
             </div>
           </div>
 
-          <div className="mt-4 text-xs text-gray-500 italic">
-            ⚠️ Maximální jednorázová dávka a počet aplikací dle etikety použitého hnojiva.
+          {/* Smart Product Selection - Doporučení */}
+          <div className={`p-4 rounded-lg mb-4 ${
+            vysledek.vapneni.doporucenyProdukt === 'dolomit' 
+              ? 'bg-amber-50 border-2 border-amber-300' 
+              : 'bg-blue-50 border-2 border-blue-300'
+          }`}>
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">
+                {vysledek.vapneni.doporucenyProdukt === 'dolomit' ? '💎' : '🪨'}
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-lg mb-1">
+                  ✅ Doporučujeme: {vysledek.vapneni.doporucenyProdukt === 'dolomit' ? 'Dolomitický vápenec' : 'Vápenec mletý'}
+                </div>
+                <p className="text-sm text-gray-700 mb-2">
+                  {vysledek.vapneni.duvod}
+                </p>
+                <div className="text-2xl font-bold text-[#2D5016]">
+                  {vysledek.vapneni.doporucenyProdukt === 'dolomit' 
+                    ? `${vysledek.vapneni.prepocetyHnojiva.dolomit_t} t/ha`
+                    : `${vysledek.vapneni.prepocetyHnojiva.vapenec_t} t/ha`
+                  }
+                </div>
+                <div className="text-xs text-gray-600">
+                  {vysledek.vapneni.doporucenyProdukt === 'dolomit' 
+                    ? 'Dolomit (30% CaO + 18% MgO) - řeší pH i Mg'
+                    : 'Vápenec (48% CaO) - pouze pH'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Alternativní varianta */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <div className="text-sm font-semibold text-gray-700 mb-2">
+              📊 Alternativní varianta:
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-white p-3 rounded border border-gray-200">
+                <div className="font-semibold text-amber-700 mb-1">💎 Dolomit</div>
+                <div className="text-xl font-bold text-gray-900">
+                  {vysledek.vapneni.prepocetyHnojiva.dolomit_t} t/ha
+                </div>
+                <div className="text-xs text-gray-600">30% CaO + 18% MgO</div>
+                <div className="text-xs text-gray-500 mt-1">Řeší pH + doplní Mg</div>
+              </div>
+              <div className="bg-white p-3 rounded border border-gray-200">
+                <div className="font-semibold text-blue-700 mb-1">🪨 Vápenec</div>
+                <div className="text-xl font-bold text-gray-900">
+                  {vysledek.vapneni.prepocetyHnojiva.vapenec_t} t/ha
+                </div>
+                <div className="text-xs text-gray-600">48% CaO</div>
+                <div className="text-xs text-gray-500 mt-1">Pouze pH (bez Mg)</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <div className="text-xs text-blue-900">
+              <p className="font-semibold mb-1">ℹ️ Poznámka k výpočtu:</p>
+              <p className="mb-2">
+                Dávky jsou vypočítány s použitím <strong>ENV (Effective Neutralizing Value)</strong> - 
+                zohledňují skutečnou neutralizační schopnost MgO (1.39× silnější než CaO).
+              </p>
+              <p>
+                Celková potřeba se aplikuje postupně v několika dávkách. 
+                Maximální jednorázová dávka závisí na typu půdy:
+              </p>
+              <ul className="mt-2 ml-4 space-y-1">
+                <li>• Lehká půda (L): max 1.5 t CaO/ha</li>
+                <li>• Střední půda (S): max 3.0 t CaO/ha</li>
+                <li>• Těžká půda (T): max 5.0 t CaO/ha</li>
+              </ul>
+              <p className="mt-2">Interval mezi aplikacemi: minimálně 3 roky</p>
+            </div>
           </div>
 
           {vysledek.vapneni.pocetAplikaci > 1 && (
             <div className="mt-4 bg-orange-50 p-4 rounded-lg flex items-start">
               <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0" />
               <p className="text-sm text-orange-900">
-                <strong>Upozornění:</strong> Doporučená dávka přesahuje maximální jednorázovou aplikaci.
-                {vysledek.vapneni.doporucenyInterval && ` Doporučujeme ${vysledek.vapneni.doporucenyInterval}.`}
+                <strong>Upozornění:</strong> Celková potřeba vyžaduje {vysledek.vapneni.pocetAplikaci} aplikace.
+                {vysledek.vapneni.doporucenyInterval && ` Doporučený ${vysledek.vapneni.doporucenyInterval}.`}
               </p>
             </div>
           )}
@@ -636,9 +776,17 @@ function VysledekView({ vysledek, onNova }: { vysledek: VysledekKalkulace; onNov
 
         {/* Info */}
         <div className="bg-blue-50 p-6 rounded-lg mb-6">
-          <p className="text-blue-900">
-            ℹ️ Toto je orientační výpočet na 1 hektar podle metodiky VDLUFA. Pro kompletní plán hnojení 
-            s konkrétními hnojivy a cenovou nabídkou vás bude kontaktovat náš obchodní zástupce.
+          <p className="text-blue-900 mb-3">
+            <strong>ℹ️ O výpočtu:</strong>
+          </p>
+          <p className="text-blue-900 text-sm mb-2">
+            Toto je <strong>orientační výpočet</strong> celkové potřeby vápnění pro nápravu deficitu 
+            podle metodiky ÚKZÚZ (Mehlich 3). Výsledky jsou uvedeny na 1 hektar.
+          </p>
+          <p className="text-blue-900 text-sm">
+            Pro <strong>komplexní víceletý plán vápnění</strong> s konkrétními produkty, 
+            rozložením do jednotlivých let a cenovou nabídkou se zaregistrujte do portálu 
+            nebo nás kontaktujte.
           </p>
         </div>
 

@@ -11,7 +11,7 @@ export async function logAdminAccess(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verify admin
     const { data: profile } = await supabase

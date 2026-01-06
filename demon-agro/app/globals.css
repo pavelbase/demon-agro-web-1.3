@@ -143,3 +143,102 @@
 .animate-slide-in-left {
   animation: slide-in-left 0.3s ease-out;
 }
+
+/* ============================================================================
+   STICKY TABLE STYLES - Liming Overview
+   ============================================================================ */
+
+.liming-table-container {
+  position: relative;
+  max-height: calc(100vh - 300px);
+  overflow: auto;
+}
+
+/* Sticky header row */
+.liming-table-container thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.liming-table-container thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f3f4f6 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Sticky columns */
+.liming-sticky-col {
+  position: sticky !important;
+  z-index: 15;
+  background-color: inherit;
+}
+
+.liming-sticky-col-1 {
+  left: 0 !important;
+  min-width: 70px;
+}
+
+.liming-sticky-col-2 {
+  left: 70px !important;
+  min-width: 120px;
+}
+
+.liming-sticky-col-3 {
+  left: 190px !important;
+  min-width: 100px;
+}
+
+.liming-sticky-col-4 {
+  left: 290px !important;
+  min-width: 100px;
+  box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.15);
+}
+
+/* Header cells in sticky columns have even higher z-index */
+.liming-table-container thead .liming-sticky-col {
+  z-index: 30 !important;
+  position: sticky !important;
+  top: 0 !important;
+  background-color: #f3f4f6 !important;
+}
+
+/* Hover effect for rows */
+.liming-table-row:hover td {
+  background-color: #f0fdf4 !important;
+}
+
+.liming-table-row:hover .liming-sticky-col {
+  background-color: #f0fdf4 !important;
+}
+
+/* Zebra striping */
+.liming-row-even {
+  background-color: white;
+}
+
+.liming-row-odd {
+  background-color: #f9fafb;
+}
+
+.liming-row-even .liming-sticky-col {
+  background-color: white !important;
+}
+
+.liming-row-odd .liming-sticky-col {
+  background-color: #f9fafb !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .liming-sticky-col-2,
+  .liming-sticky-col-3,
+  .liming-sticky-col-4 {
+    position: static !important;
+  }
+  
+  .liming-sticky-col-4 {
+    box-shadow: none;
+  }
+}

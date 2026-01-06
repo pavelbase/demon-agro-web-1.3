@@ -1,6 +1,11 @@
-export type TypPudy = 'piscita' | 'hlinito_piscita' | 'hlinita' | 'jilovita';
+// Sjednocení s portálem - 3 typy půd podle české metodiky ÚKZÚZ
+export type TypPudy = 'L' | 'S' | 'T';
+
+// Kategorie pH - zachováváme A/B/C/D/E pro jednoduchost v kalkulačce
 export type PhTrida = 'A' | 'B' | 'C' | 'D' | 'E';
-export type TridaZasobenosti = 'A' | 'B' | 'C' | 'D' | 'E';
+
+// Kategorie živin - sjednoceno s portálem
+export type TridaZasobenosti = 'nizky' | 'vyhovujici' | 'dobry' | 'vysoky' | 'velmi_vysoky';
 
 export interface KalkulackaInputs {
   // Základní údaje (BEZ plochy - pouze na hektar)
@@ -34,8 +39,12 @@ export interface VysledekVapneni {
   phTridaPopis: string;
   potrebaVapneni: boolean;
   optimalniPhRozmezi: string;       // cílové pH rozmezí pro daný typ půdy
+  doporucenyProdukt: 'dolomit' | 'vapenec'; // Smart Product Selection podle Mg
+  duvod: string;                    // Vysvětlení výběru produktu
   prepocetyHnojiva: {
-    mletyVapenec_t: number;         // 48% CaO
+    dolomit_t: number;              // Dolomit (30% CaO + 18% MgO) - s ENV
+    vapenec_t: number;              // Vápenec mletý (48% CaO) - čistý
+    mletyVapenec_t: number;         // DEPRECATED: zachováno pro zpětnou kompatibilitu
   };
 }
 

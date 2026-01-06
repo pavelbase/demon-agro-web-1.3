@@ -11,6 +11,11 @@ interface Product {
   mgo_content: number
   reactivity: string | null
   is_active: boolean
+  moisture_content?: number | null
+  particles_over_1mm?: number | null
+  particles_under_05mm?: number | null
+  particles_009_05mm?: number | null
+  price_per_ton?: number | null
 }
 
 interface LimingProductModalProps {
@@ -28,6 +33,11 @@ export function LimingProductModal({ product, onClose }: LimingProductModalProps
     mgo_content: product?.mgo_content || 0,
     reactivity: product?.reactivity || 'medium',
     is_active: product?.is_active !== false,
+    moisture_content: product?.moisture_content || '',
+    particles_over_1mm: product?.particles_over_1mm || '',
+    particles_under_05mm: product?.particles_under_05mm || '',
+    particles_009_05mm: product?.particles_009_05mm || '',
+    price_per_ton: product?.price_per_ton || '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +57,11 @@ export function LimingProductModal({ product, onClose }: LimingProductModalProps
         ...formData,
         cao_content: parseFloat(formData.cao_content as any),
         mgo_content: parseFloat(formData.mgo_content as any),
+        moisture_content: formData.moisture_content ? parseFloat(formData.moisture_content as any) : null,
+        particles_over_1mm: formData.particles_over_1mm ? parseFloat(formData.particles_over_1mm as any) : null,
+        particles_under_05mm: formData.particles_under_05mm ? parseFloat(formData.particles_under_05mm as any) : null,
+        particles_009_05mm: formData.particles_009_05mm ? parseFloat(formData.particles_009_05mm as any) : null,
+        price_per_ton: formData.price_per_ton ? parseFloat(formData.price_per_ton as any) : null,
       }
 
       const endpoint = product 
@@ -176,7 +191,109 @@ export function LimingProductModal({ product, onClose }: LimingProductModalProps
                 </select>
               </div>
 
-              <div className="flex items-center">
+              {/* Physical Properties Section */}
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Fyzikální vlastnosti</h4>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Vlhkost (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={formData.moisture_content}
+                      onChange={(e) => setFormData({ ...formData, moisture_content: e.target.value as any })}
+                      placeholder="např. 3.0 nebo 15.0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Vlhkost produktu v % (dle etikety)
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Částice nad 1 mm (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={formData.particles_over_1mm}
+                        onChange={(e) => setFormData({ ...formData, particles_over_1mm: e.target.value as any })}
+                        placeholder="např. 18.0 (max)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Částice pod 0,5 mm (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={formData.particles_under_05mm}
+                        onChange={(e) => setFormData({ ...formData, particles_under_05mm: e.target.value as any })}
+                        placeholder="např. 74.0 (min)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Částice 0,09-0,5 mm (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={formData.particles_009_05mm}
+                        onChange={(e) => setFormData({ ...formData, particles_009_05mm: e.target.value as any })}
+                        placeholder="např. 90.0 (min)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Pro jemně mletý vápenec
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Section */}
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Cena</h4>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cena produktu (CZK/t)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={formData.price_per_ton}
+                    onChange={(e) => setFormData({ ...formData, price_per_ton: e.target.value as any })}
+                    placeholder="např. 800"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Orientační cena v CZK/t bez dopravy a aplikace. Ponechte prázdné pro individuální stanovení.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center pt-4 border-t border-gray-200">
                 <input
                   type="checkbox"
                   id="is_active"

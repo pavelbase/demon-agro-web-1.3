@@ -37,7 +37,7 @@ export default function Navigation() {
         isScrolled ? "bg-white shadow-md" : "bg-white/95 shadow-sm"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center py-2">
@@ -188,8 +188,8 @@ export default function Navigation() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden pb-4">
-            <div className="flex flex-col space-y-4">
+          <div className="lg:hidden fixed top-24 left-0 right-0 bottom-0 bg-white shadow-lg border-t overflow-y-auto z-40">
+            <div className="flex flex-col space-y-4 px-6 py-6 pb-8">
               <Link
                 href="/"
                 className="text-gray-700 hover:text-primary-green transition-colors font-medium"

@@ -1,22 +1,24 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   Upload,
-  ShoppingCart,
   MapPin,
   Calendar,
   FileText,
-  TrendingUp,
   Beaker,
+  Sparkles,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
 import { ParcelHealthCard } from '@/components/portal/ParcelHealthCard'
 import { ParcelActionButtons } from '@/components/portal/ParcelActionButtons'
+import { AddAnalysisManually } from '@/components/portal/AddAnalysisManually'
 import {
   SOIL_TYPE_LABELS,
   CULTURE_LABELS,
 } from '@/lib/constants/database'
+import { groupAndAverageAnalyses } from '@/lib/utils/soil-analysis-helpers'
 
 interface ParcelDetailPageProps {
   params: { id: string }
@@ -64,9 +66,11 @@ export default async function ParcelDetailPage({
     .from('soil_analyses')
     .select('*')
     .eq('parcel_id', params.id)
-    .order('date', { ascending: false })
+    .order('analysis_date', { ascending: false })
 
-  const latestAnalysis = analyses && analyses.length > 0 ? analyses[0] : null
+  // Group and average analyses by date (AZZP methodology)
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [])
+  const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
   // Fetch fertilization history (last 3 years)
   const threeYearsAgo = new Date()
@@ -111,10 +115,10 @@ export default async function ParcelDetailPage({
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {parcel.name}
             </h1>
-            {parcel.cadastral_number && (
+            {parcel.code && (
               <div className="flex items-center gap-2 text-gray-600">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm">Kód: {parcel.cadastral_number}</span>
+                <span className="text-sm">Kód: {parcel.code}</span>
               </div>
             )}
           </div>
@@ -174,17 +178,10 @@ export default async function ParcelDetailPage({
               Historie rozborů
             </Link>
             <Link
-              href={`/portal/pozemky/${params.id}/plan-hnojeni`}
-              className="flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 font-medium transition-colors"
-            >
-              <TrendingUp className="w-4 h-4" />
-              Plán hnojení
-            </Link>
-            <Link
               href={`/portal/pozemky/${params.id}/plan-vapneni`}
-              className="flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-green-700 hover:text-green-800 hover:border-green-500 font-semibold transition-colors bg-green-50 hover:bg-green-100 rounded-t-lg"
             >
-              <Calendar className="w-4 h-4" />
+              <Sparkles className="w-5 h-5" />
               Plán vápnění
             </Link>
           </nav>
@@ -209,27 +206,27 @@ export default async function ParcelDetailPage({
                   <div>
                     <span className="text-xs text-gray-600 uppercase">Fosfor (P)</span>
                     <p className="text-2xl font-bold text-gray-900">
-                      {latestAnalysis.phosphorus}
+                      {latestAnalysis.p}
                       <span className="text-sm text-gray-600 ml-1">mg/kg</span>
                     </p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-600 uppercase">Draslík (K)</span>
                     <p className="text-2xl font-bold text-gray-900">
-                      {latestAnalysis.potassium}
+                      {latestAnalysis.k}
                       <span className="text-sm text-gray-600 ml-1">mg/kg</span>
                     </p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-600 uppercase">Hořčík (Mg)</span>
                     <p className="text-2xl font-bold text-gray-900">
-                      {latestAnalysis.magnesium}
+                      {latestAnalysis.mg}
                       <span className="text-sm text-gray-600 ml-1">mg/kg</span>
                     </p>
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-600">
-                  Datum rozboru: <strong>{formatDate(latestAnalysis.date)}</strong>
+                  Datum rozboru: <strong>{formatDate(latestAnalysis.analysis_date)}</strong>
                   {latestAnalysis.lab_name && (
                     <span className="ml-4">
                       Laboratoř: <strong>{latestAnalysis.lab_name}</strong>
@@ -364,13 +361,25 @@ export default async function ParcelDetailPage({
               <Upload className="w-5 h-5" />
               Nahrát nový rozbor
             </Link>
-            <button className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59] hover:text-white font-medium rounded-lg transition-colors">
-              <ShoppingCart className="w-5 h-5" />
-              Přidat do poptávky vápnění
-            </button>
+            <Link
+              href={`/portal/pozemky/${params.id}?action=add-analysis`}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              <Beaker className="w-5 h-5" />
+              Zadat živiny ručně
+            </Link>
           </div>
         </div>
       </div>
+
+      {/* Add Analysis Manually Modal */}
+      <Suspense fallback={null}>
+        <AddAnalysisManually 
+          parcelId={params.id} 
+          parcelName={parcel.name}
+          soilType={parcel.soil_type}
+        />
+      </Suspense>
     </div>
   )
 }

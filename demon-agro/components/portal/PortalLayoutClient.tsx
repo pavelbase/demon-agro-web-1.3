@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { LimingCartButton } from './LimingCartButton'
+import { Toaster } from 'react-hot-toast'
 import type { Profile } from '@/lib/types/database'
 
 interface PortalLayoutClientProps {
@@ -21,8 +22,6 @@ const pageTitles: Record<string, string> = {
   '/portal/dashboard': 'Dashboard',
   '/portal/pozemky': 'Moje pozemky',
   '/portal/upload': 'Upload rozborů půdy',
-  '/portal/historie-hnojeni': 'Historie hnojení',
-  '/portal/osevni-postup': 'Osevní postup',
   '/portal/poptavky': 'Moje poptávky',
   '/portal/nastaveni': 'Nastavení',
   '/portal/onboarding': 'Vítejte',
@@ -108,6 +107,32 @@ export function PortalLayoutClient({ user, isAdmin, children }: PortalLayoutClie
 
       {/* Floating Cart Button - visible on all portal pages */}
       <LimingCartButton />
+      
+      {/* Toast notifications */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#4ade80',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   )
 }

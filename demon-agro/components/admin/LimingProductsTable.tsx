@@ -12,6 +12,11 @@ interface LimingProduct {
   mgo_content: number
   reactivity: string | null
   is_active: boolean
+  moisture_content?: number | null
+  particles_over_1mm?: number | null
+  particles_under_05mm?: number | null
+  particles_009_05mm?: number | null
+  price_per_ton?: number | null
 }
 
 interface LimingProductsTableProps {
@@ -79,6 +84,9 @@ export function LimingProductsTable({ products }: LimingProductsTableProps) {
                   % MgO
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Cena (CZK/t)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Reaktivita
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -105,6 +113,17 @@ export function LimingProductsTable({ products }: LimingProductsTableProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {product.mgo_content}%
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                    {product.price_per_ton 
+                      ? new Intl.NumberFormat('cs-CZ', {
+                          style: 'currency',
+                          currency: 'CZK',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }).format(product.price_per_ton)
+                      : <span className="text-gray-500 text-xs">individuální</span>
+                    }
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {product.reactivity ? REACTIVITY_LABELS[product.reactivity] : '—'}

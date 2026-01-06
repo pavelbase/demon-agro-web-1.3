@@ -27,6 +27,7 @@ import { PlanRecommendationsTable } from '@/components/portal/PlanRecommendation
 import { PlanDecisionAssistant } from '@/components/portal/PlanDecisionAssistant'
 import { ExportPlanPDFButton } from '@/components/portal/ExportPlanPDFButton'
 import { ExportPlanExcelButton } from '@/components/portal/ExportPlanExcelButton'
+import { groupAndAverageAnalyses } from '@/lib/utils/soil-analysis-helpers'
 
 interface PlanHnojeniPageProps {
   params: { id: string }
@@ -115,10 +116,11 @@ export default async function PlanHnojeniPage({ params }: PlanHnojeniPageProps) 
     .from('soil_analyses')
     .select('*')
     .eq('parcel_id', params.id)
-    .order('date', { ascending: false })
-    .limit(1)
+    .order('analysis_date', { ascending: false })
 
-  const latestAnalysis = analyses && analyses.length > 0 ? analyses[0] : null
+  // Group and average analyses by date (AZZP methodology)
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [])
+  const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
   // If no analysis, show empty state
   if (!latestAnalysis) {

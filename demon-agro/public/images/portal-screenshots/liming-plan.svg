@@ -1,0 +1,10 @@
+<svg width="1200" height="900" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#f3f4f6"/>
+  <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#4a7c59">
+    Časový plán vápnění
+  </text>
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#666">
+    Placeholder - nahrajte skutečný screenshot jako liming-plan.png
+  </text>
+</svg>
+

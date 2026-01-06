@@ -22,18 +22,11 @@ export default async function AdminRequestsPage({
     redirect('/portal/dashboard')
   }
 
-  // Build query
+  // Build query WITHOUT problematic joins
   let query = supabase
     .from('liming_requests')
     .select(`
       *,
-      profiles!inner(
-        full_name,
-        company_name,
-        district,
-        email,
-        phone
-      ),
       liming_request_items(
         id,
         parcel_id,
@@ -43,17 +36,28 @@ export default async function AdminRequestsPage({
     `)
     .order('created_at', { ascending: false })
 
-  // Apply filters
+  // Apply status filter
   if (searchParams.status && searchParams.status !== 'all') {
     query = query.eq('status', searchParams.status)
   }
 
-  if (searchParams.search) {
-    query = query.ilike('profiles.company_name', `%${searchParams.search}%`)
-  }
-
-  const { data: requests } = await query
-
+  const { data: rawRequests } = await query
+  
+  // Use contact information from liming_requests table
+  // (These are filled when user creates a request)
+  const requests = (rawRequests || []).map((request) => {
+    return {
+      ...request,
+      profiles: {
+        full_name: request.contact_person,
+        company_name: null, // Not available in request table
+        district: null, // Not available in request table
+        email: request.contact_email,
+        phone: request.contact_phone,
+      }
+    }
+  })
+  
   // Count new requests for badge
   const { count: newCount } = await supabase
     .from('liming_requests')

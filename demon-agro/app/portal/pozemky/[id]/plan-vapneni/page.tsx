@@ -1,10 +1,32 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Calculator, ShoppingCart, AlertCircle, CheckCircle, Info } from 'lucide-react'
+import { ChevronLeft, AlertCircle } from 'lucide-react'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
-import { calculateLimeNeed, selectLimeType } from '@/lib/utils/calculations'
-import { LimingProductSelector } from '@/components/portal/LimingProductSelector'
+import LimingPlanGenerator from '@/components/portal/LimingPlanGenerator'
+import LimingPlanTable from '@/components/portal/LimingPlanTable'
+import ExportLimingPlan from '@/components/portal/ExportLimingPlan'
+import AddLimingPlanToCart from '@/components/portal/AddLimingPlanToCart'
+import RegenerateLimingPlanButton from '@/components/portal/RegenerateLimingPlanButton'
+
+/**
+ * PLÁN VÁPNĚNÍ - VÍCEDETÝ SYSTÉM
+ * ================================
+ * 
+ * Nová verze s automatickým návrhem víceletého plánu vápnění
+ * dle oficiální metodiky ČZU Praha.
+ * 
+ * Funkce:
+ * - Automatický výpočet potřeby CaO na základě pH a typu půdy
+ * - Rozložení do více aplikací s intervalem 3 roky
+ * - Predikce změn pH po každé aplikaci
+ * - Inteligentní výběr produktu (vápenec vs. dolomit)
+ * - Export do Excelu
+ */
+
+// 🔴 FORCE DYNAMIC - NO CACHING
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function LimingPlanPage({
   params,
@@ -14,7 +36,10 @@ export default async function LimingPlanPage({
   const user = await requireAuth()
   const supabase = await createClient()
 
-  // Fetch parcel
+  // -------------------------------------------------
+  // 1. NAČTENÍ POZEMKU
+  // -------------------------------------------------
+  
   const { data: parcel, error: parcelError } = await supabase
     .from('parcels')
     .select('*')
@@ -26,115 +51,44 @@ export default async function LimingPlanPage({
     notFound()
   }
 
-  // Fetch latest soil analysis
-  const { data: analyses } = await supabase
+  // -------------------------------------------------
+  // 2. NAČTENÍ NEJNOVĚJŠÍHO ROZBORU
+  // -------------------------------------------------
+  
+  const { data: latestAnalysis } = await supabase
     .from('soil_analyses')
     .select('*')
     .eq('parcel_id', params.id)
-    .order('date', { ascending: false })
+    .order('analysis_date', { ascending: false })
     .limit(1)
+    .maybeSingle()
 
-  const latestAnalysis = analyses?.[0] || null
-
-  // If no analysis, show empty state
-  if (!latestAnalysis) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <Link
-              href={`/portal/pozemky/${params.id}`}
-              className="inline-flex items-center text-sm text-gray-600 hover:text-primary-green mb-4"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Zpět na detail pozemku
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Plán vápnění - {parcel.name}
-            </h1>
-            <p className="text-gray-600 mt-1">{parcel.area} ha</p>
-          </div>
-
-          {/* Empty State */}
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <AlertCircle className="h-16 w-16 text-orange-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Chybí rozbor půdy
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Pro vytvoření plánu vápnění je potřeba aktuální rozbor půdy s hodnotou pH.
-              Nahrajte rozbor a my automaticky vypočítáme doporučené množství vápna.
-            </p>
-            <Link
-              href={`/portal/upload?parcel=${params.id}`}
-              className="inline-flex items-center px-6 py-3 bg-primary-green text-white rounded-lg hover:bg-primary-brown transition-colors"
-            >
-              Nahrát rozbor půdy
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Calculate liming need
-  const targetPh = parcel.culture === 'orna' ? 6.5 : 6.0
-  const limeNeedResult = calculateLimeNeed(
-    latestAnalysis.ph,
-    parcel.soil_type,
-    parcel.culture,
-    targetPh
-  )
-  const limeNeedKgHa = limeNeedResult.amount
-
-  // Calculate total need for parcel
-  const totalLimeNeedTons = (limeNeedKgHa * Number(parcel.area)) / 1000
-
-  // Select lime type recommendation
-  const limeTypeRecommendation = selectLimeType(latestAnalysis)
+  // -------------------------------------------------
+  // 3. NAČTENÍ EXISTUJÍCÍHO PLÁNU
+  // -------------------------------------------------
   
-  // Generate recommendation text based on type
-  const getLimeTypeLabel = (type: string) => {
-    if (type === 'calcitic') return 'Vápenatý (kalcitický) vápenec'
-    if (type === 'dolomite') return 'Dolomitický vápenec'
-    return 'Libovolný typ vápence'
+  const { data: existingPlan } = await supabase
+    .from('liming_plans')
+    .select(`
+      *,
+      applications:liming_applications(
+        *
+      )
+    `)
+    .eq('parcel_id', params.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  // Seřadit aplikace podle pořadí
+  if (existingPlan?.applications) {
+    existingPlan.applications.sort((a, b) => a.sequence_order - b.sequence_order)
   }
+
+  // -------------------------------------------------
+  // 4. RENDER
+  // -------------------------------------------------
   
-  const getLimeTypeReason = (type: string) => {
-    const kmgRatio = latestAnalysis.potassium / latestAnalysis.magnesium
-    if (type === 'dolomite') {
-      return `Doporučen dolomitický vápenec kvůli nízkému obsahu hořčíku (${latestAnalysis.magnesium} mg/kg, kategorie ${latestAnalysis.magnesium_category}) a nevyváženému poměru K:Mg (${kmgRatio.toFixed(2)}:1).`
-    }
-    if (type === 'calcitic') {
-      return `Doporučen kalcitický vápenec. Obsah hořčíku je dostatečný (${latestAnalysis.magnesium} mg/kg, kategorie ${latestAnalysis.magnesium_category}).`
-    }
-    return 'Lze použít libovolný typ vápence podle dostupnosti a ceny.'
-  }
-
-  // Fetch liming products
-  const { data: allProducts } = await supabase
-    .from('liming_products')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-
-  const products = allProducts || []
-
-  // Filter products by recommended type
-  let recommendedProducts = products
-  if (limeTypeRecommendation === 'calcitic') {
-    recommendedProducts = products.filter(p => p.type === 'calcitic' || p.type === 'both')
-  } else if (limeTypeRecommendation === 'dolomite') {
-    recommendedProducts = products.filter(p => p.type === 'dolomite' || p.type === 'both')
-  }
-
-  // Check if liming is needed
-  const limingNeeded = limeNeedKgHa > 0
-
-  // Get K:Mg ratio
-  const kmgRatio = latestAnalysis.potassium / latestAnalysis.magnesium
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
@@ -142,257 +96,192 @@ export default async function LimingPlanPage({
         <div className="mb-6">
           <Link
             href={`/portal/pozemky/${params.id}`}
-            className="inline-flex items-center text-sm text-gray-600 hover:text-primary-green mb-4"
+            className="inline-flex items-center text-sm text-gray-600 hover:text-green-600 mb-4 transition-colors"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Zpět na detail pozemku
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Plán vápnění - {parcel.name}
-          </h1>
-          <p className="text-gray-600 mt-1">{parcel.area} ha • {parcel.cadastral_number || 'Bez kódu'}</p>
+          
+          <div className="flex items-start justify-between">
+            <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Plán vápnění - {parcel.name}
+            </h1>
+            <div className="flex items-center gap-3 text-gray-600 mt-1">
+              <p>Kód pozemku: {parcel.code}</p>
+              <span>•</span>
+              <p>{parcel.area} ha</p>
+            </div>
+            </div>
+            
+            {existingPlan && (
+              <div className="flex flex-wrap gap-3">
+                <AddLimingPlanToCart
+                  planId={existingPlan.id}
+                  parcelId={parcel.id}
+                  parcelName={parcel.name}
+                  parcelCode={parcel.code}
+                  parcelArea={parcel.area}
+                  applications={existingPlan.applications || []}
+                  planStatus={existingPlan.status}
+                />
+                <ExportLimingPlan 
+                  plan={existingPlan} 
+                  parcel={{
+                    custom_name: parcel.name,
+                    area_ha: parcel.area
+                  }}
+                />
+                {existingPlan.status === 'approved' && (
+                  <RegenerateLimingPlanButton
+                    planId={existingPlan.id}
+                    parcelId={parcel.id}
+                    parcelName={parcel.name}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {!limingNeeded ? (
-          // No liming needed
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <div className="flex items-start">
-              <CheckCircle className="h-12 w-12 text-green-500 mr-4 flex-shrink-0" />
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Vápnění není potřeba
-                </h2>
-                <p className="text-gray-600 mb-4">
-                  Aktuální pH půdy je v optimálním rozmezí. Vápnění v tuto chvíli není nutné.
+        {/* Main Content */}
+        {!existingPlan ? (
+          // Žádný plán neexistuje - zobrazit generátor
+          <div className="space-y-6">
+            {!latestAnalysis && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-yellow-900 mb-1">
+                      Žádný půdní rozbor nenalezen
+                    </p>
+                    <p className="text-yellow-800">
+                      Pro přesnější výsledky doporučujeme nejdříve{' '}
+                      <Link 
+                        href={`/portal/upload?parcel=${params.id}`}
+                        className="underline font-medium"
+                      >
+                        nahrát půdní rozbor
+                      </Link>
+                      . I bez rozboru můžete plán vytvořit ručním zadáním hodnot.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <LimingPlanGenerator
+              parcelId={params.id}
+              latestAnalysis={latestAnalysis ? {
+                id: latestAnalysis.id,
+                ph: latestAnalysis.ph,
+                mg: latestAnalysis.mg,
+                soil_type: parcel.soil_type as 'L' | 'S' | 'T'
+              } : null}
+              parcelArea={parcel.area}
+            />
+            
+            {/* Info box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="font-semibold text-blue-900 mb-3">
+                ℹ️ O automatickém plánu vápnění
+              </h3>
+              <div className="text-sm text-blue-800 space-y-2">
+                <p>
+                  <strong>Vícedetý plán:</strong> Systém automaticky rozloží potřebu vápnění 
+                  do více aplikací s intervalem 3 roky, respektující maximální jednorázové dávky.
                 </p>
-                
-                <div className="bg-gray-50 rounded-lg p-4 mt-6">
-                  <h3 className="font-semibold text-gray-900 mb-3">Aktuální stav</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Aktuální pH</p>
-                      <p className="text-2xl font-bold text-green-600">{latestAnalysis.ph.toFixed(1)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Cílové pH</p>
-                      <p className="text-2xl font-bold text-gray-900">{targetPh.toFixed(1)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Kategorie</p>
-                      <p className="text-lg font-semibold text-gray-900">{latestAnalysis.ph_category || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
-                  <div className="flex">
-                    <Info className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-blue-800">
-                        <strong>Doporučení:</strong> Provádějte pravidelné rozbory půdy každé 4 roky 
-                        pro monitoring pH. Pokud pH klesne pod {targetPh - 0.5}, naplánujte vápnění.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <p>
+                  <strong>Oficiální metodika:</strong> Výpočty vycházejí z oficiálních tabulek 
+                  potřeby vápnění ČZU Praha pro různé půdní typy.
+                </p>
+                <p>
+                  <strong>Inteligentní výběr produktu:</strong> Při nízkém obsahu Mg automaticky 
+                  doporučuje dolomit, jinak čistý vápenec.
+                </p>
+                <p>
+                  <strong>Predikce pH:</strong> Každá aplikace obsahuje predikci změny pH 
+                  na základě pufrační kapacity půdy.
+                </p>
               </div>
             </div>
           </div>
         ) : (
-          // Liming needed
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* 1. Přehled potřeby */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Calculator className="h-5 w-5 mr-2 text-primary-green" />
-                  Přehled potřeby vápnění
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Aktuální pH</p>
-                    <p className="text-3xl font-bold text-orange-600">{latestAnalysis.ph.toFixed(1)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Kategorie: {latestAnalysis.ph_category}</p>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Cílové pH</p>
-                    <p className="text-3xl font-bold text-green-600">{targetPh.toFixed(1)}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {parcel.culture === 'orna' ? 'Orná půda' : 'TTP'}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Rozdíl pH</p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {(targetPh - latestAnalysis.ph).toFixed(1)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">jednotek</p>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-primary-green/10 rounded-lg p-4">
-                    <p className="text-sm text-gray-700 mb-1">Potřeba CaO</p>
-                    <p className="text-2xl font-bold text-primary-green">
-                      {(limeNeedKgHa / 1000).toFixed(2)} t/ha
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      = {limeNeedKgHa.toLocaleString('cs-CZ')} kg/ha
-                    </p>
-                  </div>
-                  
-                  <div className="bg-primary-brown/10 rounded-lg p-4">
-                    <p className="text-sm text-gray-700 mb-1">Celková potřeba pro pozemek</p>
-                    <p className="text-2xl font-bold text-primary-brown">
-                      {totalLimeNeedTons.toFixed(2)} t
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Pro {parcel.area} ha
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. Doporučený typ vápence */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                  Doporučený typ vápence
-                </h2>
-                
-                <div className="flex items-start">
-                  <div className={`
-                    flex-shrink-0 w-24 h-24 rounded-lg flex items-center justify-center text-3xl font-bold text-white
-                    ${limeTypeRecommendation === 'calcitic' ? 'bg-blue-500' : 
-                      limeTypeRecommendation === 'dolomite' ? 'bg-purple-500' : 
-                      'bg-gray-500'}
-                  `}>
-                    {limeTypeRecommendation === 'calcitic' ? 'Ca' :
-                     limeTypeRecommendation === 'dolomite' ? 'Ca+Mg' : '?'}
-                  </div>
-                  
-                  <div className="ml-4 flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {getLimeTypeLabel(limeTypeRecommendation)}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      {getLimeTypeReason(limeTypeRecommendation)}
-                    </p>
-                    
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-gray-600">Aktuální Mg</p>
-                          <p className="text-lg font-semibold">
-                            {latestAnalysis.magnesium} mg/kg
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Kategorie: {latestAnalysis.magnesium_category}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Poměr K:Mg</p>
-                          <p className="text-lg font-semibold">
-                            {kmgRatio.toFixed(2)}:1
-                          </p>
-                          <p className={`text-xs font-medium ${
-                            kmgRatio >= 1.5 && kmgRatio <= 2.5 ? 'text-green-600' :
-                            kmgRatio >= 1.2 && kmgRatio <= 3.5 ? 'text-yellow-600' :
-                            'text-red-600'
-                          }`}>
-                            {kmgRatio >= 1.5 && kmgRatio <= 2.5 ? 'Optimální' :
-                             kmgRatio < 1.5 ? 'Nízký K' : 'Nízký Mg'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. Produkty Démon Agro */}
-              <LimingProductSelector
-                products={recommendedProducts}
-                limeNeedKgHa={limeNeedKgHa}
-                parcelArea={parcel.area}
-                parcelId={parcel.id}
-                parcelName={parcel.name}
-              />
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Info box */}
+          // Plán existuje - zobrazit tabulku
+          <div className="space-y-6">
+            {/* Info pro uživatele - jak přidat další roky */}
+            {existingPlan.status === 'approved' && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start">
-                  <Info className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-blue-900 mb-2">O výpočtu</h3>
-                    <p className="text-sm text-blue-800 mb-2">
-                      Potřeba vápna je vypočtena podle půdního typu ({parcel.soil_type}) 
-                      a rozdílu mezi aktuálním a cílovým pH.
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 text-sm text-blue-900">
+                    <p className="font-medium mb-2">
+                      💡 Jak přidat další rok aplikace?
                     </p>
-                    <p className="text-sm text-blue-800">
-                      Výpočet zohledňuje české zemědělské normy a doporučení ÚKZÚZ.
-                    </p>
+                    <ol className="list-decimal list-inside text-blue-800 space-y-1">
+                      <li>Použijte tlačítko <strong>"Přidat další rok aplikace"</strong> v tabulce níže</li>
+                      <li>Vyplňte rok, období, produkt a dávku</li>
+                      <li>Klikněte na <strong>"Přidat aplikaci"</strong></li>
+                      <li>✅ <strong>Hotovo!</strong> Změny se uloží automaticky</li>
+                    </ol>
                   </div>
                 </div>
               </div>
-
-              {/* Timing recommendation */}
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Doporučený termín aplikace</h3>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    <span><strong>Podzim:</strong> Po sklizni, ideálně do konce října</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    <span><strong>Jaro:</strong> Před setím, únor-březen</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-red-500 mr-2">✗</span>
-                    <span>Nevhodné: V zimě nebo na zmrzlou půdu</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Data source */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Použitá data</h3>
-                <dl className="space-y-2 text-sm">
+            )}
+            
+            <LimingPlanTable
+              plan={existingPlan}
+              parcelArea={parcel.area}
+            />
+            
+            {/* Informace o rozboru */}
+            {latestAnalysis && (
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">
+                  📊 Použitá data z půdního rozboru
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div>
-                    <dt className="text-gray-600">Rozbor půdy</dt>
-                    <dd className="font-medium text-gray-900">
-                      {new Date(latestAnalysis.date).toLocaleDateString('cs-CZ')}
-                    </dd>
+                    <span className="text-sm text-gray-600 block mb-1">Datum rozboru:</span>
+                    <p className="font-medium text-gray-900">
+                      {new Date(latestAnalysis.analysis_date || latestAnalysis.date).toLocaleDateString('cs-CZ')}
+                    </p>
                   </div>
-                  {latestAnalysis.lab_name && (
-                    <div>
-                      <dt className="text-gray-600">Laboratoř</dt>
-                      <dd className="font-medium text-gray-900">{latestAnalysis.lab_name}</dd>
-                    </div>
-                  )}
                   <div>
-                    <dt className="text-gray-600">Půdní typ</dt>
-                    <dd className="font-medium text-gray-900">
+                    <span className="text-sm text-gray-600 block mb-1">Výchozí pH:</span>
+                    <p className="font-medium text-gray-900">
+                      {latestAnalysis.ph.toFixed(1)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600 block mb-1">Hořčík (Mg):</span>
+                    <p className="font-medium text-gray-900">
+                      {Math.round(latestAnalysis.mg)} mg/kg
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600 block mb-1">Draslík (K):</span>
+                    <p className="font-medium text-gray-900">
+                      {Math.round(latestAnalysis.k)} mg/kg
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600 block mb-1">Půdní typ:</span>
+                    <p className="font-medium text-gray-900">
                       {parcel.soil_type === 'L' ? 'Lehká' : 
                        parcel.soil_type === 'S' ? 'Střední' : 'Těžká'}
-                    </dd>
+                    </p>
                   </div>
-                  <div>
-                    <dt className="text-gray-600">Kultura</dt>
-                    <dd className="font-medium text-gray-900">
-                      {parcel.culture === 'orna' ? 'Orná půda' : 'TTP'}
-                    </dd>
-                  </div>
-                </dl>
+                </div>
+                
+                {latestAnalysis.lab_name && (
+                  <p className="text-sm text-gray-600 mt-3">
+                    Laboratoř: {latestAnalysis.lab_name}
+                  </p>
+                )}
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

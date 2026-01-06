@@ -26,6 +26,10 @@ interface Request {
     product_name: string
     quantity: number
     notes: string | null
+    parcels: {
+      cadastral_number: string | null
+      name: string
+    } | null
   }>
 }
 
@@ -200,7 +204,12 @@ export function RequestDetailModal({ request, onClose, onUpdate }: RequestDetail
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <p className="font-medium text-gray-900">
-                            {index + 1}. Pozemek (ID: {item.parcel_id.substring(0, 8)})
+                            {index + 1}. {item.parcels?.name || 'Pozemek'}
+                            {item.parcels?.cadastral_number && (
+                              <span className="text-gray-600 font-normal ml-2">
+                                ({item.parcels.cadastral_number})
+                              </span>
+                            )}
                           </p>
                           <p className="text-sm text-gray-600 mt-1">
                             Produkt: {item.product_name}

@@ -49,60 +49,63 @@ export const CULTURES: Culture[] = ['orna', 'ttp']
 // ============================================================================
 
 export const NUTRIENT_CATEGORY_LABELS: Record<NutrientCategory, string> = {
-  N: 'Nízký',
-  VH: 'Velmi hluboký',
-  D: 'Dobrý',
-  V: 'Vysoký',
-  VV: 'Velmi vysoký',
+  nizky: 'Nízký',
+  vyhovujici: 'Vyhovující',
+  dobry: 'Dobrý',
+  vysoky: 'Vysoký',
+  velmi_vysoky: 'Velmi vysoký',
 }
 
 export const NUTRIENT_CATEGORY_DESCRIPTIONS: Record<NutrientCategory, string> = {
-  N: 'Nízký obsah živiny - nutné hnojení',
-  VH: 'Velmi hluboký pod optimem - výrazné hnojení',
-  D: 'Dobrý obsah živiny - udržovací hnojení',
-  V: 'Vysoký obsah živiny - minimální hnojení',
-  VV: 'Velmi vysoký obsah - hnojení není nutné',
+  nizky: 'Nízký obsah živiny - nutné intenzivní hnojení',
+  vyhovujici: 'Vyhovující obsah - doporučeno doplňkové hnojení',
+  dobry: 'Dobrý obsah živiny - udržovací hnojení',
+  vysoky: 'Vysoký obsah živiny - minimální hnojení',
+  velmi_vysoky: 'Velmi vysoký obsah - hnojení není nutné',
 }
 
 export const NUTRIENT_CATEGORY_COLORS: Record<NutrientCategory, string> = {
-  N: 'text-red-600',
-  VH: 'text-orange-600',
-  D: 'text-green-600',
-  V: 'text-blue-600',
-  VV: 'text-purple-600',
+  nizky: 'text-red-600',
+  vyhovujici: 'text-orange-600',
+  dobry: 'text-green-600',
+  vysoky: 'text-blue-600',
+  velmi_vysoky: 'text-purple-600',
 }
 
-export const NUTRIENT_CATEGORIES: NutrientCategory[] = ['N', 'VH', 'D', 'V', 'VV']
+export const NUTRIENT_CATEGORIES: NutrientCategory[] = ['nizky', 'vyhovujici', 'dobry', 'vysoky', 'velmi_vysoky']
 
 // ============================================================================
 // PH CATEGORY (Kategorie pH)
 // ============================================================================
 
 export const PH_CATEGORY_LABELS: Record<PhCategory, string> = {
-  EK: 'Extrémně kyselý',
-  SK: 'Silně kyselý',
-  N: 'Neutrální',
-  SZ: 'Slabě zásaditý',
-  EZ: 'Extrémně zásaditý',
+  extremne_kysela: 'Extrémně kyselá',
+  silne_kysela: 'Silně kyselá',
+  slabe_kysela: 'Slabě kyselá',
+  neutralni: 'Neutrální',
+  slabe_alkalicka: 'Slabě alkalická',
+  alkalicka: 'Alkalická',
 }
 
 export const PH_CATEGORY_DESCRIPTIONS: Record<PhCategory, string> = {
-  EK: 'pH < 5.0 - nutné vápnění',
-  SK: 'pH 5.0 - 5.5 - doporučeno vápnění',
-  N: 'pH 6.0 - 7.0 - optimální',
-  SZ: 'pH 7.0 - 7.5 - mírně alkalická',
-  EZ: 'pH > 8.0 - vysoká alkalita',
+  extremne_kysela: 'pH < 4.5 - urgentní vápnění',
+  silne_kysela: 'pH 4.5 - 5.6 - intenzivní vápnění',
+  slabe_kysela: 'pH 5.6 - 6.6 - udržovací vápnění',
+  neutralni: 'pH 6.6 - 7.3 - optimální',
+  slabe_alkalicka: 'pH 7.3 - 8.1 - mírně alkalická',
+  alkalicka: 'pH ≥ 8.1 - vysoká alkalita',
 }
 
 export const PH_CATEGORY_COLORS: Record<PhCategory, string> = {
-  EK: 'text-red-700',
-  SK: 'text-orange-600',
-  N: 'text-green-600',
-  SZ: 'text-blue-600',
-  EZ: 'text-purple-600',
+  extremne_kysela: 'text-red-700',
+  silne_kysela: 'text-orange-600',
+  slabe_kysela: 'text-orange-500',
+  neutralni: 'text-green-600',
+  slabe_alkalicka: 'text-blue-600',
+  alkalicka: 'text-purple-600',
 }
 
-export const PH_CATEGORIES: PhCategory[] = ['EK', 'SK', 'N', 'SZ', 'EZ']
+export const PH_CATEGORIES: PhCategory[] = ['extremne_kysela', 'silne_kysela', 'slabe_kysela', 'neutralni', 'slabe_alkalicka', 'alkalicka']
 
 // ============================================================================
 // REQUEST STATUS (Stav poptávky)

@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, X, Trash2, Package } from 'lucide-react'
+import { useRouter, usePathname } from 'next/navigation'
+import { ShoppingCart, X, Trash2, Package, AlertCircle } from 'lucide-react'
 import { useLimingCart } from '@/lib/contexts/LimingCartContext'
 
 const TYPE_LABELS = {
@@ -13,16 +14,33 @@ const TYPE_LABELS = {
 
 export function LimingCartButton() {
   const [isOpen, setIsOpen] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
   const { items, removeItem, getTotalItems, getTotalArea, getTotalQuantity } = useLimingCart()
 
   const totalItems = getTotalItems()
+  
+  // Skrýt košík na stránce nové poptávky (duplicitní informace)
+  if (pathname === '/portal/poptavky/nova') {
+    return null
+  }
+  
+  // Skrýt košík v admin sekci (admin nepotřebuje poptávky vápnění)
+  if (pathname.startsWith('/portal/admin')) {
+    return null
+  }
+  
+  const handleCreateRequest = () => {
+    setIsOpen(false)
+    router.push('/portal/poptavky/nova')
+  }
 
   return (
     <>
       {/* Floating Cart Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-primary-green text-white rounded-full p-4 shadow-lg hover:bg-primary-brown transition-colors"
+        className="fixed bottom-20 right-6 z-40 bg-primary-green text-white rounded-full p-4 shadow-lg hover:bg-primary-brown transition-colors"
         aria-label="Košík poptávky vápnění"
       >
         <ShoppingCart className="h-6 w-6" />
@@ -66,9 +84,25 @@ export function LimingCartButton() {
                 <div className="text-center py-12">
                   <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">Košík je prázdný</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 mb-4">
                     Přidejte pozemky z plánu vápnění
                   </p>
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href="/portal/plany-vapneni"
+                      onClick={() => setIsOpen(false)}
+                      className="text-sm text-primary-green hover:text-primary-brown font-medium"
+                    >
+                      Zobrazit plány vápnění →
+                    </Link>
+                    <Link
+                      href="/portal/poptavky"
+                      onClick={() => setIsOpen(false)}
+                      className="text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      Zobrazit odeslané poptávky
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -83,7 +117,7 @@ export function LimingCartButton() {
                             {item.parcel_name}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {item.area_ha} ha • {TYPE_LABELS[item.recommended_type]}
+                            {item.parcel_code && `${item.parcel_code} • `}{item.area_ha} ha • {TYPE_LABELS[item.recommended_type]}
                           </p>
                         </div>
                         <button
@@ -105,6 +139,19 @@ export function LimingCartButton() {
                               {item.cao_content}% CaO
                             </p>
                           )}
+                        </div>
+                      )}
+
+                      {/* Zobrazit aplikace pokud existují */}
+                      {item.applications && item.applications.length > 0 && (
+                        <div className="mb-2 text-xs text-gray-600">
+                          <p className="font-medium mb-1">Aplikace:</p>
+                          {item.applications.map((app, idx) => (
+                            <div key={idx} className="flex justify-between">
+                              <span>{app.year} {app.season}:</span>
+                              <span>{app.total_tons.toFixed(1)} t</span>
+                            </div>
+                          ))}
                         </div>
                       )}
 
@@ -156,13 +203,12 @@ export function LimingCartButton() {
                   </div>
                 </div>
 
-                <Link
-                  href="/portal/poptavky/nova"
-                  onClick={() => setIsOpen(false)}
+                <button
+                  onClick={handleCreateRequest}
                   className="block w-full bg-primary-green text-white text-center py-3 rounded-lg hover:bg-primary-brown transition-colors font-medium"
                 >
                   Odeslat poptávku
-                </Link>
+                </button>
 
                 <p className="text-xs text-gray-500 text-center mt-2">
                   Cena bude stanovena individuálně

@@ -266,8 +266,8 @@ export function selectLimeType(analysis: SoilAnalysis): LimeType {
 
   // Low Mg or high K:Mg ratio → use dolomite
   if (
-    analysis.magnesium_category === 'N' || 
-    analysis.magnesium_category === 'VH' ||
+    analysis.magnesium_category === 'nizky' || 
+    analysis.magnesium_category === 'vyhovujici' ||
     kMgRatio > 2.5
   ) {
     return 'dolomite'
@@ -275,8 +275,8 @@ export function selectLimeType(analysis: SoilAnalysis): LimeType {
 
   // High Mg or low K:Mg ratio → use calcitic
   if (
-    analysis.magnesium_category === 'V' || 
-    analysis.magnesium_category === 'VV' ||
+    analysis.magnesium_category === 'vysoky' || 
+    analysis.magnesium_category === 'velmi_vysoky' ||
     kMgRatio < 1.5
   ) {
     return 'calcitic'

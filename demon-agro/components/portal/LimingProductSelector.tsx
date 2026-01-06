@@ -311,6 +311,13 @@ export function LimingProductSelector({
               <p className="text-xs text-gray-500 text-center mt-3">
                 Poptávka nezavazuje k objednávce. Po odeslání vás budeme kontaktovat.
               </p>
+              
+              {/* ÚKZÚZ Disclaimer */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800">
+                  ℹ️ Výpočty množství jsou orientační podle metodiky ÚKZÚZ. Doporučujeme kontrolní rozbor půdy 1 rok po aplikaci.
+                </p>
+              </div>
             </>
           )}
         </div>

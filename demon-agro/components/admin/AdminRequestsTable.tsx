@@ -23,6 +23,10 @@ interface Request {
     parcel_id: string
     product_name: string
     quantity: number
+    parcels?: {
+      cadastral_number: string | null
+      name: string
+    } | null
   }>
 }
 

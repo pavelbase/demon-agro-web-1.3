@@ -18,7 +18,20 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { productId, name, type, cao_content, mgo_content, reactivity, is_active } = body
+    const { 
+      productId, 
+      name, 
+      type, 
+      cao_content, 
+      mgo_content, 
+      reactivity, 
+      is_active,
+      moisture_content,
+      particles_over_1mm,
+      particles_under_05mm,
+      particles_009_05mm,
+      price_per_ton
+    } = body
 
     const { data, error } = await supabase
       .from('liming_products')
@@ -29,6 +42,11 @@ export async function PUT(request: NextRequest) {
         mgo_content,
         reactivity,
         is_active,
+        moisture_content,
+        particles_over_1mm,
+        particles_under_05mm,
+        particles_009_05mm,
+        price_per_ton,
       })
       .eq('id', productId)
       .select()

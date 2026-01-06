@@ -12,6 +12,10 @@ type LimingRequest = Database['public']['Tables']['liming_requests']['Row'] & {
     product_name: string
     quantity: number
     unit: string
+    parcels: {
+      cadastral_number: string | null
+      name: string
+    } | null
   }>
 }
 

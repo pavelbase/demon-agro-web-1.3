@@ -159,19 +159,19 @@ export default async function DashboardPage() {
       })
     }
 
-    // Low nutrient categories (N or VH)
+    // Low nutrient categories (nizky or vyhovujici)
     const lowNutrients = []
-    const pCat = (analysis as any).p_category || (analysis as any).phosphorus_category
-    const kCat = (analysis as any).k_category || (analysis as any).potassium_category
-    const mgCat = (analysis as any).mg_category || (analysis as any).magnesium_category
+    const pCat = (analysis as any).p_category
+    const kCat = (analysis as any).k_category
+    const mgCat = (analysis as any).mg_category
     
-    if (pCat === 'N' || pCat === 'VH') {
+    if (pCat === 'nizky' || pCat === 'vyhovujici') {
       lowNutrients.push('P')
     }
-    if (kCat === 'N' || kCat === 'VH') {
+    if (kCat === 'nizky' || kCat === 'vyhovujici') {
       lowNutrients.push('K')
     }
-    if (mgCat === 'N' || mgCat === 'VH') {
+    if (mgCat === 'nizky' || mgCat === 'vyhovujici') {
       lowNutrients.push('Mg')
     }
 

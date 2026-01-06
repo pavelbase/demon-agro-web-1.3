@@ -7,8 +7,6 @@ import {
   Home, 
   Map, 
   Upload, 
-  History, 
-  Calendar, 
   ShoppingCart, 
   Settings,
   Users,
@@ -19,9 +17,11 @@ import {
   ClipboardList,
   LogOut,
   X,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
+import { useLimingCart } from '@/lib/contexts/LimingCartContext'
 
 /**
  * Sidebar navigace pro uživatelský portál
@@ -48,9 +48,8 @@ interface SidebarProps {
 const mainNavItems = [
   { href: '/portal/dashboard', label: 'Dashboard', icon: Home },
   { href: '/portal/pozemky', label: 'Pozemky', icon: Map },
+  { href: '/portal/plany-vapneni', label: 'Plány vápnění', icon: Sparkles },
   { href: '/portal/upload', label: 'Upload rozborů', icon: Upload },
-  { href: '/portal/historie-hnojeni', label: 'Historie hnojení', icon: History },
-  { href: '/portal/osevni-postup', label: 'Osevní postup', icon: Calendar },
   { href: '/portal/poptavky', label: 'Moje poptávky', icon: ShoppingCart },
   { href: '/portal/nastaveni', label: 'Nastavení', icon: Settings },
 ]
@@ -68,6 +67,8 @@ const adminNavItems = [
 
 export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
   const pathname = usePathname()
+  // Badge pro košík je nyní pouze na floating buttonu
+  // Badge u "Moje poptávky" by měl ukazovat počet ODESLANÝCH poptávek (TODO: implementovat)
 
   // DEBUG: Log admin status in sidebar
   console.log('=== SIDEBAR DEBUG ===')

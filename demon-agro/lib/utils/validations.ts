@@ -45,6 +45,15 @@ export const newPasswordSchema = z.object({
   path: ['confirmPassword'],
 })
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Současné heslo je povinné'),
+  newPassword: z.string().min(8, 'Heslo musí mít alespoň 8 znaků'),
+  confirmPassword: z.string().min(1, 'Potvrzení hesla je povinné'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Nová hesla se neshodují',
+  path: ['confirmPassword'],
+})
+
 // ============================================================================
 // PARCEL SCHEMAS
 // ============================================================================
@@ -62,6 +71,15 @@ export const parcelSchema = z.object({
     invalid_type_error: 'Neplatná kultura',
   }),
   notes: z.string().optional(),
+  // Optional soil analysis fields
+  hasAnalysis: z.boolean().optional(),
+  analysisDate: z.string().optional(),
+  ph: z.number().min(0).max(14).optional(),
+  p: z.number().min(0).optional(),
+  k: z.number().min(0).optional(),
+  mg: z.number().min(0).optional(),
+  ca: z.number().min(0).optional(),
+  s: z.number().min(0).optional(),
 })
 
 // ============================================================================
@@ -72,15 +90,15 @@ export const soilAnalysisSchema = z.object({
   parcelId: z.string().uuid('Neplatné ID pozemku'),
   date: z.string().or(z.date()),
   ph: z.number().min(0).max(14, 'pH musí být mezi 0 a 14'),
-  phCategory: z.enum(['EK', 'SK', 'N', 'SZ', 'EZ'] as const).optional(),
+  phCategory: z.enum(['extremne_kysela', 'silne_kysela', 'slabe_kysela', 'neutralni', 'slabe_alkalicka', 'alkalicka'] as const).optional(),
   phosphorus: z.number().min(0, 'Fosfor musí být kladné číslo'),
-  phosphorusCategory: z.enum(['N', 'VH', 'D', 'V', 'VV'] as const).optional(),
+  phosphorusCategory: z.enum(['nizky', 'vyhovujici', 'dobry', 'vysoky', 'velmi_vysoky'] as const).optional(),
   potassium: z.number().min(0, 'Draslík musí být kladné číslo'),
-  potassiumCategory: z.enum(['N', 'VH', 'D', 'V', 'VV'] as const).optional(),
+  potassiumCategory: z.enum(['nizky', 'vyhovujici', 'dobry', 'vysoky', 'velmi_vysoky'] as const).optional(),
   magnesium: z.number().min(0, 'Hořčík musí být kladné číslo'),
-  magnesiumCategory: z.enum(['N', 'VH', 'D', 'V', 'VV'] as const).optional(),
+  magnesiumCategory: z.enum(['nizky', 'vyhovujici', 'dobry', 'vysoky', 'velmi_vysoky'] as const).optional(),
   calcium: z.number().min(0).optional(),
-  calciumCategory: z.enum(['N', 'VH', 'D', 'V', 'VV'] as const).optional(),
+  calciumCategory: z.enum(['nizky', 'vyhovujici', 'dobry', 'vysoky', 'velmi_vysoky'] as const).optional(),
   nitrogen: z.number().min(0).optional(),
   labName: z.string().optional(),
   notes: z.string().optional(),
@@ -210,6 +228,7 @@ export type LoginFormData = z.infer<typeof loginSchema>
 export type RegisterFormData = z.infer<typeof registerSchema>
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
 export type NewPasswordFormData = z.infer<typeof newPasswordSchema>
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 
 export type ParcelFormData = z.infer<typeof parcelSchema>
 export type SoilAnalysisFormData = z.infer<typeof soilAnalysisSchema>
