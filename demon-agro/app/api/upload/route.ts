@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+
+// ============================================================================
+// SUPABASE STORAGE UPLOAD
+// ============================================================================
+// Upload endpoint pro veřejné obrázky (spravované z /admin)
+// Ukládá do Supabase Storage bucketu 'public-images'
+// Oddělené od portal-images (spravované z /portal/admin)
+// ============================================================================
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,9 +38,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
     // Získat produktový název z formData (pokud existuje)
     const productName = formData.get('productName') as string;
     
@@ -57,28 +61,50 @@ export async function POST(request: NextRequest) {
       const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       filename = `${timestamp}-${originalName}`;
     }
-    
-    // Cesta pro uložení
-    const uploadDir = path.join(process.cwd(), 'public', 'images', 'uploads');
-    const filepath = path.join(uploadDir, filename);
 
-    // Vytvořit složku pokud neexistuje
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (error) {
-      // Složka už existuje
+    // ========================================================================
+    // UPLOAD DO SUPABASE STORAGE
+    // ========================================================================
+    
+    // Inicializace Supabase klienta
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Konverze File na Buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Upload do bucketu 'public-images'
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('public-images')
+      .upload(filename, buffer, {
+        contentType: file.type,
+        upsert: false, // Nepřepisovat existující soubory
+      });
+
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      return NextResponse.json(
+        { error: 'Chyba při nahrávání do úložiště: ' + uploadError.message },
+        { status: 500 }
+      );
     }
 
-    // Uložit soubor
-    await writeFile(filepath, buffer);
+    // Získat veřejnou URL
+    const { data: urlData } = supabase.storage
+      .from('public-images')
+      .getPublicUrl(filename);
 
-    // Vrátit URL
-    const imageUrl = `/images/uploads/${filename}`;
-
+    // Vrátit URL (kompatibilní s předchozí verzí API)
     return NextResponse.json({
       success: true,
-      url: imageUrl,
-      filename: filename
+      url: urlData.publicUrl, // Supabase Storage URL
+      filename: filename,
+      // Pro zpětnou kompatibilitu a debugging:
+      storage: 'supabase',
+      bucket: 'public-images'
     });
 
   } catch (error) {

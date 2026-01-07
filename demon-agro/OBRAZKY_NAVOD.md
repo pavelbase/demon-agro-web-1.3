@@ -29,7 +29,10 @@
 ### Maximální velikost: 5 MB
 
 ### Kam se ukládají:
-Obrázky se ukládají do: `/public/images/uploads/`
+Obrázky se ukládají do: **Supabase Storage** (bucket: `public-images`)
+- ✅ Perzistentní úložiště (nepřijdete o obrázky)
+- ✅ Veřejně přístupné URL
+- ✅ Dostupné všem uživatelům
 
 ---
 
@@ -264,43 +267,58 @@ fotka (1).jpg         (mezery)
 
 ## Produkční nasazení
 
-### Vercel / Netlify
+### ✅ Supabase Storage (IMPLEMENTOVÁNO)
+
+**Obrázky nahrané přes admin panel:**
+- ✅ **Ukládají se do Supabase Storage** (bucket: `public-images`)
+- ✅ **Perzistentní** - nepřijdete o ně při redeploy
+- ✅ **Veřejně přístupné** - zobrazí se všem uživatelům
+- ✅ **Oddělené od portálu** - bucket `public-images` pro veřejný web, `portal-images` pro portál
 
 **Statické obrázky (v /public/):**
 - ✅ Automaticky se nahrají s projektem
 - ✅ Fungují okamžitě
+- 💡 Ideální pro logo, placeholdery, ikony
 
-**Nahrané obrázky (přes admin panel):**
-- ⚠️ Ztratí se při každém redeploy!
-- 💡 Řešení: Použijte cloud storage
+### Jak to funguje:
 
-### Cloud storage pro produkci:
+1. **Upload přes admin panel** (`/admin` → Správa obrázků):
+   - Obrázek se nahraje do Supabase Storage
+   - Získáte veřejnou URL (např. `https://xxx.supabase.co/storage/v1/object/public/public-images/...`)
+   - URL se uloží do localStorage pro admin konfiguraci
 
-**Doporučené služby:**
+2. **Zobrazení uživatelům**:
+   - Obrázky se načítají přímo z Supabase Storage
+   - Dostupné všem uživatelům (bez autentizace)
+   - CDN distribuce zadarmo
 
-1. **Cloudinary** (nejjednodušší)
-   - 25 GB storage zdarma
-   - Automatická optimalizace
-   - [cloudinary.com](https://cloudinary.com)
+### Migrace existujících obrázků:
 
-2. **AWS S3** (nejpoužívanější)
-   - Levné, škálovatelné
-   - Potřebuje nastavení
-   - [aws.amazon.com/s3](https://aws.amazon.com/s3)
+Pokud máte obrázky v `/public/images/uploads/`, migrujte je do Supabase:
 
-3. **Vercel Blob Storage**
-   - Integrované s Vercel
-   - [vercel.com/storage](https://vercel.com/storage)
+```bash
+# Spusťte migrační skript
+npx tsx scripts/migrate-images-to-supabase.ts
+```
 
-4. **ImageKit.io**
-   - 20 GB zdarma
-   - CDN + optimalizace
-   - [imagekit.io](https://imagekit.io)
+**Co skript dělá:**
+- Najde všechny obrázky v `/public/images/`
+- Nahraje je do Supabase Storage
+- Vytvoří mapování starých URL → nových URL
 
-### Návod na integraci (později):
-- Přidá se v `app/api/upload/route.ts`
-- Upload místo do `/public/` půjde do cloudu
-- Admin panel zůstane stejný
+### Supabase Free Tier:
+
+- 📦 **1 GB storage** (stovky obrázků)
+- 🌐 **2 GB bandwidth/měsíc**
+- 💰 **ZDARMA** pro malé až střední projekty
+- 🚀 **Upgrade** kdykoliv při potřebě
+
+### Alternativní služby (pokud potřebujete):
+
+1. **Cloudinary** - 25 GB zdarma, automatická optimalizace
+2. **AWS S3** - levné, škálovatelné
+3. **Vercel Blob** - nativní integrace s Vercel
+4. **ImageKit.io** - 20 GB zdarma, CDN
 
 ---
 

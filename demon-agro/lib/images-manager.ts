@@ -149,6 +149,12 @@ export function getImagesByPage(page: PageKey): [string, ImageData][] {
 export function getImageUrl(key: string, fallback?: string): string {
   const image = getImage(key);
   if (image && image.url) {
+    // Přidej cache-busting parametr pro Supabase obrázky
+    if (image.url.includes('supabase.co')) {
+      const timestamp = new Date(image.uploadedAt).getTime();
+      const separator = image.url.includes('?') ? '&' : '?';
+      return `${image.url}${separator}t=${timestamp}`;
+    }
     return image.url;
   }
   
@@ -169,6 +175,12 @@ export function getProductImageUrl(productId: string, fallback?: string): string
   const image = getImage(key);
   
   if (image && image.url) {
+    // Přidej cache-busting parametr pro Supabase obrázky
+    if (image.url.includes('supabase.co')) {
+      const timestamp = new Date(image.uploadedAt).getTime();
+      const separator = image.url.includes('?') ? '&' : '?';
+      return `${image.url}${separator}t=${timestamp}`;
+    }
     return image.url;
   }
   

@@ -88,38 +88,61 @@ export default function ImageUploadModal({ imageKey, currentImage, onClose, onSa
       let imageDimensions = specs?.dimensions || "";
       
       if (selectedFile) {
-        // V produkčním prostředí by zde byl upload na server
-        // Pro development použijeme data URL
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          finalUrl = e.target?.result as string;
-          imageSize = selectedFile.size;
-          imageFormat = selectedFile.type.split('/')[1];
+        // ========================================================================
+        // UPLOAD DO SUPABASE STORAGE přes API endpoint
+        // ========================================================================
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        // Přidat název pro pojmenování souboru
+        const productName = isProductImage 
+          ? imageKey.replace('product_', '') 
+          : title;
+        formData.append('productName', productName);
+        
+        // Upload na server
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const uploadData = await uploadResponse.json();
+        
+        if (!uploadResponse.ok) {
+          throw new Error(uploadData.error || 'Chyba při nahrávání');
+        }
+        
+        // Získat URL ze Supabase Storage
+        finalUrl = uploadData.url;
+        imageSize = selectedFile.size;
+        imageFormat = selectedFile.type.split('/')[1];
+        
+        // Získání rozměrů obrázku
+        const img = new Image();
+        img.onload = () => {
+          imageDimensions = `${img.width}x${img.height}`;
           
-          // Získání rozměrů obrázku
-          const img = new Image();
-          img.onload = () => {
-            imageDimensions = `${img.width}x${img.height}`;
-            
-            const imageData: ImageData = {
-              url: finalUrl,
-              category: category,
-              ...(isProductImage ? { productId: imageKey.replace('product_', '') } : { page: keyData?.page }),
-              title: title,
-              dimensions: imageDimensions,
-              size: imageSize,
-              format: imageFormat,
-              uploadedAt: new Date().toISOString()
-            };
-            
-            onSave(imageKey, imageData);
-            onClose();
+          const imageData: ImageData = {
+            url: finalUrl,
+            category: category,
+            ...(isProductImage ? { productId: imageKey.replace('product_', '') } : { page: keyData?.page }),
+            title: title,
+            dimensions: imageDimensions,
+            size: imageSize,
+            format: imageFormat,
+            uploadedAt: new Date().toISOString()
           };
-          img.src = finalUrl;
+          
+          onSave(imageKey, imageData);
+          onClose();
         };
-        reader.readAsDataURL(selectedFile);
+        img.onerror = () => {
+          setError("Nepodařilo se načíst nahraný obrázek");
+          setIsUploading(false);
+        };
+        img.src = finalUrl;
       } else if (urlInput) {
-        // URL zadaná ručně
+        // URL zadaná ručně (pro externí obrázky nebo Unsplash)
         finalUrl = urlInput;
         
         // Získání rozměrů z URL

@@ -226,7 +226,7 @@ export default function PrevorniKalkulackaPage() {
                 <select
                   value={fromForm}
                   onChange={(e) => setFromForm(parseInt(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors text-base"
                   style={{ borderColor: selectedNutrient ? `${nutrientColor}40` : undefined }}
                 >
                   {nutrientForms.map((form, idx) => (
@@ -234,19 +234,19 @@ export default function PrevorniKalkulackaPage() {
                   ))}
                 </select>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-stretch">
                   <input
                     type="number"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder="Zadejte hodnotu"
-                    className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors"
+                    className="flex-1 min-w-0 px-4 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors"
                     style={{ borderColor: selectedNutrient && inputValue ? `${nutrientColor}60` : undefined }}
                   />
                   <select
                     value={inputUnit.id}
                     onChange={(e) => setInputUnit(UNITS.find(u => u.id === e.target.value) || UNITS[0])}
-                    className="px-3 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors"
+                    className="w-20 flex-shrink-0 px-2 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors text-sm"
                   >
                     {UNITS.map((unit) => (
                       <option key={unit.id} value={unit.id}>{unit.label}</option>
@@ -279,7 +279,7 @@ export default function PrevorniKalkulackaPage() {
                 <select
                   value={toForm}
                   onChange={(e) => setToForm(parseInt(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors text-base"
                   style={{ borderColor: selectedNutrient ? `${nutrientColor}40` : undefined }}
                 >
                   {nutrientForms.map((form, idx) => (
@@ -287,9 +287,9 @@ export default function PrevorniKalkulackaPage() {
                   ))}
                 </select>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-stretch">
                   <div 
-                    className="flex-1 px-4 py-3 rounded-xl border-2 font-semibold text-lg flex items-center"
+                    className="flex-1 min-w-0 px-4 py-3 rounded-xl border-2 font-semibold text-lg flex items-center"
                     style={{ 
                       backgroundColor: result ? `${nutrientColor}10` : "#F9FAFB",
                       borderColor: result ? `${nutrientColor}60` : "#E5E7EB",
@@ -301,7 +301,7 @@ export default function PrevorniKalkulackaPage() {
                   <select
                     value={outputUnit.id}
                     onChange={(e) => setOutputUnit(UNITS.find(u => u.id === e.target.value) || UNITS[0])}
-                    className="px-3 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors"
+                    className="w-20 flex-shrink-0 px-2 py-3 bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-[#4A7C59] focus:outline-none transition-colors text-sm"
                   >
                     {UNITS.map((unit) => (
                       <option key={unit.id} value={unit.id}>{unit.label}</option>

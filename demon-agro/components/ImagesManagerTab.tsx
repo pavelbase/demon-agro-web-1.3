@@ -6,8 +6,6 @@ import { Image as ImageIcon, Edit2, Trash2, Filter } from "lucide-react";
 import ImageUploadModal from "./ImageUploadModal";
 import {
   getImages,
-  saveImage,
-  deleteImage,
   getProductImages,
   ImageData,
   ImageCategory,
@@ -17,6 +15,7 @@ import {
   formatFileSize,
   ImagesDatabase
 } from "@/lib/images-manager";
+import { saveImageWithSync, deleteImageWithSync } from "@/lib/images-sync";
 import { getProducts } from "@/lib/products";
 import { Product } from "@/lib/types";
 
@@ -41,16 +40,16 @@ export default function ImagesManagerTab() {
     setProducts(getProducts());
   };
 
-  const handleSaveImage = (key: string, imageData: ImageData) => {
-    saveImage(key, imageData);
+  const handleSaveImage = async (key: string, imageData: ImageData) => {
+    await saveImageWithSync(key, imageData);
     loadImages();
     setShowUploadModal(false);
     setSelectedImageKey(null);
   };
 
-  const handleDeleteImage = (key: string) => {
+  const handleDeleteImage = async (key: string) => {
     if (confirm('Opravdu chcete smazat tento obrázek? Nahradí se placeholderem.')) {
-      deleteImage(key);
+      await deleteImageWithSync(key);
       loadImages();
     }
   };
