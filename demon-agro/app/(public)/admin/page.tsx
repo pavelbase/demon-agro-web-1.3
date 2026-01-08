@@ -8,6 +8,9 @@ import { getPageContent, savePageContent, resetPageContent, defaultContent } fro
 import { getImages, saveImages, resetImages, defaultImages } from "@/lib/images";
 import { getArticles, saveArticles, resetArticles, generateSlug } from "@/lib/articles";
 import { getKalkulace, updateKalkulace, deleteKalkulace, UlozenaKalkulace } from "@/lib/kalkulace";
+import { syncProductsFromSupabase, saveAllProductsWithSync, deleteProductWithSync } from "@/lib/products-sync";
+import { syncArticlesFromSupabase, saveAllArticlesWithSync, deleteArticleWithSync } from "@/lib/articles-sync";
+import { syncContentFromSupabase, savePageContentWithSync } from "@/lib/content-sync";
 import ImageUpload from "@/components/ImageUpload";
 import ImagesManagerTab from "@/components/ImagesManagerTab";
 
@@ -36,12 +39,25 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      setProducts(getProducts());
-      setImages(getImages());
-      setArticles(getArticles());
-      setKalkulace(getKalkulace());
+      // Inicializovat synchronizaci
+      initializeData();
     }
   }, [isAuthenticated]);
+
+  const initializeData = async () => {
+    // Synchronizovat z Supabase
+    await Promise.all([
+      syncProductsFromSupabase(),
+      syncArticlesFromSupabase(),
+      syncContentFromSupabase()
+    ]);
+    
+    // Načíst data po synchronizaci
+    setProducts(getProducts());
+    setImages(getImages());
+    setArticles(getArticles());
+    setKalkulace(getKalkulace());
+  };
 
   const handleLogin = () => {
     if (password === "demonagro2024") {
@@ -51,45 +67,46 @@ export default function AdminPage() {
     }
   };
 
-  const handleSaveProduct = (product: Product) => {
+  const handleSaveProduct = async (product: Product) => {
     const updatedProducts = editingProduct
       ? products.map((p) => (p.id === product.id ? product : p))
       : [...products, { ...product, id: `product-${Date.now()}` }];
     
     setProducts(updatedProducts);
-    saveProducts(updatedProducts);
+    await saveAllProductsWithSync(updatedProducts);
     setEditingProduct(null);
     setIsAddingProduct(false);
     showSaveMessage("Produkt uložen");
   };
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     if (confirm("Opravdu chcete smazat tento produkt?")) {
       const updatedProducts = products.filter((p) => p.id !== id);
       setProducts(updatedProducts);
-      saveProducts(updatedProducts);
+      await deleteProductWithSync(id);
       showSaveMessage("Produkt smazán");
     }
   };
 
-  const handleToggleAvailability = (id: string) => {
+  const handleToggleAvailability = async (id: string) => {
     const updatedProducts = products.map((p) =>
       p.id === id ? { ...p, dostupnost: !p.dostupnost } : p
     );
     setProducts(updatedProducts);
-    saveProducts(updatedProducts);
+    await saveAllProductsWithSync(updatedProducts);
   };
 
-  const handleResetProducts = () => {
+  const handleResetProducts = async () => {
     if (confirm("Opravdu chcete obnovit výchozí produkty? Všechny změny budou ztraceny.")) {
       resetProducts();
       setProducts(defaultProducts);
+      await saveAllProductsWithSync(defaultProducts);
       showSaveMessage("Produkty obnoveny");
     }
   };
 
-  const handleSaveContent = () => {
-    savePageContent(selectedPage, pageContent);
+  const handleSaveContent = async () => {
+    await savePageContentWithSync(selectedPage, pageContent);
     showSaveMessage("Obsah uložen");
   };
 
@@ -126,49 +143,51 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateProductImage = (productId: string, newUrl: string) => {
+  const handleUpdateProductImage = async (productId: string, newUrl: string) => {
     const updatedProducts = products.map((p) =>
       p.id === productId ? { ...p, fotka_url: newUrl } : p
     );
     setProducts(updatedProducts);
-    saveProducts(updatedProducts);
+    await saveAllProductsWithSync(updatedProducts);
     setSelectedProduct(null);
     showSaveMessage("Obrázek produktu aktualizován");
   };
 
-  const handleSaveArticle = (article: Article) => {
+  const handleSaveArticle = async (article: Article) => {
     const updatedArticles = editingArticle
       ? articles.map((a) => (a.id === article.id ? article : a))
       : [...articles, { ...article, id: `article-${Date.now()}` }];
     
     setArticles(updatedArticles);
-    saveArticles(updatedArticles);
+    await saveAllArticlesWithSync(updatedArticles);
     setEditingArticle(null);
     setIsAddingArticle(false);
     showSaveMessage("Článek uložen");
   };
 
-  const handleDeleteArticle = (id: string) => {
+  const handleDeleteArticle = async (id: string) => {
     if (confirm("Opravdu chcete smazat tento článek?")) {
       const updatedArticles = articles.filter((a) => a.id !== id);
       setArticles(updatedArticles);
-      saveArticles(updatedArticles);
+      await deleteArticleWithSync(id);
       showSaveMessage("Článek smazán");
     }
   };
 
-  const handleTogglePublished = (id: string) => {
+  const handleTogglePublished = async (id: string) => {
     const updatedArticles = articles.map((a) =>
       a.id === id ? { ...a, publikovano: !a.publikovano } : a
     );
     setArticles(updatedArticles);
-    saveArticles(updatedArticles);
+    await saveAllArticlesWithSync(updatedArticles);
   };
 
-  const handleResetArticles = () => {
+  const handleResetArticles = async () => {
     if (confirm("Opravdu chcete obnovit výchozí články? Všechny změny budou ztraceny.")) {
       resetArticles();
-      setArticles(getArticles());
+      const resetedArticles = getArticles();
+      setArticles(resetedArticles);
+      await saveAllArticlesWithSync(resetedArticles);
       showSaveMessage("Články obnoveny");
     }
   };
