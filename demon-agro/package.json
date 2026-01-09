@@ -12,6 +12,7 @@
     "@emailjs/browser": "^3.11.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
+    "@marsidev/react-turnstile": "^1.4.1",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",

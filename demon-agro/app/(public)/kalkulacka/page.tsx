@@ -6,6 +6,7 @@ import { vypocetKalkulace, ulozitKalkulaci, zkontrolujDuplicitniEmail } from "@/
 import { Calculator, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import emailjs from "@emailjs/browser";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 // Sjednoceno s portálem - 3 typy půd podle české metodiky ÚKZÚZ
 const TYPYPUDY = {
@@ -30,6 +31,7 @@ export default function KalkulackaPage() {
   const [krok, setKrok] = useState(1);
   const [vysledek, setVysledek] = useState<VysledekKalkulace | null>(null);
   const [odesila, setOdesila] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<KalkulackaInputs>({
     typPudy: 'S', // Střední půda jako výchozí (nejběžnější)
@@ -143,6 +145,12 @@ export default function KalkulackaPage() {
     const isValid = await validovatKrok3();
     if (!isValid) return;
 
+    // Validace Turnstile tokenu (ochrana proti botům)
+    if (!turnstileToken) {
+      setChyby({ ...chyby, turnstile: "Prosím ověřte, že nejste robot" });
+      return;
+    }
+
     setOdesila(true);
 
     try {
@@ -178,12 +186,16 @@ export default function KalkulackaPage() {
         // Pokračujeme i při chybě záznamu
       }
       
-      // Odeslání emailu - Hardcoded keys for reliability
+      // Odeslání emailu přes EmailJS
       // Obaleno v try-catch, aby selhání emailu nezablokovalo zobrazení výsledků
       try {
-        const serviceId = "service_xrx301a";
-        const templateId = "template_grgltnp";
-        const publicKey = "xL_Khx5Gcnt-lEvUl";
+        const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+        const templateId = process.env.NEXT_PUBLIC_EMAILJS_CALCULATOR_TEMPLATE_ID || "template_grgltnp";
+        const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+
+        if (!serviceId || !publicKey) {
+          throw new Error('EmailJS není nakonfigurován');
+        }
 
         // Sestavení nutrients_summary pro email
         const nutrients_summary = Object.entries(vypocet.ziviny)
@@ -225,6 +237,7 @@ export default function KalkulackaPage() {
   const handleNovaKalkulace = () => {
     setKrok(1);
     setVysledek(null);
+    setTurnstileToken(null); // Reset Turnstile
     setFormData({
       typPudy: 'S', // Střední půda jako výchozí
       pH: 0,
@@ -540,6 +553,23 @@ export default function KalkulackaPage() {
                     Chci odebírat novinky a tipy pro efektivní zemědělství.
                   </span>
                 </label>
+              </div>
+
+              {/* Turnstile CAPTCHA (ochrana proti botům) */}
+              <div>
+                <TurnstileWidget
+                  onSuccess={(token) => {
+                    setTurnstileToken(token);
+                    setChyby({ ...chyby, turnstile: "" });
+                  }}
+                  onError={() => {
+                    setTurnstileToken(null);
+                    setChyby({ ...chyby, turnstile: "Ověření selhalo, zkuste to znovu" });
+                  }}
+                />
+                {chyby.turnstile && (
+                  <p className="text-red-600 text-sm mt-2 text-center">{chyby.turnstile}</p>
+                )}
               </div>
 
               <div className="flex flex-col md:flex-row gap-4">

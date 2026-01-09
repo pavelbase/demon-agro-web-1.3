@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, CheckCircle2, AlertCircle } from "lucide-react";
 import emailjs from "@emailjs/browser";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 export default function KontaktPage() {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ export default function KontaktPage() {
 
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -53,12 +55,24 @@ export default function KontaktPage() {
       return;
     }
 
+    // Validace Turnstile tokenu (ochrana proti botům)
+    if (!turnstileToken) {
+      setErrors({ ...errors, turnstile: "Prosím ověřte, že nejste robot" });
+      return;
+    }
+
     setStatus("sending");
 
-    // Hardcoded credentials for reliability
-    const serviceId = "service_xrx301a";
-    const templateId = "template_kogwumm";
-    const publicKey = "xL_Khx5Gcnt-lEvUl";
+    // EmailJS credentials z environment variables
+    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+    const templateId = process.env.NEXT_PUBLIC_EMAILJS_CONTACT_TEMPLATE_ID || "template_kogwumm";
+    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !publicKey) {
+      setStatus("error");
+      console.error("EmailJS není nakonfigurován");
+      return;
+    }
 
     try {
       const templateParams = {
@@ -73,6 +87,7 @@ export default function KontaktPage() {
 
       setStatus("success");
       setFormData({ name: "", email: "", phone: "", farmLocation: "", message: "" });
+      setTurnstileToken(null); // Reset Turnstile
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("Email send error:", error);
@@ -299,6 +314,23 @@ export default function KontaktPage() {
                   />
                   {errors.message && (
                     <p className="mt-1 text-sm text-red-600">{errors.message}</p>
+                  )}
+                </div>
+
+                {/* Turnstile CAPTCHA (ochrana proti botům) */}
+                <div>
+                  <TurnstileWidget
+                    onSuccess={(token) => {
+                      setTurnstileToken(token);
+                      setErrors({ ...errors, turnstile: "" });
+                    }}
+                    onError={() => {
+                      setTurnstileToken(null);
+                      setErrors({ ...errors, turnstile: "Ověření selhalo, zkuste to znovu" });
+                    }}
+                  />
+                  {errors.turnstile && (
+                    <p className="mt-2 text-sm text-red-600 text-center">{errors.turnstile}</p>
                   )}
                 </div>
 
