@@ -223,3 +223,4 @@ AI Assistant (Claude Sonnet 4.5) + Pavel Baše
 **Pro budoucnost:**
 > Před nasazením do produkce vždy ověřit matematiku na papíře nebo kalkulačce!
 
+

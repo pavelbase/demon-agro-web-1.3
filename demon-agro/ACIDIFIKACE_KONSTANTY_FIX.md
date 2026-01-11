@@ -180,3 +180,4 @@ AI Assistant (Claude Sonnet 4.5) + Pavel Baše
 > **Display Logic = Calculation Logic**  
 > Frontend by měl zobrazovat pomocí **stejných konstant**, jaké použil backend při výpočtu. Nikdy "reverse-engineer" hodnoty z databáze.
 
+

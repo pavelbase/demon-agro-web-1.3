@@ -145,3 +145,4 @@ Po dokončení všech testů vyplňte:
 **Pokud jsou všechny checkboxy zaškrtnuté → HOTFIX ÚSPĚŠNÝ! 🎉**
 
 
+

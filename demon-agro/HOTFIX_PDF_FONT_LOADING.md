@@ -122,3 +122,4 @@ Těžká    | -                  ✅
 - [KRITICKA_OPRAVA_JEDNOTEK_VAPNENI.md](./KRITICKA_OPRAVA_JEDNOTEK_VAPNENI.md) - Oprava jednotek
 
 
+

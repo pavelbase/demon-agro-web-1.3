@@ -24,6 +24,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { SOIL_TYPE_LABELS } from '@/lib/constants/database'
+import { ExportParcelsExcelButton } from './ExportParcelsExcelButton'
 
 interface ParcelsTableProps {
   parcels: ParcelWithAnalysis[]
@@ -715,6 +716,10 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
             <Plus className="h-4 w-4" />
             Přidat pozemek
           </button>
+          <ExportParcelsExcelButton 
+            parcels={filteredParcels}
+            className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          />
           {selectedParcels.size > 0 && (
             <button
               onClick={() => setShowBulkDeleteModal(true)}

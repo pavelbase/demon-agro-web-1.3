@@ -38,3 +38,4 @@ Viz: `FIX_LIMING_REQUESTS_CONTACT_FIELDS.md`
 - **Řešení**: SQL skript vytvoří kompletní tabulku s všemi sloupci
 - **Bezpečné**: Nepřepíše existující data
 
+

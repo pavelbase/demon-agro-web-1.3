@@ -238,3 +238,4 @@ Projekt používá [Semantic Versioning](https://semver.org/lang/cs/):
 **Status:** ✅ Production Ready
 
 
+

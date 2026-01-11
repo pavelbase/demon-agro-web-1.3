@@ -71,3 +71,4 @@ COMMENT ON COLUMN public.public_content.page_key IS 'Klíč stránky (např. hom
 COMMENT ON COLUMN public.public_content.content_data IS 'JSON data obsahu stránky (hero_nadpis, hero_popis, problem_nadpis, atd.)';
 COMMENT ON COLUMN public.public_content.page_title IS 'Název stránky pro admin rozhraní';
 
+

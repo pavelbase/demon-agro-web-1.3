@@ -34,6 +34,10 @@ async function ParcelsContent() {
         k_category,
         mg,
         mg_category,
+        ca,
+        ca_category,
+        s,
+        s_category,
         created_at
       )
     `)
@@ -60,7 +64,7 @@ async function ParcelsContent() {
     const analyses = parcel.soil_analyses || []
     
     // Group and average analyses by date (AZZP methodology)
-    const groupedAnalyses = groupAndAverageAnalyses(analyses)
+    const groupedAnalyses = groupAndAverageAnalyses(analyses, parcel.soil_type)
     const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
     // Determine status

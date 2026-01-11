@@ -196,3 +196,4 @@ Pak znovu spusť vytvoření.
 **Poslední aktualizace:** Po opravě chyby "relation does not exist"
 
 
+

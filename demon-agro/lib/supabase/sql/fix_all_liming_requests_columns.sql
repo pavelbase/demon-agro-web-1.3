@@ -149,3 +149,4 @@ PO SPUŠTĚNÍ:
 - Všechna data budou zachována
 */
 
+

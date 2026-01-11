@@ -111,3 +111,4 @@ A log z API při pokusu o vytvoření plánu (z terminálu).
 **Jsem připraven pomoci s jakýmkoli dalším krokem!** 🚀
 
 
+

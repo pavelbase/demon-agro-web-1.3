@@ -89,3 +89,4 @@ Pokud reset link nefunguje, můžete implementovat admin reset:
 - Zkusit inkognito režim
 - Nebo jiný browser
 
+

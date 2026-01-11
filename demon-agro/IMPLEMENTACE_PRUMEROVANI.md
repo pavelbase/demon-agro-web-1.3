@@ -119,3 +119,4 @@ Když je odebráno více vzorků z jednoho pozemku ve stejný den:
 
 
 
+

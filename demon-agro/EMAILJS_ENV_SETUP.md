@@ -79,3 +79,4 @@ Pro kompletní setup viz:
 - [`EMAILJS_WELCOME_TEMPLATE.md`](EMAILJS_WELCOME_TEMPLATE.md) - Welcome email template
 - [`EMAILJS_README.md`](EMAILJS_README.md) - Přehled všech emailů
 
+

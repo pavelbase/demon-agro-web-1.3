@@ -116,3 +116,4 @@ Všechno je teď **synchronizované** a používá **stejné názvy sloupců a h
 **Další krok:** Spustit SQL v Supabase Dashboard
 
 
+

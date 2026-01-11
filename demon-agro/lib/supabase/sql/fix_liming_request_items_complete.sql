@@ -258,3 +258,4 @@ PO SPUŠTĚNÍ:
 - Aplikace by měla fungovat bez chyb PGRST204
 */
 
+

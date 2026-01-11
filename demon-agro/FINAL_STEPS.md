@@ -219,3 +219,4 @@ git push
 **Status:** ⏳ Čeká na spuštění KROK 1 a KROK 2
 
 
+

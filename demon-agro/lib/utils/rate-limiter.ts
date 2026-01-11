@@ -101,3 +101,4 @@ export function formatResetTime(resetAt: number): string {
   return `za ${minutes} minut`;
 }
 
+

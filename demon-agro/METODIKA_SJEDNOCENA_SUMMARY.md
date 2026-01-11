@@ -128,3 +128,4 @@ Všechna místa v aplikaci:
 **Poslední aktualizace:** 4. ledna 2026 (večer)
 
 
+

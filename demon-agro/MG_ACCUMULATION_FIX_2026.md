@@ -230,3 +230,4 @@ AI Assistant (Claude Sonnet 4.5) + Pavel Baše
 > - ✅ Validaci mezí (min/max hodnoty)
 > - ✅ Varování při kritických stavech
 
+

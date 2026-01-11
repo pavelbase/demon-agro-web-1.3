@@ -130,3 +130,4 @@ Systém nyní počítá s **6letým cyklem** (AZZP standard). Roční normativ s
 **Next:** Otestovat s reálnými daty a ověřit výsledky s agronomem
 
 
+

@@ -153,3 +153,4 @@ Což by bylo **realističtější** pro takovou dávku.
 **POZNÁMKA:** Systém funguje a logika je správná, ale **NUMERICKÉ HODNOTY** mohou být špatně až o 250%!
 
 
+

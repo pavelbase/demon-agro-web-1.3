@@ -501,3 +501,4 @@ Volá se při resetování hesla administrátorem v admin sekci.
 **Datum:** 6. ledna 2026  
 **Logo:** https://demonagro.cz/logo.png
 
+

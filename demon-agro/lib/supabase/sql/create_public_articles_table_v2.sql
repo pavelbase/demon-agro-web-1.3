@@ -114,3 +114,4 @@ BEGIN
   RAISE NOTICE '   Povolené kategorie: ph, vapneni, ziviny, vyzkumy, tipy';
 END $$;
 
+

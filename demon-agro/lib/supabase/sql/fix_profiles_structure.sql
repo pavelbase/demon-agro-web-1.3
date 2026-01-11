@@ -115,3 +115,4 @@ PO SPUŠTĚNÍ:
 - Měli byste vidět všechny sloupce včetně full_name, company_name, district, atd.
 */
 
+

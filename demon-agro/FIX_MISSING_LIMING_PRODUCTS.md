@@ -129,3 +129,4 @@ SELECT name FROM liming_products WHERE is_active = true;
 **Pokud problém přetrvává, pošlete screenshot výsledku diagnostického SQL.**
 
 
+

@@ -65,3 +65,4 @@ Veřejná kalkulačka (`/kalkulacka`) a portál (`/portal`) používají **RŮZN
 Viz: `AUDIT_METODIKY_VYPOCTU_ZIVIN.md`
 
 
+

@@ -210,3 +210,4 @@ Po implementaci by měla kalkulačka:
 - Hodnoty vápnění odpovídají doporučením ČZU Praha
 
 
+

@@ -297,3 +297,4 @@ Po dokončení všech kroků bude systém plně funkční:
 - ✅ Rychlý přístup přes localStorage cache
 - ✅ Automatická synchronizace
 
+

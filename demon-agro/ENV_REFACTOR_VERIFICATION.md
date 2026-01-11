@@ -173,3 +173,4 @@ const phChange = calculatePhChange(effectiveCaoApplied, soilType, currentPh)
 **Methodology:** Variant A (ENV + Smart Product Switching)  
 **Status:** ✅ Complete - Ready for Testing
 
+

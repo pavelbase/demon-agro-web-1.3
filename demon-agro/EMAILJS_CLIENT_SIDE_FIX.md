@@ -181,3 +181,4 @@ NEXT_PUBLIC_APP_URL=https://portal.demonagro.cz
 **Status:** ✅ Implementováno a funkční  
 **Testováno:** 6. ledna 2026
 
+

@@ -303,3 +303,4 @@ Pokud máte problémy s vytvořením template:
 **Verze:** 1.0  
 **Datum:** 6. ledna 2026
 
+

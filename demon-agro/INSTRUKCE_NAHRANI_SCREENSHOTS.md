@@ -71,3 +71,4 @@ Pro nejlepší výkon můžete obrázky optimalizovat:
 **Status**: Čeká se na nahrání screenshotů
 **Datum**: 6. ledna 2026
 
+

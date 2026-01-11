@@ -69,6 +69,42 @@ function getPhTextColor(category: PhCategory | null): string {
   }
 }
 
+// Get pH color based on soil-type evaluation status
+function getPhStatusColor(status: 'urgentni_vapneni' | 'intenzivni_vapneni' | 'udrzovaci_vapneni' | 'optimalni' | 'nad_optimum'): string {
+  switch (status) {
+    case 'urgentni_vapneni':
+      return 'bg-[#ef4444]' // Red - urgent
+    case 'intenzivni_vapneni':
+      return 'bg-[#f97316]' // Orange - intensive
+    case 'udrzovaci_vapneni':
+      return 'bg-[#fb923c]' // Light Orange - maintenance
+    case 'optimalni':
+      return 'bg-[#22c55e]' // Green - optimal
+    case 'nad_optimum':
+      return 'bg-[#3b82f6]' // Blue - above optimal
+    default:
+      return 'bg-gray-400'
+  }
+}
+
+// Get pH text color based on soil-type evaluation status
+function getPhStatusTextColor(status: 'urgentni_vapneni' | 'intenzivni_vapneni' | 'udrzovaci_vapneni' | 'optimalni' | 'nad_optimum'): string {
+  switch (status) {
+    case 'urgentni_vapneni':
+      return 'text-[#ef4444]'
+    case 'intenzivni_vapneni':
+      return 'text-[#f97316]'
+    case 'udrzovaci_vapneni':
+      return 'text-[#fb923c]'
+    case 'optimalni':
+      return 'text-[#22c55e]'
+    case 'nad_optimum':
+      return 'text-[#3b82f6]'
+    default:
+      return 'text-gray-600'
+  }
+}
+
 // Get nutrient category color (according to spec)
 function getNutrientCategoryColor(category: NutrientCategory | null): string {
   if (!category) return 'bg-gray-400'
@@ -489,16 +525,32 @@ export function ParcelHealthCard({ parcel, analysis, compact = false }: ParcelHe
           </div>
 
           <div className="grid grid-cols-2 gap-2 mb-3">
-            <NutrientBar
-              label="pH"
-              value={analysis.ph}
-              unit=""
-              category={analysis.ph_category}
-              categoryLabel={analysis.ph_category ? PH_CATEGORY_LABELS[analysis.ph_category] : '-'}
-              categoryDescription={analysis.ph_category ? PH_CATEGORY_DESCRIPTIONS[analysis.ph_category] : ''}
-              isPh={true}
-              compact={true}
-            />
+            {(() => {
+              const phEval = evaluatePhForSoilType(analysis.ph, parcel.soil_type, parcel.culture)
+              const barColor = getPhStatusColor(phEval.status)
+              const textColor = getPhStatusTextColor(phEval.status)
+              const progress = Math.min((analysis.ph / 9) * 100, 100)
+
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-gray-700">pH</span>
+                    <span className={`text-sm font-bold ${textColor}`}>
+                      {analysis.ph.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${barColor} transition-all duration-500`}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className={`text-xs mt-1 ${textColor}`}>
+                    {phEval.isOptimal ? 'Optimální' : getLimingStatusLabel(phEval.status)}
+                  </div>
+                </div>
+              )
+            })()}
             <NutrientBar
               label="P"
               value={analysis.p}
@@ -563,43 +615,62 @@ export function ParcelHealthCard({ parcel, analysis, compact = false }: ParcelHe
           </div>
         )}
 
-        {/* pH Progress Bar */}
+        {/* pH Progress Bar - with soil-type specific evaluation */}
         <div className="mb-6">
-          <NutrientBar
-            label="pH"
-            value={analysis.ph}
-            unit=""
-            category={analysis.ph_category}
-            categoryLabel={analysis.ph_category ? PH_CATEGORY_LABELS[analysis.ph_category] : '-'}
-            categoryDescription={analysis.ph_category ? PH_CATEGORY_DESCRIPTIONS[analysis.ph_category] : ''}
-            isPh={true}
-          />
-          
-          {/* pH Evaluation for Soil Type */}
           {(() => {
             const phEval = evaluatePhForSoilType(analysis.ph, parcel.soil_type, parcel.culture)
+            const barColor = getPhStatusColor(phEval.status)
+            const textColor = getPhStatusTextColor(phEval.status)
+            const progress = Math.min((analysis.ph / 9) * 100, 100)
+
             return (
-              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">
-                      Status pro {SOIL_TYPE_LABELS[parcel.soil_type]} {CULTURE_LABELS[parcel.culture]}:
-                    </span>
-                    {phEval.isOptimal ? (
-                      <span className="text-sm font-semibold text-green-600">
-                        ✓ Optimální pH
-                      </span>
-                    ) : (
-                      <span className="text-sm font-semibold text-orange-600">
-                        {getLimingStatusLabel(phEval.status)}
-                      </span>
-                    )}
+                    <span className="text-sm font-semibold text-gray-900">pH</span>
+                    <Tooltip content={analysis.ph_category ? PH_CATEGORY_DESCRIPTIONS[analysis.ph_category] : ''}>
+                      <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+                    </Tooltip>
                   </div>
-                  <span className="text-sm text-gray-600">
-                    Cíl: pH {phEval.targetPh}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-lg font-bold ${textColor}`}>
+                      {analysis.ph.toFixed(1)}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded font-medium ${textColor.replace('text-', 'bg-')}/10 ${textColor}`}>
+                      {phEval.isOptimal ? 'Optimální' : getLimingStatusLabel(phEval.status)}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-600 mt-2">{phEval.recommendation}</p>
+                <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${barColor} transition-all duration-500 rounded-full`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                
+                {/* pH Evaluation for Soil Type */}
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Status pro {SOIL_TYPE_LABELS[parcel.soil_type]} {CULTURE_LABELS[parcel.culture]}:
+                      </span>
+                      {phEval.isOptimal ? (
+                        <span className="text-sm font-semibold text-green-600">
+                          ✓ Optimální pH
+                        </span>
+                      ) : (
+                        <span className="text-sm font-semibold text-orange-600">
+                          {getLimingStatusLabel(phEval.status)}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      Cíl: pH {phEval.targetPh}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">{phEval.recommendation}</p>
+                </div>
               </div>
             )
           })()}

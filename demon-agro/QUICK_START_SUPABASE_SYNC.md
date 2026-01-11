@@ -115,3 +115,4 @@ DELETE FROM public_content;
 
 Detailní dokumentace: `IMPLEMENTACE_SUPABASE_SYNC.md`
 
+

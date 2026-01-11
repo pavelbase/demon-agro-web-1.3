@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import type { NutrientCategory, PhCategory } from '@/lib/types/database'
 
 interface SoilAnalysisFormProps {
@@ -24,6 +25,8 @@ interface SoilAnalysisFormProps {
 
 export function SoilAnalysisForm({ parcelId, initialData, onCancel, onSuccess }: SoilAnalysisFormProps) {
   const router = useRouter()
+  const supabase = createClient()
+  const [userId, setUserId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -40,6 +43,19 @@ export function SoilAnalysisForm({ parcelId, initialData, onCancel, onSuccess }:
     notes: '',
   })
 
+  // Get user ID on mount
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      } else {
+        setError('Uživatel není přihlášen')
+      }
+    }
+    getUser()
+  }, [supabase])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -51,6 +67,11 @@ export function SoilAnalysisForm({ parcelId, initialData, onCancel, onSuccess }:
     setError(null)
 
     try {
+      // Check if user is authenticated
+      if (!userId) {
+        throw new Error('Uživatel není přihlášen')
+      }
+
       // Validate required fields
       if (!formData.date || !formData.ph || !formData.phosphorus || !formData.potassium || !formData.magnesium) {
         throw new Error('Vyplňte všechna povinná pole (datum, pH, P, K, Mg)')
@@ -86,7 +107,8 @@ export function SoilAnalysisForm({ parcelId, initialData, onCancel, onSuccess }:
       // Prepare data for submission
       const submitData = {
         parcelId,
-        date: formData.date,
+        userId,
+        analysis_date: formData.date,
         ph,
         phosphorus,
         potassium,
@@ -98,7 +120,7 @@ export function SoilAnalysisForm({ parcelId, initialData, onCancel, onSuccess }:
       }
 
       // Submit to API
-      const response = await fetch('/api/soil-analyses', {
+      const response = await fetch('/api/portal/save-soil-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),

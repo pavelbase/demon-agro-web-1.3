@@ -346,3 +346,4 @@ Po dokončení všech kroků budete mít:
 **Autor:** AI Assistant  
 **Projekt:** Démon agro - Portál pro správu pozemků a vápnění
 
+

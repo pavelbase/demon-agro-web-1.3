@@ -69,13 +69,13 @@ export async function POST(request: NextRequest) {
     console.log('7. Admin client created')
     
     console.log('8. Fetching target user...')
-    let targetUser
+    let targetUser: { id: string; email: string; company_name: string | null }
     if (userId) {
       const { data, error } = await adminClient
         .from('profiles')
-        .select('id, email, full_name, company_name')
+        .select('id, email, company_name')
         .eq('id', userId)
-        .single()
+        .single() as { data: { id: string; email: string; company_name: string | null } | null; error: any }
       
       if (error) {
         console.error('9. Error fetching user:', error)
@@ -84,19 +84,31 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
+      if (!data) {
+        return NextResponse.json(
+          { error: 'Uživatel nenalezen' },
+          { status: 404 }
+        )
+      }
       targetUser = data
     } else {
       const { data, error } = await adminClient
         .from('profiles')
-        .select('id, email, full_name, company_name')
+        .select('id, email, company_name')
         .eq('email', email)
-        .single()
+        .single() as { data: { id: string; email: string; company_name: string | null } | null; error: any }
       
       if (error) {
         console.error('9. Error fetching user:', error)
         return NextResponse.json(
           { error: 'Chyba při načítání uživatele: ' + error.message },
           { status: 500 }
+        )
+      }
+      if (!data) {
+        return NextResponse.json(
+          { error: 'Uživatel nenalezen' },
+          { status: 404 }
         )
       }
       targetUser = data
@@ -160,7 +172,7 @@ export async function POST(request: NextRequest) {
       success: true,
       userId: targetUser.id,
       email: targetUser.email,
-      fullName: targetUser.full_name || targetUser.company_name || 'Uživatel',
+      fullName: targetUser.company_name || 'Uživatel',
       newPassword: newPassword,
       message: 'Heslo bylo resetováno',
     })

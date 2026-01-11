@@ -37,3 +37,4 @@ WHERE p.id IS NULL;
 -- LEFT JOIN public.profiles p ON u.id = p.id
 -- WHERE p.id IS NULL;
 
+

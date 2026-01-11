@@ -164,3 +164,4 @@ console.log('VŠECHNY TESTY DOKONČENY')
 console.log('='.repeat(60) + '\n')
 
 
+

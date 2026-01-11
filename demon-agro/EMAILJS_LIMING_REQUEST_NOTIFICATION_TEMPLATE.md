@@ -665,3 +665,4 @@ Subject obsahuje `{{company_name}}`, takže v emailové schránce uvidíte rovno
 **Logo:** https://demonagro.cz/logo.png  
 **Důležité:** Nezapomeňte nastavit Reply-To na `{{contact_email}}`!
 
+

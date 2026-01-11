@@ -232,3 +232,4 @@ Speciální poděkování:
 **Bezpečné:** ✅ ANO (RLS + validace)
 
 
+

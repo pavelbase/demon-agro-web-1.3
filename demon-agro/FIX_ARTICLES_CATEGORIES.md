@@ -209,3 +209,4 @@ Po provedení těchto kroků:
 - `lib/supabase/sql/create_public_articles_table_v2.sql` (Opravená verze)
 - `FIX_ARTICLES_CATEGORIES.md` (Tento návod)
 
+

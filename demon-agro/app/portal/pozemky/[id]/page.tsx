@@ -69,7 +69,7 @@ export default async function ParcelDetailPage({
     .order('analysis_date', { ascending: false })
 
   // Group and average analyses by date (AZZP methodology)
-  const groupedAnalyses = groupAndAverageAnalyses(analyses || [])
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type)
   const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
   // Fetch fertilization history (last 3 years)

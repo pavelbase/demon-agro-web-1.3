@@ -215,3 +215,4 @@ PO SPUŠTĚNÍ:
 - Chyba PGRST204 by měla zmizet
 */
 
+

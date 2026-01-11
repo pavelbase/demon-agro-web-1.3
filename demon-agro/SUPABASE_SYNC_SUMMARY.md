@@ -271,3 +271,4 @@ Při problémech:
 **Verze:** 1.0  
 **Status:** ✅ Kompletní a připraveno k nasazení
 
+

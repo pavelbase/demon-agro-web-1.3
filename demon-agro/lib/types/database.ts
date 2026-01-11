@@ -91,7 +91,7 @@ export interface Database {
           user_id: string
           name: string
           area: number
-          cadastral_number: string | null
+          code: string | null
           soil_type: SoilType
           culture: Culture
           notes: string | null
@@ -105,7 +105,7 @@ export interface Database {
           user_id: string
           name: string
           area: number
-          cadastral_number?: string | null
+          code?: string | null
           soil_type?: SoilType | null
           culture?: Culture
           notes?: string | null
@@ -119,7 +119,7 @@ export interface Database {
           user_id?: string
           name?: string
           area?: number
-          cadastral_number?: string | null
+          code?: string | null
           soil_type?: SoilType | null
           culture?: Culture
           notes?: string | null

@@ -265,3 +265,4 @@ Systém vás může varovat:
 **Verze:** 1.0
 
 
+

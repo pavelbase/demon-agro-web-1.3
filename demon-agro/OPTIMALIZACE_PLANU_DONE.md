@@ -264,3 +264,4 @@ Pro plné využití kombinace produktů bude potřeba upravit UI:
 **Next:** Otestovat generování plánu na reálných datech.
 
 
+

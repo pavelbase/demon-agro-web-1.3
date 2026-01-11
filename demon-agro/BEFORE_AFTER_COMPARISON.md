@@ -322,3 +322,4 @@ Návštěvník → Načte z Supabase ───┘
 
 **Systém je nyní profesionální, škálovatelný a připravený pro reálný provoz! 🚀**
 
+

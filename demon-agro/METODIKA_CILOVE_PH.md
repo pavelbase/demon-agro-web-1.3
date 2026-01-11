@@ -146,3 +146,4 @@ Doporučeno: TTP 5.5-6.0 (pro střední půdu)
 **Verze:** 2.0 (2026-01-03)
 
 
+

@@ -54,3 +54,4 @@ Nebo spusťte přímo:
 npx tsx scripts/migrate-images-to-supabase.ts
 ```
 
+

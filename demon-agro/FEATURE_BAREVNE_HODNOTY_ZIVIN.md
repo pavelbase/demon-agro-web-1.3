@@ -143,3 +143,4 @@ V tabulce:
 - [ ] Zvážit přidání ikon vedle hodnot (⚠ pro nízké, ✓ pro optimální)
 
 
+

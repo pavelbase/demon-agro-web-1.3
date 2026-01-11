@@ -446,3 +446,4 @@ Volá se při vytvoření nového uživatele v admin sekci.
 **Datum:** 6. ledna 2026  
 **Logo:** https://demonagro.cz/logo.png
 
+

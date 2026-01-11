@@ -230,3 +230,4 @@ Kalkulačka je připravena k nasazení do produkce! 🚀
 **Dokumentováno:** Kompletně ✅
 
 
+

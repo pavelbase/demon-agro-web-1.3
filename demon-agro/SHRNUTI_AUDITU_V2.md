@@ -115,3 +115,4 @@ potrebaCaoTHa = kgCaco3PerHa_to_tCaoPerHa(limeNeed.amount)
 **Poslední aktualizace:** 4. ledna 2026 (17:00)
 
 
+

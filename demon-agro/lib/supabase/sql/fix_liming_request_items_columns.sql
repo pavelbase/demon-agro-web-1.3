@@ -133,3 +133,4 @@ BEZPEČNOST:
 - Lze bezpečně spustit opakovaně
 */
 
+

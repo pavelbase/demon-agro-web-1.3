@@ -187,3 +187,4 @@ npm run dev
 - Pošlete mi screenshot nebo text chyby
 
 
+

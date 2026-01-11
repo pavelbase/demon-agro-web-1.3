@@ -108,3 +108,4 @@ SQL migrace `create_liming_plans.sql` obsahuje správný název, ale constraint 
 **Status:** ✅ Připraveno k použití
 
 
+

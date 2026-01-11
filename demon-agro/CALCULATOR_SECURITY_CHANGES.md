@@ -446,3 +446,4 @@ $$ LANGUAGE plpgsql;
 **Autor:** AI Assistant  
 **Datum:** 6. ledna 2026
 
+

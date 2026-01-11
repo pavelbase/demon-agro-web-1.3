@@ -63,11 +63,12 @@ function getCultureLabel(culture: Culture): string {
 function getPhCategoryLabel(category: PhCategory | null | undefined): string {
   if (!category) return '-'
   const labels: Record<PhCategory, string> = {
-    EK: 'Extrémně kyselý',
-    SK: 'Silně kyselý',
-    N: 'Neutrální',
-    SZ: 'Slabě zásaditý',
-    EZ: 'Extrémně zásaditý',
+    extremne_kysela: 'Extrémně kyselá',
+    silne_kysela: 'Silně kyselá',
+    slabe_kysela: 'Slabě kyselá',
+    neutralni: 'Neutrální',
+    slabe_alkalicka: 'Slabě alkalická',
+    alkalicka: 'Alkalická',
   }
   return labels[category] || category
 }
@@ -78,11 +79,11 @@ function getPhCategoryLabel(category: PhCategory | null | undefined): string {
 function getNutrientCategoryLabel(category: NutrientCategory | null | undefined): string {
   if (!category) return '-'
   const labels: Record<NutrientCategory, string> = {
-    N: 'Nízký',
-    VH: 'Velmi hluboko',
-    D: 'Dobrý',
-    V: 'Vysoký',
-    VV: 'Velmi vysoký',
+    nizky: 'Nízký',
+    vyhovujici: 'Vyhovující',
+    dobry: 'Dobrý',
+    vysoky: 'Vysoký',
+    velmi_vysoky: 'Velmi vysoký',
   }
   return labels[category] || category
 }
@@ -173,18 +174,23 @@ export function exportParcelsExcel(parcels: ParcelWithAnalysis[]): Buffer {
     const analysis = parcel.latest_analysis
 
     return {
-      'Kód': parcel.code || '-',
-      'Název': parcel.name,
+      'Název pozemku': parcel.name,
+      'Kód pozemku (LPIS)': parcel.code || '-',
       'Výměra (ha)': parcel.area,
-      'Půdní druh': getSoilTypeLabel(parcel.soil_type),
+      'Typ půdy': getSoilTypeLabel(parcel.soil_type),
       'Kultura': getCultureLabel(parcel.culture),
       'pH': analysis?.ph ? formatNumber(analysis.ph, 2) : '-',
-      'P (mg/kg)': analysis?.phosphorus || '-',
-      'K (mg/kg)': analysis?.potassium || '-',
-      'Mg (mg/kg)': analysis?.magnesium || '-',
-      'S (mg/kg)': analysis?.sulfur || '-',
-      'K:Mg': analysis ? calculateKMgRatio(analysis.potassium, analysis.magnesium) : '-',
-      'Datum rozboru': analysis ? formatDate(analysis.date) : '-',
+      'Fosfor P (mg/kg)': analysis?.p ? formatNumber(analysis.p, 0) : '-',
+      'Stav P': analysis?.p_category ? getNutrientCategoryLabel(analysis.p_category) : '-',
+      'Draslík K (mg/kg)': analysis?.k ? formatNumber(analysis.k, 0) : '-',
+      'Stav K': analysis?.k_category ? getNutrientCategoryLabel(analysis.k_category) : '-',
+      'Hořčík Mg (mg/kg)': analysis?.mg ? formatNumber(analysis.mg, 0) : '-',
+      'Stav Mg': analysis?.mg_category ? getNutrientCategoryLabel(analysis.mg_category) : '-',
+      'Vápník Ca (mg/kg)': analysis?.ca ? formatNumber(analysis.ca, 0) : '-',
+      'Stav Ca': analysis?.ca_category ? getNutrientCategoryLabel(analysis.ca_category) : '-',
+      'Síra S (mg/kg)': analysis?.s ? formatNumber(analysis.s, 0) : '-',
+      'Stav S': analysis?.s_category ? getNutrientCategoryLabel(analysis.s_category) : '-',
+      'Datum rozboru': analysis ? formatDate(analysis.analysis_date) : '-',
     }
   })
 
@@ -193,17 +199,22 @@ export function exportParcelsExcel(parcels: ParcelWithAnalysis[]): Buffer {
 
   // Set column widths
   const colWidths = [
-    { wch: 12 }, // Kód
-    { wch: 25 }, // Název
+    { wch: 25 }, // Název pozemku
+    { wch: 18 }, // Kód pozemku
     { wch: 12 }, // Výměra
-    { wch: 15 }, // Půdní druh
+    { wch: 12 }, // Typ půdy
     { wch: 15 }, // Kultura
     { wch: 8 },  // pH
-    { wch: 12 }, // P
-    { wch: 12 }, // K
-    { wch: 12 }, // Mg
-    { wch: 12 }, // S
-    { wch: 8 },  // K:Mg
+    { wch: 16 }, // Fosfor P
+    { wch: 12 }, // Stav P
+    { wch: 16 }, // Draslík K
+    { wch: 12 }, // Stav K
+    { wch: 16 }, // Hořčík Mg
+    { wch: 12 }, // Stav Mg
+    { wch: 16 }, // Vápník Ca
+    { wch: 12 }, // Stav Ca
+    { wch: 16 }, // Síra S
+    { wch: 12 }, // Stav S
     { wch: 15 }, // Datum rozboru
   ]
   worksheet['!cols'] = colWidths
@@ -516,7 +527,7 @@ export function exportLimingRequestExcel(request: LimingRequestWithDetails): Buf
  */
 export function generateParcelsFilename(): string {
   const date = new Date().toISOString().split('T')[0]
-  return `Pozemky_${date}.xlsx`
+  return `demon-agro-pozemky-${date}.xlsx`
 }
 
 /**

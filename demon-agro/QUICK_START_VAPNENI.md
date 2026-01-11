@@ -84,3 +84,4 @@ Po spuštění SQL můžeš hned začít zadávat produkty s kompletními údaji
 *Quick Start vytvořen: 3.1.2026*
 
 
+

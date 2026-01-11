@@ -21,3 +21,4 @@ Tato složka obsahuje screenshoty z portálu pro zobrazení na landing page.
 ## Nahrání:
 Umístěte screenshoty ze své aplikace do této složky s výše uvedenými názvy.
 
+

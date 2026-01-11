@@ -326,3 +326,4 @@ Pokud máte dotazy, konzultujte:
 - `TURNSTILE_SETUP.md` - Setup guide
 - Cloudflare Dashboard - analytics a nastavení
 
+

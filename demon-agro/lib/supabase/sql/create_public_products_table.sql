@@ -78,3 +78,4 @@ COMMENT ON COLUMN public.public_products.product_id IS 'Unikátní ID produktu (
 COMMENT ON COLUMN public.public_products.product_data IS 'JSON data produktu (nazev, popis, technicke_parametry, fotka_url, atd.)';
 COMMENT ON COLUMN public.public_products.category IS 'Kategorie produktu: ph, sira, k, mg, analyza';
 
+

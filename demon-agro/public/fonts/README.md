@@ -27,3 +27,4 @@ První generování PDF může trvat o 1-2 sekundy déle, protože musí font st
 **Důležité:** Font je potřeba pro správné zobrazení českých znaků (ěščřžýáíéúůďťň) v PDF.
 
 
+

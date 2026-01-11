@@ -369,3 +369,4 @@ Po dokončení nastavení by mělo fungovat:
 **Datum:** 6. ledna 2026  
 **Další krok:** 👉 Otevřít `EMAILJS_PORTAL_SETUP_MASTER.md`
 
+

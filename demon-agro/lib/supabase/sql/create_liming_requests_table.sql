@@ -225,3 +225,4 @@ TRIGGER:
 - Automatická aktualizace updated_at při každé změně
 */
 
+

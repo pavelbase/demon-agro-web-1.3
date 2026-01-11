@@ -71,3 +71,4 @@ WHERE conname = 'public_articles_category_check'
 -- DELETE FROM public.public_articles;
 -- RAISE NOTICE '🗑️  Všechny články smazány. Obnovte stránku pro novou migraci.';
 
+

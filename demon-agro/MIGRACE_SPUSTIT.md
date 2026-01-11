@@ -175,3 +175,4 @@ Pokud migrace selže nebo hodnoty stále nesedí:
 
 
 
+

@@ -261,3 +261,4 @@ Vše s profesionálním designem a logem Démon agro! 🌱
 
 **👉 Další krok:** Otevřete [`EMAILJS_PORTAL_SETUP_MASTER.md`](EMAILJS_PORTAL_SETUP_MASTER.md) a začněte! 🚀
 
+

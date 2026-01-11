@@ -89,3 +89,4 @@ COMMENT ON COLUMN public.site_images.category IS 'Kategorie obrázku: hero, back
 COMMENT ON COLUMN public.site_images.page IS 'Stránka, na které se obrázek používá (pokud není produkt)';
 COMMENT ON COLUMN public.site_images.product_id IS 'ID produktu (pokud je to produktový obrázek)';
 
+

@@ -8,6 +8,7 @@ import LimingPlanTable from '@/components/portal/LimingPlanTable'
 import ExportLimingPlan from '@/components/portal/ExportLimingPlan'
 import AddLimingPlanToCart from '@/components/portal/AddLimingPlanToCart'
 import RegenerateLimingPlanButton from '@/components/portal/RegenerateLimingPlanButton'
+import { groupAndAverageAnalyses } from '@/lib/utils/soil-analysis-helpers'
 
 /**
  * PLÁN VÁPNĚNÍ - VÍCEDETÝ SYSTÉM
@@ -52,16 +53,19 @@ export default async function LimingPlanPage({
   }
 
   // -------------------------------------------------
-  // 2. NAČTENÍ NEJNOVĚJŠÍHO ROZBORU
+  // 2. NAČTENÍ ROZBORŮ A VÝPOČET PRŮMĚRU
   // -------------------------------------------------
   
-  const { data: latestAnalysis } = await supabase
+  // Načíst všechny rozbory (stejně jako na zdravotní kartě)
+  const { data: analyses } = await supabase
     .from('soil_analyses')
     .select('*')
     .eq('parcel_id', params.id)
     .order('analysis_date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  
+  // Průměrovat rozbory podle data (AZZP metodika)
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type)
+  const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
   // -------------------------------------------------
   // 3. NAČTENÍ EXISTUJÍCÍHO PLÁNU

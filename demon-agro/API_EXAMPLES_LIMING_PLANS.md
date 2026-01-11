@@ -305,3 +305,4 @@ Všechny endpoints jsou chráněny:
 **Verze API:** 1.0.0
 
 
+

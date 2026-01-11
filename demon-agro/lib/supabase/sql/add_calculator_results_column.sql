@@ -30,3 +30,4 @@ CREATE INDEX IF NOT EXISTS idx_calculator_usage_unviewed
 ON public.calculator_usage(viewed_by_admin)
 WHERE viewed_by_admin = false;
 
+

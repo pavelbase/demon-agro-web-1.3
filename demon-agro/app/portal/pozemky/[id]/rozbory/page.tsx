@@ -92,7 +92,7 @@ export default async function RozboryPage({ params }: RozboryPageProps) {
     .order('analysis_date', { ascending: false })
 
   // Group and average analyses by date
-  const groupedAnalyses = groupAndAverageAnalyses(analyses || [])
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type)
 
   return (
     <div className="max-w-6xl mx-auto">

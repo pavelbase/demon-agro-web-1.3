@@ -58,32 +58,33 @@ export async function POST(request: NextRequest) {
     // Categorize values based on soil type
     const soilType = parcel.soil_type
     const ph_category = categorizePh(ph)
-    const phosphorus_category = categorizeNutrient('P', phosphorus, soilType)
-    const potassium_category = categorizeNutrient('K', potassium, soilType)
-    const magnesium_category = categorizeNutrient('Mg', magnesium, soilType)
-    const calcium_category = calcium ? categorizeNutrient('Ca', calcium, soilType) : null
+    const p_category = categorizeNutrient('P', phosphorus, soilType)
+    const k_category = categorizeNutrient('K', potassium, soilType)
+    const mg_category = categorizeNutrient('Mg', magnesium, soilType)
+    const ca_category = calcium ? categorizeNutrient('Ca', calcium, soilType) : null
+
+    // Combine lab_name and notes
+    const combinedNotes = [lab_name, notes].filter(Boolean).join(' | ')
 
     // Insert soil analysis
     const { data: analysis, error: insertError } = await supabase
       .from('soil_analyses')
       .insert({
         parcel_id: parcelId,
-        user_id: userId,
-        date: analysis_date,
+        analysis_date: analysis_date,
+        methodology: 'mehlich3',
         ph,
         ph_category,
-        phosphorus,
-        phosphorus_category,
-        potassium,
-        potassium_category,
-        magnesium,
-        magnesium_category,
-        calcium,
-        calcium_category,
-        nitrogen,
-        pdf_url: pdfUrl || null,
-        lab_name: lab_name || null,
-        notes: notes || null,
+        p: phosphorus,
+        p_category,
+        k: potassium,
+        k_category,
+        mg: magnesium,
+        mg_category,
+        ca: calcium || null,
+        ca_category,
+        source_document: pdfUrl || null,
+        notes: combinedNotes || null,
         is_current: true,
         ai_extracted: !!pdfUrl,
         user_validated: true,
@@ -104,13 +105,16 @@ export async function POST(request: NextRequest) {
       .from('audit_logs')
       .insert({
         user_id: userId,
-        action: 'soil_analysis_created',
-        entity_type: 'soil_analysis',
-        entity_id: analysis.id,
-        details: {
+        action: 'Vytvořen rozbor půdy',
+        table_name: 'soil_analyses',
+        record_id: analysis.id,
+        new_data: {
           parcel_id: parcelId,
           analysis_date,
           ph,
+          p: phosphorus,
+          k: potassium,
+          mg: magnesium,
           has_pdf: !!pdfUrl,
         },
       })

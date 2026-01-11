@@ -37,7 +37,7 @@ export interface GroupedAnalysis {
  * This follows AZZP methodology which requires averaging when multiple
  * samples are taken from the same parcel on the same day.
  */
-export function groupAndAverageAnalyses(analyses: any[]): GroupedAnalysis[] {
+export function groupAndAverageAnalyses(analyses: any[], soilType?: SoilType): GroupedAnalysis[] {
   if (!analyses || analyses.length === 0) return []
   
   // Helper to round to 2 decimal places
@@ -69,17 +69,17 @@ export function groupAndAverageAnalyses(analyses: any[]): GroupedAnalysis[] {
     const avgCa = group[0].ca ? round2(group.reduce((sum, a) => sum + (a.ca || 0), 0) / count) : null
     const avgS = group[0].s ? round2(group.reduce((sum, a) => sum + (a.s || 0), 0) / count) : null
     
-    // Get soil_type from first analysis (assuming all analyses are from same parcel)
+    // Get soil_type from parameter, or try to get from analysis data, fallback to 'S'
     // @ts-ignore - parcels might not be loaded in all contexts
-    const soilType: SoilType = group[0].parcels?.soil_type || group[0].soil_type || 'S'
+    const effectiveSoilType: SoilType = soilType || group[0].parcels?.soil_type || group[0].soil_type || 'S'
     
     // Recalculate categories based on averaged values
     const ph_category = categorizePh(avgPh)
-    const p_category = categorizeNutrient('P', avgP, soilType)
-    const k_category = categorizeNutrient('K', avgK, soilType)
-    const mg_category = categorizeNutrient('Mg', avgMg, soilType)
-    const ca_category = avgCa ? categorizeNutrient('Ca', avgCa, soilType) : null
-    const s_category = avgS ? categorizeNutrient('S', avgS, soilType) : null
+    const p_category = categorizeNutrient('P', avgP, effectiveSoilType)
+    const k_category = categorizeNutrient('K', avgK, effectiveSoilType)
+    const mg_category = categorizeNutrient('Mg', avgMg, effectiveSoilType)
+    const ca_category = avgCa ? categorizeNutrient('Ca', avgCa, effectiveSoilType) : null
+    const s_category = avgS ? categorizeNutrient('S', avgS, effectiveSoilType) : null
     
     const avg: GroupedAnalysis = {
       analysis_date: date,

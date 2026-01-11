@@ -343,3 +343,4 @@ WHERE tablename = 'calculator_usage';
 -- Kontakt pro podporu: admin@demonagro.cz
 -- ============================================================================
 
+

@@ -62,3 +62,4 @@ Po spuštění tohoto SQL byste měli vidět:
 - 4 kontaktní sloupce v třetím výsledku
 */
 
+

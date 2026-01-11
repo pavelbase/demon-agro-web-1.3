@@ -119,7 +119,7 @@ export default async function PlanHnojeniPage({ params }: PlanHnojeniPageProps) 
     .order('analysis_date', { ascending: false })
 
   // Group and average analyses by date (AZZP methodology)
-  const groupedAnalyses = groupAndAverageAnalyses(analyses || [])
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type)
   const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
   // If no analysis, show empty state

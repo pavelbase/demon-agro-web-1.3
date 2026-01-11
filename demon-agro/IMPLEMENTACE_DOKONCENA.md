@@ -265,3 +265,4 @@ Potřebujete pomoc?
 *Vytvořeno: $(date)*
 *Verze: 1.0*
 
+

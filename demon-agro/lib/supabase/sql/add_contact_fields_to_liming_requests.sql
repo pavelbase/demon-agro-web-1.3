@@ -139,3 +139,4 @@ Tato migrace bezpečně přidá sloupce, které chybí.
 Pokud sloupce již existují, nic se nestane.
 */
 
+
