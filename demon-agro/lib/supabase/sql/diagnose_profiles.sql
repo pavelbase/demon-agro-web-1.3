@@ -39,3 +39,4 @@ SELECT * FROM public.profiles WHERE email = 'base@demonagro.cz';
 
 
 
+

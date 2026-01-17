@@ -63,3 +63,4 @@ Po spuštění tohoto SQL byste měli vidět:
 */
 
 
+

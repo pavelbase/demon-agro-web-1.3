@@ -72,3 +72,4 @@ Pro nejlepší výkon můžete obrázky optimalizovat:
 **Datum**: 6. ledna 2026
 
 
+

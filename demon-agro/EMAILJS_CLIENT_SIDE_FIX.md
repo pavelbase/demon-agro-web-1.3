@@ -182,3 +182,4 @@ NEXT_PUBLIC_APP_URL=https://portal.demonagro.cz
 **Testováno:** 6. ledna 2026
 
 
+

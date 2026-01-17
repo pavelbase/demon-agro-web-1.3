@@ -440,3 +440,4 @@ Implementace je **KOMPLETNÍ** a připravena k použití!
 **Status:** ✅ HOTOVO
 
 
+

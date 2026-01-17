@@ -447,3 +447,4 @@ $$ LANGUAGE plpgsql;
 **Datum:** 6. ledna 2026
 
 
+

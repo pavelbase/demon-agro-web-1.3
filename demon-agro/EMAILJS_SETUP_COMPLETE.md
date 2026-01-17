@@ -326,3 +326,4 @@ Všechny emaily mají:
 **Status:** ✅ Připraveno k testování
 
 
+

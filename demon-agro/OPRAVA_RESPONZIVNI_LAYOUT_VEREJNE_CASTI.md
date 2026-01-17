@@ -208,3 +208,4 @@ Jednoduchá, ale kritická oprava pro UX veřejné části webu.
 **🎉 Veřejná část webu nyní má správný responzivní layout! 🎉**
 
 
+

@@ -117,3 +117,4 @@ Všechno je teď **synchronizované** a používá **stejné názvy sloupců a h
 
 
 
+

@@ -242,3 +242,4 @@ Po nastavení credentials:
 **Po splnění checklistu pokračujte instalací balíčku!** 🚀
 
 
+

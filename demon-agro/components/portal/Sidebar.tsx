@@ -18,7 +18,8 @@ import {
   X,
   Shield,
   Sparkles,
-  Calculator
+  Calculator,
+  TrendingDown
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
 import { useLimingCart } from '@/lib/contexts/LimingCartContext'
@@ -49,6 +50,7 @@ const mainNavItems = [
   { href: '/portal/dashboard', label: 'Dashboard', icon: Home },
   { href: '/portal/pozemky', label: 'Pozemky', icon: Map },
   { href: '/portal/plany-vapneni', label: 'Plány vápnění', icon: Sparkles },
+  { href: '/portal/kalkulacka-ztrat', label: 'Kalkulačka ztrát', icon: TrendingDown },
   { href: '/portal/upload', label: 'Upload rozborů', icon: Upload },
   { href: '/portal/poptavky', label: 'Moje poptávky', icon: ShoppingCart },
   { href: '/portal/nastaveni', label: 'Nastavení', icon: Settings },

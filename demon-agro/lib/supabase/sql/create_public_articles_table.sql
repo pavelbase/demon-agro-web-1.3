@@ -92,3 +92,4 @@ COMMENT ON COLUMN public.public_articles.category IS 'Kategorie článku';
 COMMENT ON COLUMN public.public_articles.slug IS 'URL slug pro článek (např. jak-spravne-vapnit)';
 
 
+

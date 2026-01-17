@@ -210,3 +210,4 @@ Po provedení těchto kroků:
 - `FIX_ARTICLES_CATEGORIES.md` (Tento návod)
 
 
+

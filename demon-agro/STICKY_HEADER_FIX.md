@@ -277,3 +277,4 @@ This solution reuses the same CSS and approach from:
 **🎉 Tables now have sticky headers and proper horizontal scroll! 🎉**
 
 
+

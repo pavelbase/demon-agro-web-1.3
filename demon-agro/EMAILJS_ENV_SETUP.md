@@ -80,3 +80,4 @@ Pro kompletní setup viz:
 - [`EMAILJS_README.md`](EMAILJS_README.md) - Přehled všech emailů
 
 
+

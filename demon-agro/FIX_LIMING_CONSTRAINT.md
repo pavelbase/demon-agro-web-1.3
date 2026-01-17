@@ -109,3 +109,4 @@ SQL migrace `create_liming_plans.sql` obsahuje správný název, ale constraint 
 
 
 
+

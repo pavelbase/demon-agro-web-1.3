@@ -90,3 +90,4 @@ Pokud reset link nefunguje, můžete implementovat admin reset:
 - Nebo jiný browser
 
 
+

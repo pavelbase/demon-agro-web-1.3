@@ -112,3 +112,4 @@ Poznámky: Aritmetický průměr z 2 rozborů
 
 
 
+

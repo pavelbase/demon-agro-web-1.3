@@ -169,3 +169,4 @@ Kategorizace živin nyní správně funguje podle typu půdy (L/S/T) dle Mehlich
 Stejná hodnota živiny dostává správně různé kategorie podle typu půdy!
 
 
+

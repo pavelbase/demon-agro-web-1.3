@@ -47,3 +47,4 @@ SELECT
   (SELECT COUNT(*) FROM auth.users u INNER JOIN public.profiles p ON u.id = p.id WHERE u.email != p.email) as email_mismatches;
 
 
+

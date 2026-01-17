@@ -16,6 +16,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { SoilType } from '@/lib/types/database'
+import { categorizeNutrient, type NutrientCategory } from '@/lib/utils/soil-categories'
 
 // ============================================================================
 // ROBOTO FONT BASE64 (SUBSET WITH CZECH CHARACTERS)
@@ -43,7 +44,7 @@ export interface LimingTableRow {
   pozemek: string
   kodPozemku?: string
   vymera: string
-  druh: string
+  druh: string // 'L' | 'S' | 'T' | 'Lehká' | 'Střední' | 'Těžká'
   rokRozboru: string
   ph: string
   ca: string
@@ -108,6 +109,45 @@ const FONTS = {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Převod kategorie živiny na RGB barvu pro PDF
+ * DŮLEŽITÉ: Musí odpovídat barvám v portálu (TabulkovyPrehledVapneni.tsx)
+ */
+function getNutrientColorRGB(category: NutrientCategory | null): [number, number, number] {
+  if (!category) return [107, 114, 128] // Gray-600
+  
+  switch (category) {
+    case 'nizky':
+      return [239, 68, 68] // Red-500 - Nízký
+    case 'vyhovujici':
+      return [249, 115, 22] // Orange-500 - Vyhovující
+    case 'dobry':
+      return [34, 197, 94] // Green-500 - Dobrý
+    case 'vysoky':
+      return [59, 130, 246] // Blue-500 - Vysoký
+    case 'velmi_vysoky':
+      return [168, 85, 247] // Purple-500 - Velmi vysoký
+    default:
+      return [107, 114, 128] // Gray-600
+  }
+}
+
+/**
+ * Převod řetězce půdního typu na SoilType enum
+ * 'Lehká' | 'Střední' | 'Těžká' -> 'L' | 'S' | 'T'
+ */
+function parseSoilType(soilTypeStr: string): SoilType {
+  const normalized = soilTypeStr.toLowerCase()
+  if (normalized.includes('lehk')) return 'L'
+  if (normalized.includes('střed') || normalized.includes('stred')) return 'S'
+  if (normalized.includes('těž') || normalized.includes('tez')) return 'T'
+  // If already in short format
+  if (soilTypeStr === 'L' || soilTypeStr === 'S' || soilTypeStr === 'T') {
+    return soilTypeStr as SoilType
+  }
+  return 'S' // Default to střední
+}
 
 /**
  * Remove Czech accents as FALLBACK when font loading fails
@@ -605,7 +645,7 @@ export async function exportLimingRecommendationsPDF(
     },
     margin: { left: margin, right: margin },
     didParseCell: function (data) {
-      // Color-code pH values
+      // Color-code pH values (pH logic stays the same - not a nutrient)
       if (data.column.index === 6 && data.section === 'body') {
         const phText = data.cell.text[0]
         if (phText && phText !== '-') {
@@ -627,93 +667,106 @@ export async function exportLimingRecommendationsPDF(
         }
       }
 
+      // Get soil type from row data for nutrient categorization
+      const rowIndex = data.row.index
+      const rowData = data.rows?.[rowIndex] || tableData[rowIndex]
+      const soilTypeStr = rowData?.[4] || 'S' // Column 4 is 'Druh půdy'
+      const soilType = parseSoilType(soilTypeStr)
+
+      // ============================================================
       // Color-code Ca (mg/kg) - Column 7
+      // ============================================================
       if (data.column.index === 7 && data.section === 'body') {
         const caText = data.cell.text[0]
         if (caText && caText !== '-') {
-          const ca = parseFloat(caText.replace(',', '.'))
+          const ca = parseFloat(caText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(ca)) {
-            if (ca < 1000) {
-              data.cell.styles.textColor = [239, 68, 68] // Red - low
-            } else if (ca < 2000) {
-              data.cell.styles.textColor = [245, 158, 11] // Orange - medium
-            } else {
-              data.cell.styles.textColor = [16, 185, 129] // Green - good
+            const category = categorizeNutrient('Ca', ca, soilType)
+            const color = getNutrientColorRGB(category)
+            data.cell.styles.textColor = color
+            if (category === 'nizky') {
+              data.cell.styles.fontStyle = 'bold'
             }
           }
         }
       }
 
+      // ============================================================
       // Color-code Mg (mg/kg) - Column 8
+      // ============================================================
       if (data.column.index === 8 && data.section === 'body') {
         const mgText = data.cell.text[0]
         if (mgText && mgText !== '-') {
-          const mg = parseFloat(mgText.replace(',', '.'))
+          const mg = parseFloat(mgText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(mg)) {
-            if (mg < 120) {
-              data.cell.styles.textColor = [239, 68, 68] // Red - low
-            } else if (mg < 200) {
-              data.cell.styles.textColor = [245, 158, 11] // Orange - medium
-            } else {
-              data.cell.styles.textColor = [16, 185, 129] // Green - good
+            const category = categorizeNutrient('Mg', mg, soilType)
+            const color = getNutrientColorRGB(category)
+            data.cell.styles.textColor = color
+            if (category === 'nizky') {
+              data.cell.styles.fontStyle = 'bold'
             }
           }
         }
       }
 
+      // ============================================================
       // Color-code K (mg/kg) - Column 9
+      // ============================================================
       if (data.column.index === 9 && data.section === 'body') {
         const kText = data.cell.text[0]
         if (kText && kText !== '-') {
-          const k = parseFloat(kText.replace(',', '.'))
+          const k = parseFloat(kText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(k)) {
-            if (k < 150) {
-              data.cell.styles.textColor = [239, 68, 68] // Red - low
-            } else if (k < 250) {
-              data.cell.styles.textColor = [245, 158, 11] // Orange - medium
-            } else {
-              data.cell.styles.textColor = [16, 185, 129] // Green - good
+            const category = categorizeNutrient('K', k, soilType)
+            const color = getNutrientColorRGB(category)
+            data.cell.styles.textColor = color
+            if (category === 'nizky') {
+              data.cell.styles.fontStyle = 'bold'
             }
           }
         }
       }
 
+      // ============================================================
       // Color-code P (mg/kg) - Column 10
+      // ============================================================
       if (data.column.index === 10 && data.section === 'body') {
         const pText = data.cell.text[0]
         if (pText && pText !== '-') {
-          const p = parseFloat(pText.replace(',', '.'))
+          const p = parseFloat(pText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(p)) {
-            if (p < 100) {
-              data.cell.styles.textColor = [239, 68, 68] // Red - low
-            } else if (p < 150) {
-              data.cell.styles.textColor = [245, 158, 11] // Orange - medium
-            } else {
-              data.cell.styles.textColor = [16, 185, 129] // Green - good
+            const category = categorizeNutrient('P', p, soilType)
+            const color = getNutrientColorRGB(category)
+            data.cell.styles.textColor = color
+            if (category === 'nizky') {
+              data.cell.styles.fontStyle = 'bold'
             }
           }
         }
       }
 
+      // ============================================================
       // Color-code S (mg/kg) - Column 11
+      // ============================================================
       if (data.column.index === 11 && data.section === 'body') {
         const sText = data.cell.text[0]
         if (sText && sText !== '-') {
-          const s = parseFloat(sText.replace(',', '.'))
+          const s = parseFloat(sText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(s)) {
-            if (s < 15) {
-              data.cell.styles.textColor = [239, 68, 68] // Red - low
-            } else if (s < 20) {
-              data.cell.styles.textColor = [245, 158, 11] // Orange - medium
-            } else {
-              data.cell.styles.textColor = [16, 185, 129] // Green - good
+            const category = categorizeNutrient('S', s, soilType)
+            const color = getNutrientColorRGB(category)
+            data.cell.styles.textColor = color
+            if (category === 'nizky') {
+              data.cell.styles.fontStyle = 'bold'
             }
           }
         }
       }
 
+      // ============================================================
       // Color-code K/Mg ratio - Column 12
       // Metodika shodná s portálem - optimální rozsah: 1.5 - 2.5
+      // ============================================================
       if (data.column.index === 12 && data.section === 'body') {
         const ratioText = data.cell.text[0]
         if (ratioText && ratioText !== '-') {
@@ -723,13 +776,13 @@ export async function exportLimingRecommendationsPDF(
             if (!isNaN(ratio)) {
               if (ratio >= 1.5 && ratio <= 2.5) {
                 // Optimální rozsah: 1.5 - 2.5
-                data.cell.styles.textColor = [16, 185, 129] // Green - optimální
+                data.cell.styles.textColor = [34, 197, 94] // Green-500 - optimální
               } else if ((ratio >= 1.2 && ratio < 1.5) || (ratio > 2.5 && ratio <= 3.5)) {
                 // Suboptimální: 1.2-1.5 (+ K) nebo 2.5-3.5 (+ Mg)
-                data.cell.styles.textColor = [234, 179, 8] // Yellow - suboptimální (+ K nebo + Mg)
+                data.cell.styles.textColor = [234, 179, 8] // Yellow-600 - suboptimální (+ K nebo + Mg)
               } else {
                 // Kritický nepoměr: < 1.2 nebo > 3.5
-                data.cell.styles.textColor = [220, 38, 38] // Red - kritický
+                data.cell.styles.textColor = [220, 38, 38] // Red-600 - kritický
                 data.cell.styles.fontStyle = 'bold'
               }
             }
@@ -977,4 +1030,31 @@ export function generateLimingFilename(companyName: string): string {
   const date = new Date().toISOString().split('T')[0]
   return `Protokol_vapneni_${safeName}_${date}.pdf`
 }
+
+// ============================================================================
+// VERSION HISTORY & CHANGELOG
+// ============================================================================
+/**
+ * V2.1 - 2026-01-17
+ * -----------------
+ * ✅ FIXED: Nutrient colors now match portal exactly
+ * - Integrated categorizeNutrient() from soil-categories.ts
+ * - Added support for 5-color system (red/orange/green/blue/purple)
+ * - Ca, Mg, K, P, S values now use scientific methodology
+ * - Values categorized by soil type (Lehká/Střední/Těžká)
+ * 
+ * Color mapping:
+ * - Nízký → Červená (Red-500)
+ * - Vyhovující → Oranžová (Orange-500)
+ * - Dobrý → Zelená (Green-500)
+ * - Vysoký → Modrá (Blue-500)
+ * - Velmi vysoký → Fialová (Purple-500)
+ * 
+ * V2.0 - 2026-01-04
+ * -----------------
+ * ✅ Czech character support with Roboto font
+ * ✅ Professional layout and design
+ * ✅ Intelligent recommendations
+ * ✅ Color-coded warnings
+ */
 

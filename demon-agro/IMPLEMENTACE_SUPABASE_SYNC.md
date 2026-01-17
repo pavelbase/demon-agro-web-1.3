@@ -298,3 +298,4 @@ Po dokončení všech kroků bude systém plně funkční:
 - ✅ Automatická synchronizace
 
 
+

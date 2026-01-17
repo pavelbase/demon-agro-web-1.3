@@ -231,3 +231,4 @@ AI Assistant (Claude Sonnet 4.5) + Pavel Baše
 > - ✅ Varování při kritických stavech
 
 
+

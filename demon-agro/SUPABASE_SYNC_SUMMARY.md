@@ -272,3 +272,4 @@ Při problémech:
 **Status:** ✅ Kompletní a připraveno k nasazení
 
 
+

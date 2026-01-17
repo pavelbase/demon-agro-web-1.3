@@ -139,3 +139,4 @@ GRANT EXECUTE ON FUNCTION check_calculator_ip_rate_limit(TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION record_calculator_usage(TEXT, TEXT, TEXT, JSONB) TO anon;
 
 
+

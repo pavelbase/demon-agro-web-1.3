@@ -145,3 +145,4 @@ Po doplnění ENV variables by mělo vše fungovat. Pokud ne, zkontrolujte:
 🎉 **Úspěch!** Veřejné formuláře by nyní měly fungovat.
 
 
+

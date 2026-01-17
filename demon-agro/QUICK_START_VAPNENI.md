@@ -85,3 +85,4 @@ Po spuštění SQL můžeš hned začít zadávat produkty s kompletními údaji
 
 
 
+

@@ -251,3 +251,4 @@ Máte nyní **3 oddělené buckety**:
 **🚀 Připraveno k nasazení!**
 
 
+

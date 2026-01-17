@@ -167,3 +167,4 @@ Vaše implementace Supabase Storage je funkční:
 **🚀 Připraveno k nasazení!**
 
 
+

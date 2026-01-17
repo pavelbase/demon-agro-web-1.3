@@ -304,3 +304,4 @@ Pokud máte problémy s vytvořením template:
 **Datum:** 6. ledna 2026
 
 
+

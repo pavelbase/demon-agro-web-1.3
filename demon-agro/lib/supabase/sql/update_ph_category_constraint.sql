@@ -18,3 +18,4 @@ COMMENT ON COLUMN soil_analyses.ph_category IS 'pH kategorie: EK=extrémně kyse
 
 
 
+

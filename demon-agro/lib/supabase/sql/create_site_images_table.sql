@@ -90,3 +90,4 @@ COMMENT ON COLUMN public.site_images.page IS 'Stránka, na které se obrázek po
 COMMENT ON COLUMN public.site_images.product_id IS 'ID produktu (pokud je to produktový obrázek)';
 
 
+

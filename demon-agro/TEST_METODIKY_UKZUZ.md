@@ -251,3 +251,4 @@ Pokud najdete nesrovnalosti, zapište je a konzultujte s agronomem.
 
 
 
+

@@ -79,3 +79,4 @@ COMMENT ON COLUMN public.public_products.product_data IS 'JSON data produktu (na
 COMMENT ON COLUMN public.public_products.category IS 'Kategorie produktu: ph, sira, k, mg, analyza';
 
 
+

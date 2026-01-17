@@ -112,3 +112,4 @@ A log z API při pokusu o vytvoření plánu (z terminálu).
 
 
 
+

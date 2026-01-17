@@ -31,3 +31,4 @@ ON public.calculator_usage(viewed_by_admin)
 WHERE viewed_by_admin = false;
 
 
+

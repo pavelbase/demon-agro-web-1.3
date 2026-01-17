@@ -100,3 +100,4 @@ Budu moct přesně identifikovat problém a opravit ho.
 
 
 
+

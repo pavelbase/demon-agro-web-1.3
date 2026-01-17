@@ -131,3 +131,4 @@ Systém nyní počítá s **6letým cyklem** (AZZP standard). Roční normativ s
 
 
 
+

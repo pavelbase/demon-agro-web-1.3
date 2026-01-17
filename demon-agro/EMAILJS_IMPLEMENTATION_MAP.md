@@ -370,3 +370,4 @@ Po dokončení nastavení by mělo fungovat:
 **Další krok:** 👉 Otevřít `EMAILJS_PORTAL_SETUP_MASTER.md`
 
 
+

@@ -72,3 +72,4 @@ WHERE conname = 'public_articles_category_check'
 -- RAISE NOTICE '🗑️  Všechny články smazány. Obnovte stránku pro novou migraci.';
 
 
+

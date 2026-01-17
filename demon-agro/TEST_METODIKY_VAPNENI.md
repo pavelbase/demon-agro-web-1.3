@@ -154,3 +154,4 @@ Což by bylo **realističtější** pro takovou dávku.
 
 
 
+

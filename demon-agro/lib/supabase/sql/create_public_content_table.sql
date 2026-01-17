@@ -72,3 +72,4 @@ COMMENT ON COLUMN public.public_content.content_data IS 'JSON data obsahu strán
 COMMENT ON COLUMN public.public_content.page_title IS 'Název stránky pro admin rozhraní';
 
 
+

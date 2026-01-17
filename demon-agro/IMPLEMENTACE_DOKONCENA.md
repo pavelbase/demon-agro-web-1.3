@@ -266,3 +266,4 @@ Potřebujete pomoc?
 *Verze: 1.0*
 
 
+
