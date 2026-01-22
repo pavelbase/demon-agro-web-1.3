@@ -19,7 +19,8 @@ import {
   Shield,
   Sparkles,
   Calculator,
-  TrendingDown
+  TrendingDown,
+  Tractor
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
 import { useLimingCart } from '@/lib/contexts/LimingCartContext'
@@ -63,6 +64,7 @@ const adminNavItems = [
   { href: '/portal/admin/produkty-vapneni', label: 'Produkty vápnění', icon: Package },
   { href: '/portal/admin/poptavky', label: 'Poptávky', icon: ClipboardList },
   { href: '/portal/admin/kalkulace', label: 'Kalkulace', icon: Calculator },
+  { href: '/portal/admin/agromanager', label: 'AgroManažer', icon: Tractor },
   { href: '/portal/admin/audit-log', label: 'Audit log', icon: FileText },
   { href: '/portal/admin/statistiky', label: 'Statistiky', icon: BarChart3 },
 ]

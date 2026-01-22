@@ -704,6 +704,69 @@ export interface Database {
       }
 
       // ======================================================================
+      // AGRO CUSTOMERS (AgroManažer - Kalkulačka zákazníků)
+      // ======================================================================
+      agro_customers: {
+        Row: {
+          id: string
+          user_id: string
+          jmeno: string
+          vymera_ha: number
+          davka_kg_ha: number
+          cena_nakup_material_tuna: number
+          cena_prodej_sluzba_ha: number
+          cena_najem_traktor_mth: number
+          vykonnost_ha_mth: number
+          cena_nafta_tuna_materialu: number
+          cena_traktorista_mth: number
+          cena_traktorista_tuna: number
+          traktorista_typ: 'hodina' | 'tuna'
+          pozadovany_zisk_ha: number
+          pocet_kamionu: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          jmeno?: string
+          vymera_ha?: number
+          davka_kg_ha?: number
+          cena_nakup_material_tuna?: number
+          cena_prodej_sluzba_ha?: number
+          cena_najem_traktor_mth?: number
+          vykonnost_ha_mth?: number
+          cena_nafta_tuna_materialu?: number
+          cena_traktorista_mth?: number
+          cena_traktorista_tuna?: number
+          traktorista_typ?: 'hodina' | 'tuna'
+          pozadovany_zisk_ha?: number
+          pocet_kamionu?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          jmeno?: string
+          vymera_ha?: number
+          davka_kg_ha?: number
+          cena_nakup_material_tuna?: number
+          cena_prodej_sluzba_ha?: number
+          cena_najem_traktor_mth?: number
+          vykonnost_ha_mth?: number
+          cena_nafta_tuna_materialu?: number
+          cena_traktorista_mth?: number
+          cena_traktorista_tuna?: number
+          traktorista_typ?: 'hodina' | 'tuna'
+          pozadovany_zisk_ha?: number
+          pocet_kamionu?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      // ======================================================================
       // AUDIT LOGS (Audit záznamy)
       // ======================================================================
       audit_logs: {
@@ -789,6 +852,7 @@ export type Product = Tables<'products'>
 export type LimingRequest = Tables<'liming_requests'>
 export type LimingRequestItem = Tables<'liming_request_items'>
 export type PortalImage = Tables<'portal_images'>
+export type AgroCustomer = Tables<'agro_customers'>
 export type AuditLog = Tables<'audit_logs'>
 
 // Insert types (for creating new records)
@@ -802,6 +866,7 @@ export type ProductInsert = Database['public']['Tables']['products']['Insert']
 export type LimingRequestInsert = Database['public']['Tables']['liming_requests']['Insert']
 export type LimingRequestItemInsert = Database['public']['Tables']['liming_request_items']['Insert']
 export type PortalImageInsert = Database['public']['Tables']['portal_images']['Insert']
+export type AgroCustomerInsert = Database['public']['Tables']['agro_customers']['Insert']
 export type AuditLogInsert = Database['public']['Tables']['audit_logs']['Insert']
 
 // Update types (for updating existing records)
@@ -815,6 +880,7 @@ export type ProductUpdate = Database['public']['Tables']['products']['Update']
 export type LimingRequestUpdate = Database['public']['Tables']['liming_requests']['Update']
 export type LimingRequestItemUpdate = Database['public']['Tables']['liming_request_items']['Update']
 export type PortalImageUpdate = Database['public']['Tables']['portal_images']['Update']
+export type AgroCustomerUpdate = Database['public']['Tables']['agro_customers']['Update']
 export type AuditLogUpdate = Database['public']['Tables']['audit_logs']['Update']
 
 // ============================================================================

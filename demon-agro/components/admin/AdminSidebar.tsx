@@ -13,6 +13,7 @@ import {
   BarChart3,
   Shield,
   ArrowLeft,
+  Tractor,
 } from 'lucide-react'
 
 const navigation = [
@@ -45,6 +46,11 @@ const navigation = [
     name: 'Kalkulace',
     href: '/portal/admin/kalkulace',
     icon: Calculator,
+  },
+  {
+    name: 'AgroManažer',
+    href: '/portal/admin/agromanager',
+    icon: Tractor,
   },
   {
     name: 'Audit log',

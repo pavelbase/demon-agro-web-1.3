@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
-import { AdminSidebar } from '@/components/admin/AdminSidebar'
 
 export default async function AdminLayout({
   children,
@@ -24,15 +23,7 @@ export default async function AdminLayout({
     redirect('/portal/dashboard')
   }
 
-  // User is confirmed admin - render admin interface with sidebar
-  return (
-    <div className="flex h-screen bg-gray-100">
-      <AdminSidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-6 py-8">
-          {children}
-        </div>
-      </main>
-    </div>
-  )
+  // User is confirmed admin - render admin content WITHOUT extra sidebar
+  // Admin navigation is handled by portal sidebar (ADMIN ZÓNA section)
+  return <>{children}</>
 }
