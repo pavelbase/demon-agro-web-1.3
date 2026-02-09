@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mail, Phone, MapPin, CheckCircle2, AlertCircle, Building2 } from "lucide-react";
 import emailjs from "@emailjs/browser";
 import TurnstileWidget from "@/components/TurnstileWidget";
 
@@ -119,6 +119,21 @@ export default function KontaktPage() {
               </h2>
 
               <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-[#4A7C59] rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                    <Building2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Firma</h3>
+                    <p className="text-gray-900 font-medium">Démon agro s.r.o.</p>
+                    <p className="text-gray-600 text-sm mt-1">IČO: 24477753</p>
+                    <p className="text-gray-600 text-sm">
+                      Piletická 486, Věkoše<br />
+                      503 41 Hradec Králové
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-[#4A7C59] rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
                     <Mail className="w-6 h-6 text-white" />
