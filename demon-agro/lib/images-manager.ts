@@ -163,10 +163,10 @@ export function getImageUrl(key: string, fallback?: string): string {
   
   const keyData = IMAGE_KEYS[key as keyof typeof IMAGE_KEYS];
   if (keyData) {
-    return `/images/placeholders/${keyData.category}-placeholder.jpg`;
+    return `/images/placeholders/${keyData.category}-placeholder.svg`;
   }
   
-  return '/images/placeholders/default-placeholder.jpg';
+  return '/images/placeholders/default-placeholder.svg';
 }
 
 // Získání URL produktového obrázku
@@ -225,13 +225,13 @@ export function initializeDefaultImages(): void {
   
   Object.entries(IMAGE_KEYS).forEach(([key, data]) => {
     defaults[key] = {
-      url: `/images/placeholders/${data.category}-placeholder.jpg`,
+      url: `/images/placeholders/${data.category}-placeholder.svg`,
       category: data.category,
       page: data.page,
       title: data.title,
       dimensions: IMAGE_SPECS[data.category].dimensions,
       size: 0,
-      format: 'jpg',
+      format: 'svg',
       uploadedAt: new Date().toISOString()
     };
   });

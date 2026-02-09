@@ -34,6 +34,8 @@ export async function syncImagesFromSupabase(): Promise<void> {
     if (images && Object.keys(images).length > 0) {
       // Uložit do localStorage
       saveImages(images);
+      // Notifikovat všechny komponenty o aktualizaci obrázků
+      window.dispatchEvent(new Event('images-updated'));
       if (process.env.NODE_ENV === 'development') {
         console.log('✅ Images synced from Supabase:', Object.keys(images).length);
       }

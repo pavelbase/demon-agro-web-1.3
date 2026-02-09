@@ -17,13 +17,20 @@ import { getImageUrl } from '@/lib/images-manager';
 export function useImage(key: string, fallback?: string): string {
   const [imageUrl, setImageUrl] = useState<string>(() => {
     // SSR/initial: použij fallback nebo placeholder
-    return fallback || `/images/placeholders/default-placeholder.jpg`;
+    return fallback || `/images/placeholders/default-placeholder.svg`;
   });
 
   useEffect(() => {
     // Client-side: načti skutečnou URL z localStorage
     const url = getImageUrl(key, fallback);
     setImageUrl(url);
+  }, [key, fallback]);
+
+  useEffect(() => {
+    // Naslouchej na custom event po sync dokončení
+    const handler = () => setImageUrl(getImageUrl(key, fallback));
+    window.addEventListener('images-updated', handler);
+    return () => window.removeEventListener('images-updated', handler);
   }, [key, fallback]);
 
   return imageUrl;
@@ -50,6 +57,16 @@ export function useProductImage(productId: string, fallback?: string): string {
     const key = `product_${productId}`;
     const url = getImageUrl(key, fallback);
     setImageUrl(url);
+  }, [productId, fallback]);
+
+  useEffect(() => {
+    // Naslouchej na custom event po sync dokončení
+    const handler = () => {
+      const key = `product_${productId}`;
+      setImageUrl(getImageUrl(key, fallback));
+    };
+    window.addEventListener('images-updated', handler);
+    return () => window.removeEventListener('images-updated', handler);
   }, [productId, fallback]);
 
   return imageUrl;
