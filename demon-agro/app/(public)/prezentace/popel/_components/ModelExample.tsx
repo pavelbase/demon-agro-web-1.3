@@ -36,23 +36,23 @@ export default function ModelExample() {
                     300 t popela
                   </td>
                   <td className="px-6 py-4 text-center text-sm">
-                    34,4 t Draselná sůl + 4,3 t MAP 12-52 + 19,8 t vápenec
+                    40,6 t Draselná sůl + 5,1 t MAP 12-52 + 23,4 t vápenec
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
                   <td className="px-6 py-4 font-semibold text-gray-900">K₂O dodáno</td>
-                  <td className="px-6 py-4 text-center bg-orange-50">20 640 kg</td>
-                  <td className="px-6 py-4 text-center">20 640 kg</td>
+                  <td className="px-6 py-4 text-center bg-orange-50">24 390 kg</td>
+                  <td className="px-6 py-4 text-center">24 390 kg</td>
                 </tr>
                 <tr className="hover:bg-gray-50">
                   <td className="px-6 py-4 font-semibold text-gray-900">P₂O₅ dodáno</td>
-                  <td className="px-6 py-4 text-center bg-orange-50">2 250 kg</td>
-                  <td className="px-6 py-4 text-center">2 250 kg</td>
+                  <td className="px-6 py-4 text-center bg-orange-50">2 670 kg</td>
+                  <td className="px-6 py-4 text-center">2 670 kg</td>
                 </tr>
                 <tr className="hover:bg-gray-50">
                   <td className="px-6 py-4 font-semibold text-gray-900">CaO dodáno</td>
-                  <td className="px-6 py-4 text-center bg-orange-50">9 900 kg</td>
-                  <td className="px-6 py-4 text-center">9 900 kg</td>
+                  <td className="px-6 py-4 text-center bg-orange-50">11 700 kg</td>
+                  <td className="px-6 py-4 text-center">11 700 kg</td>
                 </tr>
                 <tr className="bg-blue-50 hover:bg-blue-100">
                   <td className="px-6 py-4 font-bold text-gray-900 text-lg">Náklady materiál</td>
@@ -60,7 +60,7 @@ export default function ModelExample() {
                     300 000 Kč
                   </td>
                   <td className="px-6 py-4 text-center font-bold text-red-700 text-xl">
-                    438 200 Kč
+                    518 500 Kč
                   </td>
                 </tr>
                 <tr className="bg-blue-50 hover:bg-blue-100">
@@ -69,7 +69,7 @@ export default function ModelExample() {
                     zahrnuto v ceně
                   </td>
                   <td className="px-6 py-4 text-center font-bold text-red-700 text-lg">
-                    ~3 přejezdy × 350 Kč/ha = <strong className="text-xl">105 000 Kč</strong>
+                    3 přejezdy × 80 Kč/ha × 100 ha = <strong className="text-xl">24 000 Kč</strong>
                   </td>
                 </tr>
                 <tr className="bg-gradient-to-r from-green-100 to-emerald-100">
@@ -96,7 +96,7 @@ export default function ModelExample() {
         <div className="mt-8 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-8 text-white shadow-xl">
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-4">
-              🎯 To je čtvrt milionu korun úspory!
+              🎯 To je přes 240 tisíc korun úspory!
             </h3>
             <p className="text-lg opacity-95 max-w-3xl mx-auto">
               A navíc máte všechno vyřešené na klíč — žádné sklady, žádnou logistiku, 
