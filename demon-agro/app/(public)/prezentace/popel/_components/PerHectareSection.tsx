@@ -39,7 +39,7 @@ export default function PerHectareSection() {
             <div className="text-center">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Průmyslová hnojiva</h3>
               <div className="bg-white rounded-xl p-6 mb-6 border-2 border-red-200">
-                <div className="text-6xl font-bold text-red-600 mb-2">5 430</div>
+                <div className="text-6xl font-bold text-red-600 mb-2">6 250</div>
                 <div className="text-lg text-gray-700 font-semibold">Kč/ha</div>
               </div>
               <div className="text-sm text-gray-600 space-y-1">
@@ -60,7 +60,7 @@ export default function PerHectareSection() {
               </div>
               <h3 className="text-2xl font-bold mb-4">Úspora</h3>
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-4 border-2 border-white/30">
-                <div className="text-7xl font-bold mb-2">2 430</div>
+                <div className="text-7xl font-bold mb-2">3 250</div>
                 <div className="text-xl font-semibold">Kč/ha</div>
               </div>
               <p className="text-lg opacity-95 font-semibold">
@@ -77,17 +77,17 @@ export default function PerHectareSection() {
           </h3>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-white rounded-xl p-6 text-center shadow-lg border border-gray-200">
-              <div className="text-4xl font-bold text-orange-600 mb-2">206 kg</div>
+              <div className="text-4xl font-bold text-orange-600 mb-2">244 kg</div>
               <div className="text-lg font-semibold text-gray-900 mb-1">K₂O</div>
               <div className="text-sm text-gray-600">Oxidů draslíku na hektar</div>
             </div>
             <div className="bg-white rounded-xl p-6 text-center shadow-lg border border-gray-200">
-              <div className="text-4xl font-bold text-blue-600 mb-2">23 kg</div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">27 kg</div>
               <div className="text-lg font-semibold text-gray-900 mb-1">P₂O₅</div>
               <div className="text-sm text-gray-600">Oxidů fosforu na hektar</div>
             </div>
             <div className="bg-white rounded-xl p-6 text-center shadow-lg border border-gray-200">
-              <div className="text-4xl font-bold text-green-600 mb-2">99 kg</div>
+              <div className="text-4xl font-bold text-green-600 mb-2">117 kg</div>
               <div className="text-lg font-semibold text-gray-900 mb-1">CaO</div>
               <div className="text-sm text-gray-600">Oxidů vápníku na hektar</div>
             </div>

@@ -83,7 +83,7 @@ export default function ModelExample() {
                 </tr>
                 <tr className="bg-gradient-to-r from-yellow-100 to-amber-100">
                   <td className="px-6 py-4 font-bold text-gray-900 text-xl">Úspora</td>
-                  <td className="px-6 py-4 text-center bg-orange-50" colspan="2">
+                  <td className="px-6 py-4 text-center bg-orange-50" colSpan={2}>
                     <div className="text-4xl font-bold text-green-700 mb-2">~243 000 Kč</div>
                     <div className="text-lg text-gray-700">Na celých 100 ha</div>
                   </td>

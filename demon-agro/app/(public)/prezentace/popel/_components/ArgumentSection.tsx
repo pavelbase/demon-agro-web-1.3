@@ -29,16 +29,16 @@ export default function ArgumentSection() {
               
               <p className="text-2xl md:text-3xl leading-relaxed font-medium">
                 Stejné živiny z průmyslových hnojiv by vás stály 
-                přes <strong className="text-yellow-300">5 400 Kč/ha</strong> — 
+                přes <strong className="text-yellow-300">6 250 Kč/ha</strong> — 
                 a navíc byste potřebovali <strong className="text-yellow-300">3 přejezdy</strong> místo jednoho.
               </p>
 
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-8 border-2 border-white/40 mt-8">
                 <p className="text-3xl md:text-4xl font-bold text-yellow-300 mb-3">
-                  Ušetříte 2 430 Kč na každém hektaru
+                  Ušetříte 3 250 Kč na každém hektaru
                 </p>
                 <p className="text-xl md:text-2xl opacity-95">
-                  Na 100 ha je to čtvrt milionu korun.
+                  Na 100 ha je to přes 320 tisíc korun.
                 </p>
               </div>
 

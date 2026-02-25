@@ -9,8 +9,8 @@ export default function WarningsSection() {
       description: "Nutno doplnit zvlášť (LAD 8 150 Kč/t, DASA 9 100 Kč/t, DAM 8 500 Kč/t)",
     },
     {
-      title: "45 % vlhkost",
-      description: "Přepravuje se téměř dvojnásobek hmotnosti oproti sušině",
+      title: "35 % vlhkost",
+      description: "Přepravuje se přibližně 1,5× více hmotnosti oproti suché sušině (650 kg sušiny z 1 t)",
     },
     {
       title: "Variabilita složení",

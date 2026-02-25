@@ -15,7 +15,7 @@ export default function Footer() {
               Ceník Agro 2000 platný od 4. 2. 2026, splatnost 30 dní, parita FCA sklad.
             </p>
             <p className="text-gray-400 text-sm mb-4">
-              Popel: P 0,6 %, CaO 6 %, K₂O 10–15 %, vlhkost 45 %. Cena 1 000 Kč/t komplet bez DPH.
+              Popel: P 0,6 %, CaO 6 %, K₂O 10–15 %, vlhkost 35 %. Cena 1 000 Kč/t komplet bez DPH.
             </p>
             <p className="text-gray-400 text-sm">
               © 2026 Démon Agro. Všechna práva vyhrazena.

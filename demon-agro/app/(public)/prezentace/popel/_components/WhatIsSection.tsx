@@ -9,7 +9,7 @@ export default function WhatIsSection() {
       title: "Složení",
       value: "K₂O + P₂O₅ + CaO",
       description: "10–15 % K₂O, 0,6 % P, 6 % CaO",
-      subtitle: "Při vlhkosti 45 % v sušině",
+      subtitle: "Při vlhkosti 35 % v sušině",
     },
     {
       icon: Droplet,
@@ -22,7 +22,7 @@ export default function WhatIsSection() {
       icon: Sparkles,
       title: "Aplikace",
       value: "3 t/ha",
-      description: "= 206 kg K₂O + 23 kg P₂O₅ + 99 kg CaO",
+      description: "= 244 kg K₂O + 27 kg P₂O₅ + 117 kg CaO",
       subtitle: "Jeden přejezd, všechny živiny",
     },
     {

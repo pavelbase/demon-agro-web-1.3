@@ -11,7 +11,7 @@ export default function NutrientContentSection() {
             Obsah živin v 1 tuně popela
           </h2>
           <p className="text-lg text-gray-600">
-            Přepočet na standardní vlhkost 45 %
+            Přepočet na standardní vlhkost 35 %
           </p>
         </div>
 
@@ -20,11 +20,11 @@ export default function NutrientContentSection() {
             <div className="inline-flex items-center gap-3 bg-orange-50 px-6 py-3 rounded-full border-2 border-orange-200 mb-6">
               <Beaker className="w-6 h-6 text-orange-600" />
               <span className="text-xl font-bold text-gray-900">
-                1 t mokrého popela (45 % vlhkost)
+                1 t mokrého popela (35 % vlhkost)
               </span>
             </div>
             <p className="text-lg text-gray-600">
-              = 550 kg sušiny + 450 kg vody
+              = 650 kg sušiny + 350 kg vody
             </p>
           </div>
 
@@ -33,7 +33,7 @@ export default function NutrientContentSection() {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="text-sm text-gray-600 mb-1">Oxidů draslíku</div>
-                  <div className="text-3xl font-bold text-orange-600">K₂O: 68,8 kg</div>
+                  <div className="text-3xl font-bold text-orange-600">K₂O: 81,3 kg</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-gray-600 mb-1">V sušině</div>
@@ -49,7 +49,7 @@ export default function NutrientContentSection() {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="text-sm text-gray-600 mb-1">Oxidů fosforu</div>
-                  <div className="text-3xl font-bold text-blue-600">P₂O₅: 7,5 kg</div>
+                  <div className="text-3xl font-bold text-blue-600">P₂O₅: 8,9 kg</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-gray-600 mb-1">V sušině (0,6 % P)</div>
@@ -65,7 +65,7 @@ export default function NutrientContentSection() {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="text-sm text-gray-600 mb-1">Oxidů vápníku</div>
-                  <div className="text-3xl font-bold text-green-600">CaO: 33,0 kg</div>
+                  <div className="text-3xl font-bold text-green-600">CaO: 39,0 kg</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-gray-600 mb-1">V sušině</div>
@@ -90,7 +90,7 @@ export default function NutrientContentSection() {
 
           <div className="mt-8 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl p-6 text-white text-center">
             <p className="text-2xl font-bold mb-2">
-              Celková hodnota živin: 1 460 Kč/t
+              Celková hodnota živin: 1 728 Kč/t
             </p>
             <p className="text-lg opacity-90">
               (při cenách průmyslových hnojiv)
