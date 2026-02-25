@@ -31,7 +31,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="mb-4 space-y-1">
           {Object.entries(product.technicke_parametry).map(([key, value]) => (
             <div key={key} className="flex justify-between text-sm">
-              <span className="text-gray-500 capitalize">
+              <span className="text-gray-500">
                 {key.replace(/_/g, " ")}:
               </span>
               <span className="text-gray-900 font-medium">{value}</span>
