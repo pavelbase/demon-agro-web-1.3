@@ -4,18 +4,18 @@ import { Beaker } from "lucide-react";
 
 export default function NutrientContentSection() {
   return (
-    <section className="py-12 bg-gradient-to-br from-gray-50 to-gray-100">
+    <section className="py-10 md:py-12 bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-5xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3">
             Obsah živin v 1 tuně popela
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-base md:text-lg text-gray-600">
             Přepočet na standardní vlhkost 35 %
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border-2 border-orange-200">
+        <div className="bg-white rounded-2xl shadow-2xl p-5 md:p-8 border-2 border-orange-200">
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-3 bg-orange-50 px-6 py-3 rounded-full border-2 border-orange-200 mb-6">
               <Beaker className="w-6 h-6 text-orange-600" />
@@ -88,11 +88,11 @@ export default function NutrientContentSection() {
             </div>
           </div>
 
-          <div className="mt-8 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl p-6 text-white text-center">
-            <p className="text-2xl font-bold mb-2">
+          <div className="mt-6 md:mt-8 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl p-5 md:p-6 text-white text-center">
+            <p className="text-xl md:text-2xl font-bold mb-2">
               Celková hodnota živin: 1 728 Kč/t
             </p>
-            <p className="text-lg opacity-90">
+            <p className="text-base md:text-lg opacity-90">
               (při cenách průmyslových hnojiv)
             </p>
           </div>

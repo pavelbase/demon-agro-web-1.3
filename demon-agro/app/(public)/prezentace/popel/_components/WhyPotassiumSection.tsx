@@ -28,18 +28,18 @@ export default function WhyPotassiumSection() {
   ];
 
   return (
-    <section className="py-12 bg-white">
+    <section className="py-10 md:py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3">
             Proč potřebujete draslík?
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
             Tři kritická fakta o draslíku v zemědělství
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
           {reasons.map((reason, index) => {
             const Icon = reason.icon;
             const colorClasses = {
@@ -85,14 +85,14 @@ export default function WhyPotassiumSection() {
         </div>
 
         {/* Liebigův zákon minima */}
-        <div className="mt-12 bg-white rounded-2xl p-8 shadow-xl border-2 border-indigo-300">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+        <div className="mt-8 md:mt-12 bg-white rounded-2xl p-4 md:p-8 shadow-xl border-2 border-indigo-300">
+          <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 text-center">
             🛢️ Liebigův zákon minima: Draslík jako nejkratší plaňka
           </h3>
-          <div className="flex flex-col md:flex-row items-center gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
             {/* ASCII vizuál sudu */}
-            <div className="flex-shrink-0 bg-gradient-to-b from-amber-100 to-amber-200 rounded-xl p-6 border-2 border-amber-400">
-              <pre className="text-gray-700 text-sm font-mono leading-tight">
+            <div className="flex-shrink-0 bg-gradient-to-b from-amber-100 to-amber-200 rounded-xl p-4 md:p-6 border-2 border-amber-400 overflow-x-auto max-w-full">
+              <pre className="text-gray-700 text-xs md:text-sm font-mono leading-tight">
 {`   ┌─────────────┐
    │     N       │ ▲
    │             │ │ 
@@ -130,8 +130,8 @@ export default function WhyPotassiumSection() {
           </div>
         </div>
 
-        <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border-2 border-blue-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+        <div className="mt-8 md:mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 md:p-8 border-2 border-blue-200">
+          <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 text-center">
             💡 Proč je draslík tak důležitý?
           </h3>
           <div className="grid md:grid-cols-2 gap-6 text-gray-700">
