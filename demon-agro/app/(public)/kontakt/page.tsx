@@ -127,10 +127,12 @@ export default function KontaktPage() {
                     <h3 className="font-semibold text-gray-900 mb-1">Firma</h3>
                     <p className="text-gray-900 font-medium">Démon agro s.r.o.</p>
                     <p className="text-gray-600 text-sm mt-1">IČO: 24477753</p>
+                    <p className="text-gray-600 text-sm">DIČ: CZ24477753</p>
                     <p className="text-gray-600 text-sm">
                       Piletická 486, Věkoše<br />
                       503 41 Hradec Králové
                     </p>
+                    <p className="text-gray-600 text-sm mt-1">Číslo účtu: 7423457004/5500</p>
                   </div>
                 </div>
 
@@ -173,7 +175,7 @@ export default function KontaktPage() {
                       Oblast působnosti
                     </h3>
                     <p className="text-gray-600">
-                      Plzeňský, Karlovarský, Ústecký, Liberecký, Královéhradecký a Středočeský kraj
+                      Plzeňský, Karlovarský, Ústecký, Liberecký, Královéhradecký, Pardubický, Jihočeský a Středočeský kraj
                     </p>
                   </div>
                 </div>
