@@ -1,9 +1,10 @@
 import { requireAuth } from '@/lib/supabase/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import PlanyVapneniClient from '@/components/portal/PlanyVapneniClient'
+import { groupAndAverageAnalyses } from '@/lib/utils/soil-analysis-helpers'
 
 /**
- * PŘEHLED PLÁNŮ VÁPNĚNÍ
+ * PŘEHLED PLÁNŮ VÁPNĚNÍ (služba: Vápnění)
  * =====================
  * Souhrný seznam všech plánů vápnění ze všech pozemků uživatele
  * NOVĚ: Tabulkový přehled všech pozemků s rozbory a doporučeními
@@ -57,18 +58,26 @@ export default async function PlanyVapneniPage() {
     .from('soil_analyses')
     .select('*')
     .in('parcel_id', parcelIds)
+    // Druhotné řazení podle id je nutné: vzorky jednoho odběru mají shodné
+    // analysis_date, takže bez něj vrací databáze řádky v nedefinovaném pořadí.
     .order('analysis_date', { ascending: false })
+    .order('id', { ascending: true })
 
   console.log('Analyses loaded:', allAnalyses?.length || 0)
 
-  // Spojit pozemky s jejich nejnovějšími rozbory
+  // Spojit pozemky s jejich nejnovějším odběrem.
+  // POZOR: nikdy nebrat jeden vzorek - pozemek s víc vzorky se dle metodiky
+  // ÚKZÚZ hodnotí z aritmetického průměru (viz groupAndAverageAnalyses).
   const parcelsWithAnalyses = allParcels?.map(parcel => {
     const parcelAnalyses = allAnalyses?.filter(a => a.parcel_id === parcel.id) || []
-    const latestAnalysis = parcelAnalyses.length > 0 ? parcelAnalyses[0] : null
+    const groupedAnalyses = groupAndAverageAnalyses(parcelAnalyses, parcel.soil_type, parcel.culture)
+    const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
     
     return {
       ...parcel,
-      latest_analysis: latestAnalysis
+      // GroupedAnalysis nese navíc count/ids (kolik vzorků se zprůměrovalo);
+      // konzumenti čtou jen hodnoty a kategorie, které má shodné se SoilAnalysis.
+      latest_analysis: latestAnalysis as any
     }
   }) || []
 
@@ -171,4 +180,3 @@ export default async function PlanyVapneniPage() {
     />
   )
 }
-

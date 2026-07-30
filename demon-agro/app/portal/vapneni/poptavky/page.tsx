@@ -55,7 +55,7 @@ export default async function LimingRequestsPage({
               </p>
             </div>
             <Link
-              href="/portal/poptavky/nova"
+              href="/portal/vapneni/poptavky/nova"
               className="flex items-center px-4 py-2 bg-primary-green text-white rounded-lg hover:bg-primary-brown transition-colors"
             >
               <Plus className="h-5 w-5 mr-2" />

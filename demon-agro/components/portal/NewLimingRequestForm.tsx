@@ -176,7 +176,7 @@ export function NewLimingRequestForm({ profile }: NewLimingRequestFormProps) {
 
       // Success!
       clearCart()
-      router.push(`/portal/poptavky?success=true&id=${result.requestId}`)
+      router.push(`/portal/vapneni/poptavky?success=true&id=${result.requestId}`)
     } catch (err) {
       console.error('Error creating request:', err)
       setError('Nepodařilo se odeslat poptávku. Zkuste to prosím znovu.')
@@ -195,7 +195,7 @@ export function NewLimingRequestForm({ profile }: NewLimingRequestFormProps) {
           Přidejte pozemky z plánu vápnění do košíku, abyste mohli odeslat poptávku.
         </p>
         <button
-          onClick={() => router.push('/portal/plany-vapneni')}
+          onClick={() => router.push('/portal/vapneni/plany')}
           className="px-6 py-3 bg-primary-green text-white rounded-lg hover:bg-primary-brown transition-colors"
         >
           Přejít na plány vápnění

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { 
   Home, 
@@ -20,13 +20,33 @@ import {
   Sparkles,
   Calculator,
   TrendingDown,
-  Tractor
+  Tractor,
+  Leaf,
+  Layers,
+  SprayCan,
+  Sprout,
+  Droplets
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
-import { useLimingCart } from '@/lib/contexts/LimingCartContext'
+import {
+  serviceOwnsPath,
+  useActiveService,
+  type ServiceId,
+} from '@/lib/contexts/ActiveServiceContext'
 
 /**
  * Sidebar navigace pro uživatelský portál
+ * 
+ * Struktura navigace:
+ * - Sdílené jádro (`sharedNavItems`) – vždy viditelné, nezávisle na zvolené službě
+ *   (Dashboard, Nastavení)
+ * - Přepínač služeb (`services`) – segmentované přepínání mezi moduly portálu.
+ *   Položky vybrané služby (`services[activeService].items`) se zobrazují
+ *   pod sdíleným jádrem.
+ *
+ * Pozemky jsou záměrně u služeb, ne ve sdíleném jádru: vápnění pracuje s pozemky
+ * s rozbory půdy (tabulka `parcels`), evidence hnojiv a POR s díly půdních bloků
+ * z LPIS (tabulka `land_blocks`) a jejich legislativními atributy.
  * 
  * Role-based přístup:
  * - Běžní uživatelé (role='user'): Vidí pouze hlavní navigaci
@@ -47,14 +67,56 @@ interface SidebarProps {
   isMobile?: boolean
 }
 
-const mainNavItems = [
+interface NavItem {
+  href: string
+  label: string
+  icon: typeof Home
+}
+
+// Sdílené jádro – dostupné vždy, nezávisle na zvolené službě
+const sharedNavItems: NavItem[] = [
   { href: '/portal/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/portal/pozemky', label: 'Pozemky', icon: Map },
-  { href: '/portal/plany-vapneni', label: 'Plány vápnění', icon: Sparkles },
-  { href: '/portal/kalkulacka-ztrat', label: 'Kalkulačka ztrát', icon: TrendingDown },
-  { href: '/portal/upload', label: 'Upload rozborů', icon: Upload },
-  { href: '/portal/poptavky', label: 'Moje poptávky', icon: ShoppingCart },
   { href: '/portal/nastaveni', label: 'Nastavení', icon: Settings },
+]
+
+// Registr služeb (modulů) portálu – jednotlivé položky se v Sidebaru
+// zobrazují pouze pro aktuálně vybranou službu.
+const services: {
+  id: ServiceId
+  label: string
+  icon: typeof Home
+  homeHref: string
+  items: NavItem[]
+}[] = [
+  {
+    id: 'vapneni',
+    label: 'Vápnění',
+    icon: Sparkles,
+    homeHref: '/portal/pozemky',
+    items: [
+      // Pozemky a rozbory půdy patří vápnění – evidence hnojiv a POR má vlastní
+      // pozemky (DPB z LPIS) s jinými atributy
+      { href: '/portal/pozemky', label: 'Pozemky', icon: Map },
+      { href: '/portal/upload', label: 'Upload rozborů', icon: Upload },
+      { href: '/portal/vapneni/plany', label: 'Plány vápnění', icon: Sparkles },
+      { href: '/portal/vapneni/kalkulacka-ztrat', label: 'Kalkulačka ztrát', icon: TrendingDown },
+      { href: '/portal/vapneni/poptavky', label: 'Moje poptávky', icon: ShoppingCart },
+    ],
+  },
+  {
+    id: 'hnojiva-por',
+    label: 'Hnojiva a POR',
+    icon: Leaf,
+    homeHref: '/portal/hnojiva-por/evidence',
+    items: [
+      { href: '/portal/hnojiva-por/evidence', label: 'Evidence aplikací', icon: ClipboardList },
+      { href: '/portal/hnojiva-por/nitratova-smernice', label: 'Nitrátová směrnice', icon: Droplets },
+      { href: '/portal/hnojiva-por/parcely', label: 'Parcely a osevy', icon: Layers },
+      { href: '/portal/hnojiva-por/pozemky', label: 'Pozemky (DPB)', icon: Map },
+      { href: '/portal/hnojiva-por/hnojiva', label: 'Katalog hnojiv', icon: Sprout },
+      { href: '/portal/hnojiva-por/pripravky', label: 'Katalog přípravků', icon: SprayCan },
+    ],
+  },
 ]
 
 const adminNavItems = [
@@ -71,14 +133,10 @@ const adminNavItems = [
 
 export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { activeService, setActiveService } = useActiveService()
   // Badge pro košík je nyní pouze na floating buttonu
   // Badge u "Moje poptávky" by měl ukazovat počet ODESLANÝCH poptávek (TODO: implementovat)
-
-  // DEBUG: Log admin status in sidebar
-  console.log('=== SIDEBAR DEBUG ===')
-  console.log('isAdmin prop:', isAdmin)
-  console.log('pathname:', pathname)
-  console.log('====================')
 
   const handleLogout = async () => {
     await logout()
@@ -90,6 +148,16 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
     }
     return pathname.startsWith(href)
   }
+
+  const handleServiceSwitch = (service: typeof services[number]) => {
+    setActiveService(service.id)
+    if (!serviceOwnsPath(service.id, pathname)) {
+      router.push(service.homeHref)
+    }
+    onClose?.()
+  }
+
+  const currentServiceItems = services.find((s) => s.id === activeService)?.items ?? []
 
   return (
     <aside className="h-full bg-white border-r border-gray-200 flex flex-col">
@@ -115,11 +183,47 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
         )}
       </div>
 
+      {/* Přepínač služeb */}
+      <div className="p-4 pb-2 border-b border-gray-100">
+        <div className="grid grid-cols-2 gap-1 bg-gray-100 rounded-lg p-1">
+          {services.map((service) => {
+            const ServiceIcon = service.icon
+            const isSelected = activeService === service.id
+
+            return (
+              <button
+                key={service.id}
+                type="button"
+                onClick={() => handleServiceSwitch(service)}
+                aria-pressed={isSelected}
+                title={service.label}
+                className={`
+                  flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold transition-colors
+                  ${isSelected
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                  }
+                `}
+              >
+                <ServiceIcon
+                  className={`h-3.5 w-3.5 flex-shrink-0 ${
+                    isSelected
+                      ? service.id === 'vapneni' ? 'text-primary-green' : 'text-amber-600'
+                      : ''
+                  }`}
+                />
+                <span className="truncate">{service.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4">
-        {/* Main navigation */}
+        {/* Sdílené jádro */}
         <div className="space-y-1">
-          {mainNavItems.map((item) => {
+          {sharedNavItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)
             
@@ -143,8 +247,38 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
           })}
         </div>
 
+        {/* Položky aktuálně vybrané služby */}
+        {currentServiceItems.length > 0 && (
+          <>
+            <div className="my-4 border-t border-gray-200" />
+            <div className="space-y-1">
+              {currentServiceItems.map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={`
+                      flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
+                      ${active 
+                        ? 'bg-primary-green text-white' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                      }
+                    `}
+                  >
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </>
+        )}
+
         {/* Admin section - POUZE pro uživatele s role="admin" */}
-        {/* DEBUG: isAdmin = {isAdmin ? 'TRUE' : 'FALSE'} */}
         {isAdmin && (
           <>
             {/* Vizuální oddělení admin sekce */}

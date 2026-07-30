@@ -21,7 +21,7 @@ export function LimingCartButton() {
   const totalItems = getTotalItems()
   
   // Skrýt košík na stránce nové poptávky (duplicitní informace)
-  if (pathname === '/portal/poptavky/nova') {
+  if (pathname === '/portal/vapneni/poptavky/nova') {
     return null
   }
   
@@ -29,10 +29,15 @@ export function LimingCartButton() {
   if (pathname.startsWith('/portal/admin')) {
     return null
   }
+
+  // Skrýt košík ve službě Hnojiva a POR (košík patří jen ke službě Vápnění)
+  if (pathname.startsWith('/portal/hnojiva-por')) {
+    return null
+  }
   
   const handleCreateRequest = () => {
     setIsOpen(false)
-    router.push('/portal/poptavky/nova')
+    router.push('/portal/vapneni/poptavky/nova')
   }
 
   return (
@@ -89,14 +94,14 @@ export function LimingCartButton() {
                   </p>
                   <div className="flex flex-col gap-2">
                     <Link
-                      href="/portal/plany-vapneni"
+                      href="/portal/vapneni/plany"
                       onClick={() => setIsOpen(false)}
                       className="text-sm text-primary-green hover:text-primary-brown font-medium"
                     >
                       Zobrazit plány vápnění →
                     </Link>
                     <Link
-                      href="/portal/poptavky"
+                      href="/portal/vapneni/poptavky"
                       onClick={() => setIsOpen(false)}
                       className="text-sm text-gray-600 hover:text-gray-900"
                     >

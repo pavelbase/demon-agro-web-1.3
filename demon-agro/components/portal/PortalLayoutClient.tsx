@@ -22,9 +22,22 @@ const pageTitles: Record<string, string> = {
   '/portal/dashboard': 'Dashboard',
   '/portal/pozemky': 'Moje pozemky',
   '/portal/upload': 'Upload rozborů půdy',
-  '/portal/poptavky': 'Moje poptávky',
   '/portal/nastaveni': 'Nastavení',
   '/portal/onboarding': 'Vítejte',
+  // Služba: Vápnění
+  '/portal/vapneni': 'Vápnění',
+  '/portal/vapneni/plany': 'Plány vápnění',
+  '/portal/vapneni/kalkulacka-ztrat': 'Kalkulačka ztrát',
+  '/portal/vapneni/poptavky': 'Moje poptávky',
+  // Služba: Hnojiva a POR
+  '/portal/hnojiva-por': 'Hnojiva a POR',
+  '/portal/hnojiva-por/evidence': 'Evidence aplikací',
+  '/portal/hnojiva-por/evidence/nova': 'Nová aplikace',
+  '/portal/hnojiva-por/evidence/hromadne': 'Souhrnné zadání',
+  '/portal/hnojiva-por/parcely': 'Parcely a osevy',
+  '/portal/hnojiva-por/pripravky': 'Katalog přípravků',
+  '/portal/hnojiva-por/hnojiva': 'Katalog hnojiv',
+  '/portal/hnojiva-por/pozemky': 'Pozemky (DPB)',
   // Admin pages
   '/portal/admin': 'Administrace',
   '/portal/admin/uzivatele': 'Správa uživatelů',
@@ -46,11 +59,15 @@ export function PortalLayoutClient({ user, isAdmin, children }: PortalLayoutClie
     if (pageTitles[pathname]) {
       return pageTitles[pathname]
     }
-    
-    // Try to match parent route (e.g., /portal/pozemky/123 → Moje pozemky)
-    const parentPath = pathname.split('/').slice(0, 3).join('/')
-    if (pageTitles[parentPath]) {
-      return pageTitles[parentPath]
+
+    // Try progressively shorter parent routes (e.g. /portal/vapneni/poptavky/nova
+    // → /portal/vapneni/poptavky → /portal/vapneni), take the most specific match.
+    const segments = pathname.split('/').filter(Boolean)
+    for (let i = segments.length - 1; i > 0; i--) {
+      const parentPath = '/' + segments.slice(0, i).join('/')
+      if (pageTitles[parentPath]) {
+        return pageTitles[parentPath]
+      }
     }
     
     // Default

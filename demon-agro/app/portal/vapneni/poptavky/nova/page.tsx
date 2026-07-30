@@ -26,7 +26,7 @@ export default async function NewLimingRequestPage() {
         {/* Header */}
         <div className="mb-6">
           <Link
-            href="/portal/poptavky"
+            href="/portal/vapneni/poptavky"
             className="inline-flex items-center text-sm text-gray-600 hover:text-primary-green mb-4"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />

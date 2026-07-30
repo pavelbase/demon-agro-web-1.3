@@ -147,7 +147,7 @@ export async function createLimingRequest(data: CreateLimingRequestData) {
     }
 
     // Revalidate paths
-    revalidatePath('/portal/poptavky')
+    revalidatePath('/portal/vapneni/poptavky')
     revalidatePath('/portal/dashboard')
 
     return {

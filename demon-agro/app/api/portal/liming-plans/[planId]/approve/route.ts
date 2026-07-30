@@ -84,7 +84,7 @@ export async function PATCH(
     
     // Revalidace
     revalidatePath(`/portal/pozemky/${parcel.id}/plan-vapneni`)
-    revalidatePath('/portal/plany-vapneni')
+    revalidatePath('/portal/vapneni/plany')
     
     return NextResponse.json({ 
       success: true,

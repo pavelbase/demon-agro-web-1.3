@@ -1,7 +1,9 @@
 import { getCurrentUser } from '@/lib/supabase/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { PortalLayoutClient } from '@/components/portal/PortalLayoutClient'
+import { PortalScale } from '@/components/portal/PortalScale'
 import { LimingCartProvider } from '@/lib/contexts/LimingCartContext'
+import { ActiveServiceProvider } from '@/lib/contexts/ActiveServiceContext'
 import type { Profile } from '@/lib/types/database'
 import type { Metadata } from 'next'
 
@@ -26,6 +28,7 @@ export default async function PortalLayout({
   const user = await getCurrentUser()
 
   // If no user, render minimal layout (for login, landing pages)
+  // Bez PortalScale – jde o veřejnou marketingovou stránku, ne o aplikaci samotnou.
   if (!user) {
     return <>{children}</>
   }
@@ -70,10 +73,13 @@ export default async function PortalLayout({
 
   // Render authenticated layout with sidebar
   return (
-    <LimingCartProvider>
-      <PortalLayoutClient user={userData} isAdmin={isAdmin}>
-        {children}
-      </PortalLayoutClient>
-    </LimingCartProvider>
+    <ActiveServiceProvider>
+      <LimingCartProvider>
+        <PortalScale />
+        <PortalLayoutClient user={userData} isAdmin={isAdmin}>
+          {children}
+        </PortalLayoutClient>
+      </LimingCartProvider>
+    </ActiveServiceProvider>
   )
 }

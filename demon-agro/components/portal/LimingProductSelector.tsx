@@ -99,7 +99,7 @@ export function LimingProductSelector({
     
     // Redirect to new request page after a short delay
     setTimeout(() => {
-      router.push('/portal/poptavky/nova')
+      router.push('/portal/vapneni/poptavky/nova')
     }, 500)
   }
 

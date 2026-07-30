@@ -216,7 +216,7 @@ export async function DELETE(
     
     revalidatePath(`/portal/pozemky/${plan.parcel_id}/plan-vapneni`)
     revalidatePath(`/portal/pozemky/${plan.parcel_id}`)
-    revalidatePath('/portal/plany-vapneni')
+    revalidatePath('/portal/vapneni/plany')
     
     return NextResponse.json({ 
       success: true,

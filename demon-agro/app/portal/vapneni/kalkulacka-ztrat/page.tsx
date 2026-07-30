@@ -5,7 +5,7 @@ import { getPozemkyProKalkulacku } from '@/lib/database/kalkulacka-queries'
 import { TrendingDown } from 'lucide-react'
 
 /**
- * Stránka kalkulačky ekonomických ztrát z kyselé půdy
+ * Stránka kalkulačky ekonomických ztrát z kyselé půdy (služba: Vápnění)
  * 
  * Server Component - načítá data na serveru a předává je klientské komponentě
  */
@@ -179,4 +179,3 @@ export default async function KalkulackaZtratPage() {
     </div>
   )
 }
-

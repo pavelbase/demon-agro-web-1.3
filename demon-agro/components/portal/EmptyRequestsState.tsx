@@ -22,14 +22,14 @@ export function EmptyRequestsState() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/portal/poptavky/nova"
+              href="/portal/vapneni/poptavky/nova"
               className="inline-flex items-center justify-center px-6 py-3 bg-primary-green text-white rounded-lg hover:bg-primary-brown transition-colors font-medium"
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
               Dokončit poptávku
             </Link>
             <Link
-              href="/portal/plany-vapneni"
+              href="/portal/vapneni/plany"
               className="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Přidat další pozemky
@@ -67,13 +67,13 @@ export function EmptyRequestsState() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/portal/plany-vapneni"
+              href="/portal/vapneni/plany"
               className="inline-flex items-center justify-center px-6 py-3 border-2 border-primary-green text-primary-green rounded-lg hover:bg-primary-green hover:text-white transition-colors"
             >
               Přejít na plány vápnění
             </Link>
             <Link
-              href="/portal/poptavky/nova"
+              href="/portal/vapneni/poptavky/nova"
               className="inline-flex items-center justify-center px-6 py-3 bg-primary-green text-white rounded-lg hover:bg-primary-brown transition-colors"
             >
               <Plus className="h-5 w-5 mr-2" />
