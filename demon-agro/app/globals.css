@@ -12,6 +12,17 @@
   }
 }
 
+/* Portal compact scaling – aplikuje se jen na /portal/* (třída se přepíná
+   v PortalScale.tsx) a jen od šířky tabletu/desktopu výš, mobil zůstává
+   v původním měřítku. Zmenšuje kořenový font-size, takže se proporčně
+   zmenší veškeré rem-based rozestupy a velikosti textu z Tailwindu –
+   stejný efekt jako přiblížení stránky v prohlížeči na 90 %. */
+@media (min-width: 1024px) {
+  html.portal-scale-90 {
+    font-size: 90%;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   },
 };
 
+// Blokující skript – nastaví zmenšení portálu (viz globals.css) ještě před
+// prvním vykreslením stránky, aby při refreshi/přímém načtení /portal/*
+// nedocházelo k viditelnému "skoku" z původní na zmenšenou velikost.
+// Seznam veřejných cest musí odpovídat `publicRoutes` v middleware.ts.
+const PORTAL_SCALE_SCRIPT = `(function(){try{var p=window.location.pathname;var pub=['/portal','/portal/prihlaseni','/portal/reset-hesla','/portal/onboarding'];if(p.indexOf('/portal')===0&&pub.indexOf(p)===-1){document.documentElement.classList.add('portal-scale-90');}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: {
@@ -21,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="cs">
       <body className={inter.className}>
+        <script dangerouslySetInnerHTML={{ __html: PORTAL_SCALE_SCRIPT }} />
         {children}
       </body>
     </html>
