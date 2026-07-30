@@ -1,275 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
- 
-// ============================================================================
-// KONFIGURACE
-// ============================================================================
+import {
+  EXTRACTION_PROMPT,
+  GEMINI_MODEL,
+  buildValidationWarnings,
+  cleanJsonString,
+  normalizeData,
+  validateExtractedData,
+  type ExtractionResponse,
+  type SoilAnalysis,
+} from '@/lib/utils/soil-extraction'
 
 // Načtení API klíče z prostředí (bezpečné)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""
-
-// Model, který funguje (ověřeno)
-const GEMINI_MODEL = "gemini-flash-latest"
- 
-// ============================================================================
-// TYPY
-// ============================================================================
- 
-interface SoilAnalysis {
-  parcel_code?: string // LPIS kód nebo lab označení (např. "0701/27")
-  parcel_name: string | null // Slovní název parcely (např. "U lesa")
-  area_ha?: number | null // Výměra v hektarech
-  soil_type?: string | null // Druh půdy: L (lehká), S (střední), T (těžká)
-  analysis_date: string // YYYY-MM-DD
-  ph: number | null
-  phosphorus: number | null // P
-  potassium: number | null // K
-  magnesium: number | null // Mg
-  calcium: number | null // Ca
-  sulfur: number | null // S (SÍRA)
-  notes: string
-}
- 
-interface ExtractionResponse {
-  analyses: SoilAnalysis[]
-  pdfUrl: string
-}
- 
-// ============================================================================
-// HELPER FUNKCE
-// ============================================================================
- 
-/**
- * Odstraní Markdown značky (```json, ```) a ořízne text
- */
-function cleanJsonString(text: string): string {
-  return text
-    .replace(/```json/g, '')
-    .replace(/```/g, '')
-    .trim()
-}
- 
-/**
- * Parsuje datum z různých formátů a převede na ISO (YYYY-MM-DD)
- */
-function parseDate(dateValue: any): string {
-  if (!dateValue) return new Date().toISOString().split('T')[0]
-  
-  const dateStr = String(dateValue).trim()
-  
-  // Pokud už je ISO formát (YYYY-MM-DD)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr
-  }
-  
-  // Pokud je DD.MM.YYYY nebo DD/MM/YYYY
-  const europeanMatch = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/)
-  if (europeanMatch) {
-    const [, day, month, year] = europeanMatch
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-  }
-  
-  // Pokud je DD-MM-YYYY
-  const dashMatch = dateStr.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/)
-  if (dashMatch) {
-    const [, day, month, year] = dashMatch
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-  }
-  
-  // Zkusit standardní Date parsing
-  try {
-    const date = new Date(dateStr)
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0]
-    }
-  } catch {
-    // Fallback na dnešní datum
-  }
-  
-  // Fallback: dnešní datum
-  return new Date().toISOString().split('T')[0]
-}
- 
-/**
- * Parsuje číselnou hodnotu a odstraní jednotky (mg/kg, %, atd.)
- */
-function parseNumericValue(value: any): number | null {
-  if (value === null || value === undefined || value === '') return null
-  
-  // Pokud už je číslo, vrať ho
-  if (typeof value === 'number') {
-    return isNaN(value) ? null : value
-  }
-  
-  // Převeď na string a očisti
-  let strValue = String(value).trim()
-  
-  // Odstraň jednotky (mg/kg, %, ppm, atd.)
-  strValue = strValue.replace(/\s*(mg\/kg|mg|kg|%|ppm|mmol\/kg|meq\/l)\s*/gi, '')
-  
-  // Nahraď desetinnou čárku za tečku
-  strValue = strValue.replace(',', '.')
-  
-  // Odstraň mezery
-  strValue = strValue.replace(/\s/g, '')
-  
-  // Zkus parsovat
-  const parsed = parseFloat(strValue)
-  
-  return isNaN(parsed) ? null : parsed
-}
- 
-/**
- * Normalizuje jeden vzorek analýzy
- */
-function normalizeSample(sample: any): SoilAnalysis {
-  return {
-    parcel_code: sample.parcel_code || sample.code || null,
-    parcel_name: sample.parcel_name || sample.name || null,
-    area_ha: parseNumericValue(sample.area_ha || sample.area),
-    soil_type: sample.soil_type || null,
-    analysis_date: parseDate(sample.analysis_date || sample.date || sample.datum || null),
-    ph: parseNumericValue(sample.ph || sample.pH || sample.PH),
-    phosphorus: parseNumericValue(sample.phosphorus || sample.p || sample.P),
-    potassium: parseNumericValue(sample.potassium || sample.k || sample.K),
-    magnesium: parseNumericValue(sample.magnesium || sample.mg || sample.Mg),
-    calcium: parseNumericValue(sample.calcium || sample.ca || sample.Ca),
-    sulfur: parseNumericValue(sample.sulfur || sample.s || sample.S),
-    notes: String(sample.notes || sample.poznamka || sample.poznámka || '').trim()
-  }
-}
- 
-/**
- * Zajistí, že výstup je vždy objekt s polem `analyses`
- */
-function normalizeData(data: any): SoilAnalysis[] {
-  // Pokud je data null nebo undefined
-  if (!data) {
-    throw new Error('AI nevrátila žádná data')
-  }
-  
-  // Pokud už má správnou strukturu
-  if (data.analyses && Array.isArray(data.analyses)) {
-    return data.analyses.map(normalizeSample)
-  }
-  
-  // Pokud je to pole přímo
-  if (Array.isArray(data)) {
-    return data.map(normalizeSample)
-  }
-  
-  // Pokud je to objekt s indexy {"0": {...}, "1": {...}}
-  if (typeof data === 'object') {
-    const keys = Object.keys(data)
-    
-    // Zkontroluj, jestli jsou klíče numerické
-    const isIndexed = keys.every(key => /^\d+$/.test(key))
-    
-    if (isIndexed && keys.length > 0) {
-      // Převeď na pole
-      const samples = keys.sort((a, b) => parseInt(a) - parseInt(b)).map(key => data[key])
-      return samples.map(normalizeSample)
-    }
-    
-    // Pokud je to jeden objekt (jeden vzorek)
-    if (keys.length > 0) {
-      return [normalizeSample(data)]
-    }
-  }
-  
-  throw new Error('Neznámý formát dat z AI')
-}
- 
-/**
- * Validuje, že máme alespoň nějaká data
- */
-function validateExtractedData(analyses: SoilAnalysis[]): void {
-  if (analyses.length === 0) {
-    throw new Error('AI neextrahovala žádná data z PDF')
-  }
-  
-  // Zkontroluj, že alespoň jeden vzorek má nějaká data
-  const hasAnyData = analyses.some(sample => 
-    sample.ph !== null || 
-    sample.phosphorus !== null || 
-    sample.potassium !== null || 
-    sample.magnesium !== null || 
-    sample.calcium !== null ||
-    sample.sulfur !== null
-  )
-  
-  if (!hasAnyData) {
-    throw new Error('AI extrahovala vzorky, ale žádný neobsahuje hodnoty')
-  }
-}
- 
-// ============================================================================
-// PROMPT PRO GEMINI
-// ============================================================================
- 
-const EXTRACTION_PROMPT = `Jsi expert na české agrochemické rozbory půdy. Analyzuj PDF a extrahuj VŠECHNY vzorky.
-
-DŮLEŽITÉ:
-1. Rozpoznej formát dokumentu:
-   - Laboratorní rozbor (např. Laboratoř Postoloprty)
-   - AZZP zpráva (Agrochemické zkoušení zemědělských půd)
-
-2. Pro KAŽDÝ vzorek extrahuj:
-
-IDENTIFIKACE:
-- parcel_code: Kód pozemku (např. "0701/27", "1 9002/1") - LPIS nebo lab označení
-- parcel_name: Slovní název (např. "U lesa", "orná neurčena")
-- area_ha: Výměra v hektarech (pokud je v dokumentu)
-
-ZÁKLADNÍ ÚDAJE:
-- analysis_date: Datum rozboru (YYYY-MM-DD)
-- soil_type: Druh půdy - hledej "L", "S", nebo "T"
-  * L = lehká (písčitá)
-  * S = střední (střední)
-  * T = těžká (jílovitá)
-
-ŽIVINY (v mg/kg):
-- ph: Hodnota pH (typicky 4-9)
-- phosphorus: P nebo P₂O₅ (fosfor)
-- potassium: K nebo K₂O (draslík)
-- magnesium: Mg nebo MgO (hořčík)
-- calcium: Ca nebo CaO (vápník)
-- sulfur: S (SÍRA - velmi důležité!)
-
-POZNÁMKY:
-- notes: Jakékoliv poznámky, číslo vzorku, označení
-
-FORMÁT ODPOVĚDI - POUZE ČISTÝ JSON:
-{
-  "analyses": [
-    {
-      "parcel_code": "0701/27",
-      "parcel_name": "U lesa",
-      "area_ha": 4.3,
-      "soil_type": "S",
-      "analysis_date": "2023-12-31",
-      "ph": 7.2,
-      "phosphorus": 118,
-      "potassium": 355,
-      "magnesium": 265.5,
-      "calcium": 2752,
-      "sulfur": 17.8,
-      "notes": "vz. 274"
-    }
-  ],
-  "laboratory": "Laboratoř Postoloprty",
-  "document_type": "lab_report",
-  "document_date": "2024-09-19"
-}
-
-PRAVIDLA:
-- Pokud hodnota chybí → použij null
-- Odstraň jednotky (mg/kg, %, atd)
-- Pokud je hodnota "< 10" → použij 10
-- Pokud je rozsah "10-15" → použij střed (12.5)
-- Datum vždy YYYY-MM-DD
-- VRAŤ POUZE JSON, BEZ MARKDOWN!`;
  
 // ============================================================================
 // MAIN API HANDLER
@@ -489,14 +233,41 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('✅ Data validována')
-    
+
+    // ========================================================================
+    // 7b. PROGRAMOVÉ KONTROLY (nezávislé na sebehodnocení AI)
+    // ========================================================================
+
+    const programmaticWarnings = buildValidationWarnings(analyses)
+    const aiValidationNotes: string[] = Array.isArray(rawData?.validation_notes)
+      ? rawData.validation_notes.map((n: any) => String(n)).filter(Boolean)
+      : []
+    const validationErrors = [...aiValidationNotes, ...programmaticWarnings]
+
+    const missingCultureCount = analyses.filter(a => a.culture === null || a.culture === 'jina').length
+    if (missingCultureCount > 0) {
+      console.warn(`⚠️ ${missingCultureCount}/${analyses.length} vzorků má nerozpoznanou nebo nepodporovanou kulturu - vyžaduje ruční kontrolu`)
+    }
+
+    const aiConfidence: 'high' | 'medium' | 'low' =
+      rawData?.confidence === 'high' || rawData?.confidence === 'low' ? rawData.confidence : 'medium'
+    // Pokud programové kontroly našly problém, nikdy nenech projít "high" confidence -
+    // AI si sama nemusí všimnout, že např. kulturu nevrátila u všech vzorků.
+    const confidence: 'high' | 'medium' | 'low' =
+      validationErrors.length > 0 && aiConfidence === 'high' ? 'medium' : aiConfidence
+
     // ========================================================================
     // 8. SESTAVENÍ A VRÁCENÍ ODPOVĚDI
     // ========================================================================
     
     const response: ExtractionResponse = {
       analyses,
-      pdfUrl
+      pdfUrl,
+      laboratory: rawData?.laboratory ? String(rawData.laboratory) : null,
+      document_type: rawData?.document_type ? String(rawData.document_type) : null,
+      document_date: rawData?.document_date ? String(rawData.document_date) : null,
+      confidence,
+      validationErrors,
     }
     
     const duration = Date.now() - startTime

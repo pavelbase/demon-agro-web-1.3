@@ -4,6 +4,11 @@ import { useState, useRef } from 'react'
 import { Upload, X, FileText, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 import type { Parcel } from '@/lib/types/database'
 
+// Klíč pro předání extrahovaných dat na /portal/upload/validate přes sessionStorage
+// (viz ExtractionValidatorLoader.tsx). Nepoužívá se URL query param, protože
+// u dokumentů s desítkami pozemků by URL přesáhla limity prohlížeče/serveru.
+export const EXTRACTION_STORAGE_KEY = 'demon-agro-extraction-data'
+
 interface PDFUploadZoneProps {
   parcels: Parcel[]
   userId: string
@@ -142,11 +147,20 @@ export function PDFUploadZone({ parcels, userId, remainingExtractions }: PDFUplo
       setUploadedFile(prev => prev ? { ...prev, extractedData } : null)
       setStatus('validating')
 
-      // Redirect to validation page
-      window.location.href = `/portal/upload/validate?data=${encodeURIComponent(JSON.stringify({
-        ...extractedData,
-        pdfUrl,
-      }))}`
+      // Data se předávají přes sessionStorage, ne přes URL query param -
+      // u větších dokumentů (desítky pozemků) by URL s celým JSONem
+      // přesáhla limity prohlížeče/serveru (viz pád stránky při 29+ pozemcích).
+      try {
+        sessionStorage.setItem(
+          EXTRACTION_STORAGE_KEY,
+          JSON.stringify({ ...extractedData, pdfUrl })
+        )
+      } catch (storageError) {
+        console.error('Nepodařilo se uložit extrahovaná data do sessionStorage:', storageError)
+        throw new Error('Extrahovaná data jsou příliš velká na uložení v prohlížeči')
+      }
+
+      window.location.href = '/portal/upload/validate'
 
     } catch (error) {
       console.error('Upload error:', error)

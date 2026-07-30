@@ -3,13 +3,16 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, AlertTriangle, Save, ArrowLeft, Loader2, Plus, Link as LinkIcon, ChevronDown, ChevronRight, Check, X as XIcon } from 'lucide-react'
-import type { Parcel } from '@/lib/types/database'
+import type { Parcel, Culture } from '@/lib/types/database'
+import { CULTURES, CULTURE_LABELS } from '@/lib/constants/database'
 
 interface Analysis {
   parcel_name: string | null
   parcel_code: string | null
   area_ha: number | null
   soil_type: string | null
+  culture?: 'orna' | 'ttp' | 'chmelnice' | 'jina' | null
+  culture_raw?: string | null
   analysis_date: string
   ph: number
   ph_category?: string | null
@@ -53,7 +56,8 @@ interface AnalysisState extends Analysis {
   newParcelArea: number | ''
   newParcelCode: string
   newParcelSoilType: string
-  newParcelCulture: 'orna' | 'ttp'
+  newParcelCulture: Culture
+  cultureDetected: boolean // false = AI kulturu nerozpoznala/nepodporuje, vyžaduje ruční kontrolu
   // Editable analysis fields
   editedAnalysisDate: string
   editedPh: number | ''
@@ -83,7 +87,10 @@ export function ExtractionValidator({ extractedData, parcels, userId }: Extracti
       newParcelArea: analysis.area_ha || '',
       newParcelCode: analysis.parcel_code || '',
       newParcelSoilType: analysis.soil_type || '',
-      newParcelCulture: 'orna',
+      newParcelCulture: (analysis.culture === 'orna' || analysis.culture === 'ttp' || analysis.culture === 'chmelnice')
+        ? analysis.culture
+        : 'orna',
+      cultureDetected: analysis.culture === 'orna' || analysis.culture === 'ttp' || analysis.culture === 'chmelnice',
       // Editable analysis fields
       editedAnalysisDate: analysis.analysis_date,
       editedPh: analysis.ph,
@@ -512,13 +519,27 @@ function AnalysisCard({ analysis, index, parcels, errors, onChange }: AnalysisCa
                   <option value="">-- Vyberte pozemek --</option>
                   {parcels.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.area} ha) {p.code && `- ${p.code}`}
+                      {p.name} ({p.area} ha) {p.code && `- ${p.code}`} - {CULTURE_LABELS[p.culture]}
                     </option>
                   ))}
                 </select>
                 {errors[`${analysis.id}.selectedParcelId`] && (
                   <p className="text-sm text-red-600 mt-1">{errors[`${analysis.id}.selectedParcelId`]}</p>
                 )}
+                {(() => {
+                  if (!analysis.selectedParcelId) return null
+                  if (analysis.culture !== 'orna' && analysis.culture !== 'ttp' && analysis.culture !== 'chmelnice') return null
+                  const selectedParcel = parcels.find(p => p.id === analysis.selectedParcelId)
+                  if (!selectedParcel || selectedParcel.culture === analysis.culture) return null
+                  return (
+                    <p className="text-xs text-orange-700 mt-1 bg-orange-50 border border-orange-300 rounded p-2">
+                      ⚠️ Kultura zjištěná z dokumentu ({CULTURE_LABELS[analysis.culture]}) neodpovídá
+                      kultuře uložené u vybraného pozemku ({CULTURE_LABELS[selectedParcel.culture]}).
+                      Zkontrolujte prosím, zda jde o správný pozemek, nebo opravte kulturu pozemku
+                      po uložení.
+                    </p>
+                  )
+                })()}
               </div>
             )}
 
@@ -574,16 +595,31 @@ function AnalysisCard({ analysis, index, parcels, errors, onChange }: AnalysisCa
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Kultura
+                      Kultura {!analysis.cultureDetected && (
+                        <span className="text-orange-600 font-normal">
+                          - nerozpoznáno, zkontrolujte!
+                        </span>
+                      )}
                     </label>
                     <select
                       value={analysis.newParcelCulture}
-                      onChange={(e) => onChange('newParcelCulture', e.target.value as 'orna' | 'ttp')}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                      onChange={(e) => onChange('newParcelCulture', e.target.value as Culture)}
+                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent ${
+                        analysis.cultureDetected ? 'border-gray-300' : 'border-orange-400 bg-orange-50'
+                      }`}
                     >
-                      <option value="orna">Orná půda</option>
-                      <option value="ttp">TTP</option>
+                      {CULTURES.map((c) => (
+                        <option key={c} value={c}>{CULTURE_LABELS[c]}</option>
+                      ))}
                     </select>
+                    {!analysis.cultureDetected && (
+                      <p className="text-xs text-orange-700 mt-1">
+                        AI nedokázala z dokumentu spolehlivě určit kulturu pozemku
+                        {analysis.culture_raw ? ` (nalezený text: "${analysis.culture_raw}")` : ''}.
+                        Výchozí hodnota je "Orná půda" - prosím ověřte podle dokumentu, jde o kritický
+                        parametr pro výpočet dávky vápnění.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
