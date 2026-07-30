@@ -127,20 +127,22 @@ export default async function NitratovaSmernicePage({
                 })}{' '}
                 kg N na {balance.farm.farmArea.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} ha.
               </p>
-              <UsageBar usage={livestockUsage} />
+              <UsageBar percent={Math.round(livestockUsage * 100)} />
             </div>
           )}
+
+          <MissingDataNotice stands={balance.stands} />
 
           <div className="overflow-x-auto rounded-lg bg-white shadow-md">
             <table className="w-full text-sm">
               <thead className="border-b border-gray-200 bg-gray-50">
                 <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Stav</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Parcela</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Plodina</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Přívod N</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Limit</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Čerpání</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Zařazení DPB</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -170,11 +172,36 @@ export default async function NitratovaSmernicePage({
   )
 }
 
+const STATUS_BADGES: Record<
+  CropStandBalance['limitStatus'],
+  { label: string; className: string; rowClassName?: string }
+> = {
+  over: {
+    label: 'Nad limitem',
+    className: 'bg-red-100 text-red-800',
+    rowClassName: 'bg-red-50/50',
+  },
+  unverifiable: {
+    label: 'Nelze ověřit',
+    className: 'bg-amber-100 text-amber-800',
+    rowClassName: 'bg-amber-50/40',
+  },
+  ok: { label: 'V pořádku', className: 'bg-green-100 text-green-800' },
+  none: { label: 'Bez limitu', className: 'bg-gray-100 text-gray-600' },
+}
+
 function StandRow({ stand }: { stand: CropStandBalance }) {
-  const over = stand.limitStatus === 'over'
+  const badge = STATUS_BADGES[stand.limitStatus]
 
   return (
-    <tr className={over ? 'bg-red-50/50' : stand.limitStatus === 'unverifiable' ? 'bg-amber-50/40' : undefined}>
+    <tr className={badge.rowClassName}>
+      <td className="whitespace-nowrap px-4 py-3">
+        <span
+          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
+        >
+          {badge.label}
+        </span>
+      </td>
       <td className="px-4 py-3">
         <Link
           href={`/portal/hnojiva-por/evidence?parcela=${stand.parcelId}`}
@@ -182,13 +209,17 @@ function StandRow({ stand }: { stand: CropStandBalance }) {
         >
           {stand.parcelName}
         </Link>
-        <span className="ml-2 text-xs text-gray-500">
-          {stand.dpbCode ?? 'bez DPB'} · {stand.area.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} ha
+        <span className="block text-xs text-gray-500">
+          {stand.dpbCode ?? 'bez DPB'} ·{' '}
+          {stand.area.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} ha
+          {stand.nitrateVulnerableZone
+            ? ` · ZOD ${stand.applicationZone ?? ''}`.trimEnd()
+            : ' · mimo ZOD'}
         </span>
       </td>
       <td className="px-4 py-3 text-gray-700">
         {stand.cropName}
-        <span className="ml-2 text-xs text-gray-500">{stand.applicationCount}× hnojeno</span>
+        <span className="block text-xs text-gray-500">{stand.applicationCount}× hnojeno</span>
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-right">
         <span className="font-medium text-gray-900">{formatNitrogen(stand.supply.totalKgHa)}</span>
@@ -198,9 +229,7 @@ function StandRow({ stand }: { stand: CropStandBalance }) {
           </span>
         )}
         {stand.hasMissingNitrogen && (
-          <span className="block text-xs text-red-700">
-            neúplné – u položky chybí přívod N
-          </span>
+          <span className="block text-xs font-medium text-red-700">chybí přívod N u položky</span>
         )}
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-right text-gray-700">
@@ -208,69 +237,177 @@ function StandRow({ stand }: { stand: CropStandBalance }) {
           <>
             {formatNitrogen(stand.limit.limitKgNHa)}
             <span className="block text-xs text-gray-500">
-              {stand.limit.cropLabel}
-              {stand.limit.level !== null && ` · hladina ${stand.limit.level}`}
+              {stand.limit.level !== null ? `hladina ${stand.limit.level}` : stand.limit.cropLabel}
             </span>
           </>
         ) : stand.limitRange ? (
           <>
-            {stand.limitRange.minKgNHa.toLocaleString('cs-CZ')}–
-            {stand.limitRange.maxKgNHa.toLocaleString('cs-CZ')} kg N/ha
-            <span className="block text-xs text-amber-700">
-              {stand.limitRange.uncertainty.join('; ')}
+            <span title={stand.limitRange.uncertainty.join('; ')}>
+              {stand.limitRange.minKgNHa.toLocaleString('cs-CZ')}–
+              {stand.limitRange.maxKgNHa.toLocaleString('cs-CZ')} kg N/ha
             </span>
+            <span className="block text-xs text-amber-700">rozpětí – viz upozornění výše</span>
           </>
         ) : (
-          <span className="text-gray-400">–</span>
+          <>
+            <span className="text-gray-400">–</span>
+            <span className="block text-xs text-gray-500">příloha 3 neuvádí</span>
+          </>
         )}
       </td>
       <td className="px-4 py-3">
-        {stand.usage !== null ? (
-          <UsageBar usage={stand.usage} />
-        ) : stand.limitStatus === 'over' ? (
-          <span className="text-xs font-medium text-red-700">
-            překročen i nejvyšší možný limit
-          </span>
-        ) : stand.limitStatus === 'unverifiable' ? (
-          <span className="text-xs text-amber-700">nelze ověřit – doplňte zařazení</span>
-        ) : stand.limitRange ? (
-          <span className="text-xs text-gray-600">pod nejnižším možným limitem</span>
-        ) : (
-          <span className="text-xs text-gray-500">příloha 3 limit neuvádí</span>
-        )}
-      </td>
-      <td className="px-4 py-3 text-xs text-gray-600">
-        {stand.nitrateVulnerableZone ? (
-          <>
-            <span className="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 font-medium text-blue-800">
-              <Droplets className="h-3 w-3" />
-              ZOD {stand.applicationZone ?? ''}
-            </span>
-            <span className="ml-2">
-              region {stand.climaticRegion ?? '?'} · hladina {stand.yieldLevel ?? 'nezadaná'}
-            </span>
-          </>
-        ) : (
-          'mimo zranitelnou oblast'
-        )}
+        <UsageCell stand={stand} />
       </td>
     </tr>
   )
 }
 
-/** Čerpání limitu; nad 100 % se pruh zbarví, aby překročení nešlo přehlédnout. */
-function UsageBar({ usage }: { usage: number }) {
-  const percent = Math.round(usage * 100)
-  const color = usage > 1 ? 'bg-red-500' : usage >= 0.9 ? 'bg-amber-500' : 'bg-green-500'
+/**
+ * Čerpání limitu.
+ *
+ * U jednoznačného limitu se ukazuje přímé čerpání. Kde limit není jistý,
+ * měří se čerpání proti nejvyššímu z možných limitů – nad ním je porušení
+ * jisté – a rozpětí nejistoty se vyznačí ve pruhu.
+ */
+function UsageCell({ stand }: { stand: CropStandBalance }) {
+  if (stand.usage !== null) {
+    return <UsageBar percent={Math.round(stand.usage * 100)} />
+  }
+
+  if (!stand.limitRange) {
+    return <span className="text-xs text-gray-500">bez limitu k porovnání</span>
+  }
+
+  const { minKgNHa, maxKgNHa } = stand.limitRange
+  const percent = maxKgNHa > 0 ? Math.round((stand.supply.totalKgHa / maxKgNHa) * 100) : 0
+  const uncertainFrom = maxKgNHa > 0 ? Math.round((minKgNHa / maxKgNHa) * 100) : 0
 
   return (
-    <div className="min-w-[120px]">
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-        <div className={`h-full ${color}`} style={{ width: `${Math.min(percent, 100)}%` }} />
+    <UsageBar
+      percent={percent}
+      uncertainFromPercent={uncertainFrom}
+      caption={`z ${maxKgNHa.toLocaleString('cs-CZ')} kg N/ha`}
+      overMin={stand.supply.totalKgHa > minKgNHa}
+    />
+  )
+}
+
+/**
+ * Pruh čerpání limitu; nad 100 % se zbarví, aby překročení nešlo přehlédnout.
+ *
+ * uncertainFromPercent vyznačí šedou zónu mezi nejnižším a nejvyšším možným
+ * limitem – v ní o překročení rozhodne až doplněné zařazení pozemku.
+ */
+function UsageBar({
+  percent,
+  caption,
+  uncertainFromPercent,
+  overMin = false,
+}: {
+  percent: number
+  caption?: string
+  uncertainFromPercent?: number
+  overMin?: boolean
+}) {
+  const color =
+    percent > 100 ? 'bg-red-500' : overMin || percent >= 90 ? 'bg-amber-500' : 'bg-green-500'
+
+  return (
+    <div className="min-w-[110px]">
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+        {uncertainFromPercent !== undefined && (
+          <div
+            className="absolute inset-y-0 bg-gray-300"
+            style={{
+              left: `${Math.min(uncertainFromPercent, 100)}%`,
+              right: '0%',
+            }}
+          />
+        )}
+        <div
+          className={`absolute inset-y-0 left-0 ${color}`}
+          style={{ width: `${Math.min(percent, 100)}%` }}
+        />
       </div>
-      <span className={`text-xs ${usage > 1 ? 'font-medium text-red-700' : 'text-gray-600'}`}>
-        {percent} %
+      <span
+        className={`text-xs ${percent > 100 ? 'font-medium text-red-700' : 'text-gray-600'}`}
+      >
+        {percent} %{caption && <span className="text-gray-500"> {caption}</span>}
       </span>
+    </div>
+  )
+}
+
+/**
+ * Souhrn chybějících údajů.
+ *
+ * Důvod, proč limit nejde určit jednoznačně, je u desítek osevů stejný. V řádcích
+ * by se opakoval a rozbil tabulku, proto se sesbírá sem – s počtem osevů
+ * a odkazem tam, kde se údaj doplňuje.
+ */
+function MissingDataNotice({ stands }: { stands: CropStandBalance[] }) {
+  const affected = stands.filter((stand) => stand.limitRange !== null)
+  if (affected.length === 0) return null
+
+  const matches = (stand: CropStandBalance, needle: string) =>
+    stand.limitRange!.uncertainty.some((reason) => reason.includes(needle))
+
+  const gaps = [
+    {
+      needle: 'BPEJ',
+      title: 'Chybí kód BPEJ u dílu půdního bloku',
+      detail:
+        'Z BPEJ se určuje výnosová hladina, na které limit přívodu dusíku závisí. Bez ní zná systém jen rozpětí limitů.',
+      href: '/portal/hnojiva-por/pozemky',
+      action: 'Doplnit u pozemků',
+    },
+    {
+      needle: 'upřesněte plodinu',
+      title: 'Plodina osevu není v předpisu jednoznačná',
+      detail:
+        'Příloha 3 rozlišuje víc variant, než vede číselník – například pšenici potravinářskou a nepotravinářskou nebo ječmen sladovnický a krmný.',
+      href: '/portal/hnojiva-por/parcely',
+      action: 'Upřesnit u osevů',
+    },
+  ]
+    .map((gap) => {
+      const matching = affected.filter((stand) => matches(stand, gap.needle))
+      return {
+        ...gap,
+        count: matching.length,
+        risky: matching.filter((stand) => stand.limitStatus !== 'ok').length,
+      }
+    })
+    .filter((gap) => gap.count > 0)
+
+  if (gaps.length === 0) return null
+
+  return (
+    <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+      <h2 className="flex items-center gap-2 font-semibold text-amber-900">
+        <AlertTriangle className="h-4 w-4 shrink-0" />
+        Co doplnit, aby byl limit určený jednoznačně
+      </h2>
+      <ul className="mt-3 space-y-3">
+        {gaps.map((gap) => (
+          <li key={gap.needle} className="text-sm">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="font-medium text-amber-900">{gap.title}</span>
+              <span className="text-amber-800">
+                – {gap.count} {gap.count === 1 ? 'osev' : gap.count < 5 ? 'osevy' : 'osevů'}
+                {gap.risky > 0 && `, u ${gap.risky} z nich přívod přesahuje nejnižší možný limit`}
+              </span>
+              <Link
+                href={gap.href}
+                className="font-medium text-amber-900 underline hover:text-amber-700"
+              >
+                {gap.action}
+              </Link>
+            </div>
+            <p className="mt-0.5 text-xs text-amber-800">{gap.detail}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
