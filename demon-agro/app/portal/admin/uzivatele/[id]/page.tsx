@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logAdminAccess } from '@/lib/actions/admin-audit'
 import { UserDetailHeader } from '@/components/admin/UserDetailHeader'
 import { UserDetailTabs } from '@/components/admin/UserDetailTabs'
+import { groupAndAverageAnalyses } from '@/lib/utils/soil-analysis-helpers'
 
 export default async function AdminUserDetailPage({
   params,
@@ -48,16 +49,19 @@ export default async function AdminUserDetailPage({
   // Fetch latest soil analyses for each parcel
   const parcelsWithAnalyses = await Promise.all(
     (parcels || []).map(async (parcel) => {
+      // Bez limitu - pozemek s víc vzorky se hodnotí z jejich průměru,
+      // jinak by admin viděl jiná čísla než uživatel v portálu.
       const { data: analyses } = await supabase
         .from('soil_analyses')
         .select('*')
         .eq('parcel_id', parcel.id)
         .order('analysis_date', { ascending: false })
-        .limit(1)
+        .order('id', { ascending: true })
 
       return {
         ...parcel,
-        latest_analysis: analyses?.[0] || null,
+        latest_analysis:
+          groupAndAverageAnalyses(analyses || [], parcel.soil_type, parcel.culture)[0] || null,
       }
     })
   )

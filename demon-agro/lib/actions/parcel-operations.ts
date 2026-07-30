@@ -52,6 +52,11 @@ export async function splitParcel(data: SplitParcelData) {
     }
 
     // 3. Fetch latest analysis
+    // POZOR: tento blok je rozbitý nezávisle na agregaci vzorků - dotaz řadí
+    // podle neexistujícího sloupce "date" (schéma má analysis_date) a kopírovací
+    // insert níže používá sloupce phosphorus/potassium/nitrogen/lab_name/user_id,
+    // které v tabulce soil_analyses také nejsou. Než se to opraví a otestuje,
+    // nechávám kód beze změny - "oprava" jen dotazu by aktivovala vadný insert.
     const { data: analyses } = await supabase
       .from('soil_analyses')
       .select('*')

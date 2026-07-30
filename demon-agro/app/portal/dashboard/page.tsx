@@ -12,6 +12,7 @@ import {
   ChevronRight
 } from 'lucide-react'
 import type { Parcel, SoilAnalysis, LimingRequest, AuditLog } from '@/lib/types/database'
+import { groupAndAverageAnalyses } from '@/lib/utils/soil-analysis-helpers'
 
 // Helper to get Czech date format
 function getCzechDate() {
@@ -88,17 +89,15 @@ export default async function DashboardPage() {
   // If status column doesn't exist or is null, treat as active
   const activeParcels = (parcels || []).filter(p => !p.status || p.status === 'active')
 
-  // Process parcels to get latest analysis for each
+  // Nejnovější odběr = aritmetický průměr všech jeho vzorků (metodika ÚKZÚZ).
+  // Řazení podle data samo nestačí - vzorky jednoho odběru mají shodné datum,
+  // takže by o výsledku rozhodovalo náhodné pořadí řádků z databáze.
   const parcelsWithLatestAnalysis: ParcelWithAnalysis[] = activeParcels.map(parcel => {
     const analyses = (parcel.soil_analyses || []) as any[]
-    const latestAnalysis = analyses.length > 0 
-      ? analyses.sort((a: any, b: any) => 
-          new Date(b.analysis_date).getTime() - new Date(a.analysis_date).getTime()
-        )[0]
-      : null
+    const groupedAnalyses = groupAndAverageAnalyses(analyses, parcel.soil_type, parcel.culture)
     return {
       ...parcel,
-      latest_analysis: latestAnalysis || null
+      latest_analysis: (groupedAnalyses[0] as any) || null
     }
   })
 
@@ -142,7 +141,7 @@ export default async function DashboardPage() {
 
     const analysis = parcel.latest_analysis
     const analysisAge = Math.floor(
-      (new Date().getTime() - new Date(analysis.date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+      (new Date().getTime() - new Date(analysis.analysis_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
     )
 
     // pH < 5.5
@@ -347,7 +346,7 @@ export default async function DashboardPage() {
           </Link>
 
           <Link
-            href="/portal/poptavky/nova"
+            href="/portal/vapneni/poptavky/nova"
             className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-primary-green hover:shadow-md transition-all group"
           >
             <div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">

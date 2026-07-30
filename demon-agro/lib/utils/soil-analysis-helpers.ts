@@ -1,8 +1,9 @@
 import type { PhCategory, NutrientCategory } from './soil-categories'
 import { categorizePh, categorizeNutrient } from './soil-categories'
-import type { SoilType } from '@/lib/types/database'
+import type { SoilType, Culture } from '@/lib/types/database'
 
 export interface GroupedAnalysis {
+  id: string
   analysis_date: string
   count: number
   ids: string[]
@@ -27,21 +28,39 @@ export interface GroupedAnalysis {
 }
 
 /**
- * Groups soil analyses by date and calculates arithmetic averages
- * 
- * When multiple analyses exist for the same date, this function:
- * 1. Groups them together
- * 2. Calculates averages for all nutrient values
- * 3. Returns a single record per date with averaged values
- * 
- * This follows AZZP methodology which requires averaging when multiple
- * samples are taken from the same parcel on the same day.
+ * Aritmetický průměr z hodnot, které skutečně existují.
+ * Nully se do průměru nepočítají (ani do jmenovatele) - jinak by jeden chybějící
+ * rozbor síry stáhl průměr celého pozemku dolů. Vrací null, pokud nemá z čeho počítat.
  */
-export function groupAndAverageAnalyses(analyses: any[], soilType?: SoilType): GroupedAnalysis[] {
+function averageOf(values: any[]): number | null {
+  const numbers = values
+    .map(v => (typeof v === 'number' ? v : parseFloat(v)))
+    .filter(v => typeof v === 'number' && Number.isFinite(v))
+
+  if (numbers.length === 0) return null
+
+  const mean = numbers.reduce((sum, v) => sum + v, 0) / numbers.length
+  return Math.round(mean * 100) / 100
+}
+
+/**
+ * Seskupí rozbory podle data a spočítá aritmetický průměr.
+ *
+ * Metodika ÚKZÚZ: pokud má pozemek víc vzorků z jednoho odběru, hodnotí se
+ * VŽDY jejich aritmetický průměr, nikdy jeden vybraný vzorek. Vzorky uvnitř
+ * pozemku se běžně liší i o víc než 1 pH (viz pozemek 9701/5: 5,7 / 4,0 / 4,4),
+ * takže výběr jednoho vzorku dá úplně jiné doporučení než průměr.
+ *
+ * Funkce je záměrně DETERMINISTICKÁ a nezávislá na pořadí vstupu:
+ * - průměr je z definice nezávislý na pořadí,
+ * - reprezentativní údaje (id, laboratoř, zdrojový dokument) se berou ze vzorku
+ *   s nejmenším id, ne z toho, který zrovna přišel z databáze první.
+ * Bez toho dva běhy nad stejnými daty vrátí jiný výsledek.
+ *
+ * Vrací jeden záznam na datum, seřazeno od nejnovějšího.
+ */
+export function groupAndAverageAnalyses(analyses: any[], soilType?: SoilType, culture?: Culture): GroupedAnalysis[] {
   if (!analyses || analyses.length === 0) return []
-  
-  // Helper to round to 2 decimal places
-  const round2 = (num: number) => Math.round(num * 100) / 100
   
   // Group by date
   const grouped = new Map<string, any[]>()
@@ -57,31 +76,36 @@ export function groupAndAverageAnalyses(analyses: any[], soilType?: SoilType): G
   // Calculate averages for each date group
   const result: GroupedAnalysis[] = []
   
-  grouped.forEach((group, date) => {
+  grouped.forEach((unorderedGroup, date) => {
+    // Stabilní pořadí uvnitř skupiny - determinuje, ze kterého vzorku se
+    // převezmou needěditelné údaje (id, lab_name, source_document).
+    const group = [...unorderedGroup].sort((a, b) => String(a.id).localeCompare(String(b.id)))
     const count = group.length
     const ids = group.map(a => a.id)
     
-    // Calculate averaged values (rounded to 2 decimal places)
-    const avgPh = round2(group.reduce((sum, a) => sum + a.ph, 0) / count)
-    const avgP = round2(group.reduce((sum, a) => sum + a.p, 0) / count)
-    const avgK = round2(group.reduce((sum, a) => sum + a.k, 0) / count)
-    const avgMg = round2(group.reduce((sum, a) => sum + a.mg, 0) / count)
-    const avgCa = group[0].ca ? round2(group.reduce((sum, a) => sum + (a.ca || 0), 0) / count) : null
-    const avgS = group[0].s ? round2(group.reduce((sum, a) => sum + (a.s || 0), 0) / count) : null
+    // Aritmetický průměr pozemku (zaokrouhleno na 2 desetinná místa)
+    const avgPh = averageOf(group.map(a => a.ph)) ?? 0
+    const avgP = averageOf(group.map(a => a.p)) ?? 0
+    const avgK = averageOf(group.map(a => a.k)) ?? 0
+    const avgMg = averageOf(group.map(a => a.mg)) ?? 0
+    const avgCa = averageOf(group.map(a => a.ca))
+    const avgS = averageOf(group.map(a => a.s))
     
     // Get soil_type from parameter, or try to get from analysis data, fallback to 'S'
     // @ts-ignore - parcels might not be loaded in all contexts
     const effectiveSoilType: SoilType = soilType || group[0].parcels?.soil_type || group[0].soil_type || 'S'
     
-    // Recalculate categories based on averaged values
+    // Recalculate categories based on averaged values (dle kultury - chmelnice
+    // mají vlastní kritéria zásobenosti, tab. 13)
     const ph_category = categorizePh(avgPh)
-    const p_category = categorizeNutrient('P', avgP, effectiveSoilType)
-    const k_category = categorizeNutrient('K', avgK, effectiveSoilType)
-    const mg_category = categorizeNutrient('Mg', avgMg, effectiveSoilType)
+    const p_category = categorizeNutrient('P', avgP, effectiveSoilType, culture)
+    const k_category = categorizeNutrient('K', avgK, effectiveSoilType, culture)
+    const mg_category = categorizeNutrient('Mg', avgMg, effectiveSoilType, culture)
     const ca_category = avgCa ? categorizeNutrient('Ca', avgCa, effectiveSoilType) : null
     const s_category = avgS ? categorizeNutrient('S', avgS, effectiveSoilType) : null
     
     const avg: GroupedAnalysis = {
+      id: group[0].id,
       analysis_date: date,
       count,
       ids,
@@ -92,7 +116,9 @@ export function groupAndAverageAnalyses(analyses: any[], soilType?: SoilType): G
       mg: avgMg,
       ca: avgCa,
       s: avgS,
-      k_mg_ratio: group[0].k_mg_ratio ? round2(group.reduce((sum, a) => sum + (a.k_mg_ratio || 0), 0) / count) : null,
+      // K/Mg počítáme z průměrů pozemku, ne jako průměr poměrů - průměr podílů
+      // není podíl průměrů a u pozemků s rozdílnými vzorky se rozchází.
+      k_mg_ratio: avgMg > 0 ? Math.round((avgK / avgMg) * 100) / 100 : null,
       ph_category,
       p_category,
       k_category,
