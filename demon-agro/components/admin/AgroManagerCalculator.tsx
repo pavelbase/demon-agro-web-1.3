@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { Plus, Trash2, AlertCircle, Save, Truck, ArrowRight, Download } from 'lucide-react'
 import { AgroCustomer } from '@/lib/types/database'
 import toast from 'react-hot-toast'
-import * as XLSX from 'xlsx'
 
 // Konstanta - kapacita kamionu
 const TRUCK_CAPACITY = 30 // tun
@@ -213,13 +212,15 @@ export function AgroManagerCalculator() {
   }
 
   // Handler pro export do Excelu
-  const handleExportToExcel = () => {
+  const handleExportToExcel = async () => {
     if (customers.length === 0) {
       toast.error('Žádné zakázky k exportu')
       return
     }
 
     try {
+      // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const XLSX = await import('xlsx')
       // Připravit data pro export
       const exportData = customers.map(customer => {
         const vymera = Number(customer.vymera_ha) || 0

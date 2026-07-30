@@ -4,11 +4,6 @@ import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 import type { Parcel, SoilAnalysis } from '@/lib/types/database'
 import type { FertilizationPlan } from '@/lib/utils/fertilization-plan'
-import { 
-  exportFertilizationPlanExcel,
-  downloadExcel,
-  generatePlanExcelFilename,
-} from '@/lib/utils/excel-export'
 
 interface ExportPlanExcelButtonProps {
   plan: FertilizationPlan
@@ -31,6 +26,11 @@ export function ExportPlanExcelButton({
     setError(null)
 
     try {
+      // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const { exportFertilizationPlanExcel, downloadExcel, generatePlanExcelFilename } = await import(
+        '@/lib/utils/excel-export'
+      )
+
       // Generate Excel
       const buffer = exportFertilizationPlanExcel(plan, parcel, analysis)
       

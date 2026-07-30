@@ -3,11 +3,6 @@
 import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 import type { Parcel } from '@/lib/types/database'
-import { 
-  exportParcelsExcel,
-  downloadExcel,
-  generateParcelsFilename,
-} from '@/lib/utils/excel-export'
 
 interface ExportParcelsExcelButtonProps {
   parcels: any[] // ParcelWithAnalysis[]
@@ -26,6 +21,11 @@ export function ExportParcelsExcelButton({
     setError(null)
 
     try {
+      // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const { exportParcelsExcel, downloadExcel, generateParcelsFilename } = await import(
+        '@/lib/utils/excel-export'
+      )
+
       // Generate Excel
       const buffer = exportParcelsExcel(parcels)
       

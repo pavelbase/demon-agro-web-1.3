@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Search, Download, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import Link from 'next/link'
-import * as XLSX from 'xlsx'
 
 interface AuditLog {
   id: string
@@ -69,7 +68,7 @@ export function AuditLogTable({ logs, admins, currentPage, totalPages, totalCoun
     return cleanAction
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const exportData = logs.map(log => ({
       'Datum a čas': formatDate(log.created_at),
       'Admin': log.admin.email,
@@ -80,6 +79,8 @@ export function AuditLogTable({ logs, admins, currentPage, totalPages, totalCoun
       'Detaily': JSON.stringify(log.new_data),
     }))
 
+    // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+    const XLSX = await import('xlsx')
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Audit Log')

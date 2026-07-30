@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react'
 import { Search, Download, Eye, ShoppingCart } from 'lucide-react'
 import { RequestDetailModal } from './RequestDetailModal'
-import * as XLSX from 'xlsx'
 
 interface Request {
   id: string
@@ -73,7 +72,9 @@ export function AdminRequestsTable({ requests, newCount }: AdminRequestsTablePro
     })
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+    const XLSX = await import('xlsx')
     const exportData = filteredRequests.map(req => ({
       'Datum': formatDate(req.created_at),
       'Firma': req.profiles.company_name || req.profiles.full_name,

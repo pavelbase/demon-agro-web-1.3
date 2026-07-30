@@ -11,7 +11,7 @@ import {
   Clock
 } from 'lucide-react'
 import { AdminStatsCards } from '@/components/admin/AdminStatsCards'
-import { RegistrationsChart } from '@/components/admin/RegistrationsChart'
+import RegistrationsChart from '@/components/admin/RegistrationsChartLazy'
 import { RecentRequests } from '@/components/admin/RecentRequests'
 import { RecentRegistrations } from '@/components/admin/RecentRegistrations'
 

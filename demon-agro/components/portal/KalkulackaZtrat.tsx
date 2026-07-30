@@ -24,7 +24,6 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { calculateFarmSummary, type PozemekZtrata } from '@/lib/utils/kalkulacka-ztrat'
-import { generateKalkulackaZtratPDF } from '@/lib/utils/kalkulacka-ztrat-pdf-export'
 import { SOIL_TYPE_LABELS } from '@/lib/constants/database'
 
 interface KalkulackaZtratProps {
@@ -161,6 +160,8 @@ export function KalkulackaZtrat({ pozemky }: KalkulackaZtratProps) {
       }),
     }
 
+    // Načteno dynamicky – jspdf je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+    const { generateKalkulackaZtratPDF } = await import('@/lib/utils/kalkulacka-ztrat-pdf-export')
     await generateKalkulackaZtratPDF(pdfData)
   }
 

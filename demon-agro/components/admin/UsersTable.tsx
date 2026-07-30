@@ -17,7 +17,6 @@ import { CreateUserModal } from './CreateUserModal'
 import { EditUserModal } from './EditUserModal'
 import { UserDetailModal } from './UserDetailModal'
 import { sendPasswordResetEmailClient } from '@/lib/utils/email-client'
-import * as XLSX from 'xlsx'
 
 interface User {
   id: string
@@ -195,7 +194,9 @@ export function UsersTable({ users }: UsersTableProps) {
     }
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+    const XLSX = await import('xlsx')
     const exportData = filteredUsers.map(user => ({
       'Email': user.email,
       'Jméno': user.full_name || '',

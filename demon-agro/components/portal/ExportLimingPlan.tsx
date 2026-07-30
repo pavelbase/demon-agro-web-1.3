@@ -2,14 +2,8 @@
 
 import { useState } from 'react'
 import { FileDown, Loader2, FileSpreadsheet } from 'lucide-react'
-import * as XLSX from 'xlsx'
 import { formatLimingPlanForExport, type LimingPlan } from '@/lib/utils/liming-calculator'
-import { 
-  exportLimingPlanPDF, 
-  downloadPDF, 
-  generateLimingPlanFilename,
-  type LimingPlan as PDFLimingPlan 
-} from '@/lib/utils/liming-pdf-mustr'
+import type { LimingPlan as PDFLimingPlan } from '@/lib/utils/liming-pdf-mustr'
 
 interface ExportLimingPlanProps {
   plan: any // Plan z databáze
@@ -30,10 +24,12 @@ export default function ExportLimingPlan({
   const [exporting, setExporting] = useState(false)
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf')
   
-  function handleExportExcel() {
+  async function handleExportExcel() {
     setExporting(true)
     
     try {
+      // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const XLSX = await import('xlsx')
       // Převeď databázový formát na formát pro export
       const limingPlan: LimingPlan = {
         totalCaNeed: plan.total_ca_need || 0,
@@ -247,6 +243,11 @@ export default function ExportLimingPlan({
     setExporting(true)
     
     try {
+      // Načteno dynamicky – jspdf je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const { exportLimingPlanPDF, downloadPDF, generateLimingPlanFilename } = await import(
+        '@/lib/utils/liming-pdf-mustr'
+      )
+
       // Convert database format to PDF format
       const pdfPlan: PDFLimingPlan = {
         id: plan.id,

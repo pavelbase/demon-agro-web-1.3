@@ -2,12 +2,7 @@
 
 import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
-import { 
-  exportMultipleLimingPlansPDF, 
-  downloadPDF, 
-  generateMultipleLimingPlansFilename,
-  type LimingPlan as PDFLimingPlan 
-} from '@/lib/utils/liming-pdf-mustr'
+import type { LimingPlan as PDFLimingPlan } from '@/lib/utils/liming-pdf-mustr'
 
 interface Application {
   id: string
@@ -81,6 +76,10 @@ export default function ExportAllLimingPlansPDF({
     setError(null)
 
     try {
+      // Načteno dynamicky – jspdf je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const { exportMultipleLimingPlansPDF, downloadPDF, generateMultipleLimingPlansFilename } =
+        await import('@/lib/utils/liming-pdf-mustr')
+
       // Convert plans to PDF format
       const pdfPlans: PDFLimingPlan[] = plans.map((plan) => ({
         id: plan.id,

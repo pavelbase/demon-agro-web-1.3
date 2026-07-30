@@ -2,11 +2,6 @@
 
 import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
-import { 
-  exportLimingRequestExcel,
-  downloadExcel,
-  generateRequestFilename,
-} from '@/lib/utils/excel-export'
 
 interface ExportRequestExcelButtonProps {
   request: any // LimingRequestWithDetails
@@ -25,6 +20,11 @@ export function ExportRequestExcelButton({
     setError(null)
 
     try {
+      // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const { exportLimingRequestExcel, downloadExcel, generateRequestFilename } = await import(
+        '@/lib/utils/excel-export'
+      )
+
       // Generate Excel
       const buffer = exportLimingRequestExcel(request)
       

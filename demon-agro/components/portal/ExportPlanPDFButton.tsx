@@ -4,11 +4,6 @@ import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 import type { Parcel, SoilAnalysis } from '@/lib/types/database'
 import type { FertilizationPlan } from '@/lib/utils/fertilization-plan'
-import { 
-  exportFertilizationPlanPDF, 
-  downloadPDF, 
-  generatePlanFilename 
-} from '@/lib/utils/pdf-export'
 
 interface ExportPlanPDFButtonProps {
   plan: FertilizationPlan
@@ -31,6 +26,11 @@ export function ExportPlanPDFButton({
     setError(null)
 
     try {
+      // Načteno dynamicky – jspdf je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const { exportFertilizationPlanPDF, downloadPDF, generatePlanFilename } = await import(
+        '@/lib/utils/pdf-export'
+      )
+
       // Generate PDF
       const blob = await exportFertilizationPlanPDF(plan, parcel, analysis)
       

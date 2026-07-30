@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, Download, Filter, X, Check, AlertTriangle } from 'lucide-react'
-import * as XLSX from 'xlsx'
 
 interface CalculatorSubmission {
   id: string
@@ -69,7 +68,9 @@ export function CalculatorSubmissionsTable({
   }
 
   // Export to Excel
-  const handleExport = () => {
+  const handleExport = async () => {
+    // Načteno dynamicky – xlsx je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+    const XLSX = await import('xlsx')
     const data = filteredSubmissions.map(sub => ({
       'Datum': formatDate(sub.created_at),
       'Email': sub.email,
