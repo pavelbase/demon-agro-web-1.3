@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Verify user owns the parcel
     const { data: parcel, error: parcelError } = await supabase
       .from('parcels')
-      .select('id, user_id, soil_type')
+      .select('id, user_id, soil_type, culture')
       .eq('id', parcelId)
       .eq('user_id', userId)
       .single()
@@ -55,12 +55,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Categorize values based on soil type
+    // Categorize values based on soil type and kultura (chmelnice mají vlastní kritéria)
     const soilType = parcel.soil_type
     const ph_category = categorizePh(ph)
-    const p_category = categorizeNutrient('P', phosphorus, soilType)
-    const k_category = categorizeNutrient('K', potassium, soilType)
-    const mg_category = categorizeNutrient('Mg', magnesium, soilType)
+    const p_category = categorizeNutrient('P', phosphorus, soilType, parcel.culture)
+    const k_category = categorizeNutrient('K', potassium, soilType, parcel.culture)
+    const mg_category = categorizeNutrient('Mg', magnesium, soilType, parcel.culture)
     const ca_category = calcium ? categorizeNutrient('Ca', calcium, soilType) : null
 
     // Combine lab_name and notes

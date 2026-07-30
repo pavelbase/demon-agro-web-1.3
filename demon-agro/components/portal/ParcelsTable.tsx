@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   Sparkles
 } from 'lucide-react'
-import { SOIL_TYPE_LABELS } from '@/lib/constants/database'
+import { SOIL_TYPE_LABELS, CULTURE_LABELS, CULTURES } from '@/lib/constants/database'
+import type { Culture } from '@/lib/types/database'
 import { ExportParcelsExcelButton } from './ExportParcelsExcelButton'
 
 interface ParcelsTableProps {
@@ -39,7 +40,7 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
   // State
   const [parcels, setParcels] = useState(initialParcels)
   const [searchQuery, setSearchQuery] = useState('')
-  const [cultureFilter, setCultureFilter] = useState<'all' | 'orna' | 'ttp'>('all')
+  const [cultureFilter, setCultureFilter] = useState<'all' | Culture>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active'>('active')
   const [problemsOnly, setProblemsOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -205,11 +206,10 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
       statusReason = 'Chybí rozbor'
     } else {
       // We have analysis - evaluate pH and nutrients
-      const landUse = data.culture === 'orna' ? 'orna' : 'ttp'
       const limeNeedTCao = calculateTotalCaoNeedSimple(
         data.ph!,
         data.soilType,
-        landUse
+        data.culture
       )
 
       // Critical: pH < 5.0
@@ -525,8 +525,9 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
                           {...addForm.register('culture')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
                         >
-                          <option value="orna">Orná půda</option>
-                          <option value="ttp">TTP</option>
+                          {CULTURES.map((c) => (
+                            <option key={c} value={c}>{CULTURE_LABELS[c]}</option>
+                          ))}
                         </select>
                         {addForm.formState.errors.culture && (
                           <p className="mt-1 text-sm text-red-600">
@@ -754,8 +755,9 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
           >
             <option value="all">Všechny kultury</option>
-            <option value="orna">Orná půda</option>
-            <option value="ttp">TTP</option>
+            {CULTURES.map((c) => (
+              <option key={c} value={c}>{CULTURE_LABELS[c]}</option>
+            ))}
           </select>
 
           {/* Status filter */}
@@ -890,7 +892,7 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
                     {SOIL_TYPE_LABELS[parcel.soil_type]}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {parcel.culture === 'orna' ? 'Orná půda' : 'TTP'}
+                    {CULTURE_LABELS[parcel.culture] || parcel.culture}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
                     {parcel.latest_analysis?.ph?.toFixed(1) || '-'}
@@ -1101,8 +1103,9 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
                         {...addForm.register('culture')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
                       >
-                        <option value="orna">Orná půda</option>
-                        <option value="ttp">TTP</option>
+                        {CULTURES.map((c) => (
+                          <option key={c} value={c}>{CULTURE_LABELS[c]}</option>
+                        ))}
                       </select>
                       {addForm.formState.errors.culture && (
                         <p className="mt-1 text-sm text-red-600">
@@ -1368,8 +1371,9 @@ export function ParcelsTable({ parcels: initialParcels }: ParcelsTableProps) {
                         {...editForm.register('culture')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
                       >
-                        <option value="orna">Orná půda</option>
-                        <option value="ttp">TTP</option>
+                        {CULTURES.map((c) => (
+                          <option key={c} value={c}>{CULTURE_LABELS[c]}</option>
+                        ))}
                       </select>
                     </div>
 

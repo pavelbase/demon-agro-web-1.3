@@ -64,7 +64,7 @@ async function ParcelsContent() {
     const analyses = parcel.soil_analyses || []
     
     // Group and average analyses by date (AZZP methodology)
-    const groupedAnalyses = groupAndAverageAnalyses(analyses, parcel.soil_type)
+    const groupedAnalyses = groupAndAverageAnalyses(analyses, parcel.soil_type, parcel.culture)
     const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
     // Determine status
@@ -79,12 +79,13 @@ async function ParcelsContent() {
         (new Date().getTime() - new Date(latestAnalysis.analysis_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
       )
 
-      // Výpočet potřeby vápnění podle ÚKZÚZ metodiky
-      const landUse = parcel.culture === 'orna' ? 'orna' : 'ttp'
+      // Výpočet potřeby vápnění podle ÚKZÚZ metodiky (kultura pozemku - engine
+      // si sám ověří platnost a případně zaloguje warning, viz liming-calculator.ts)
       const limeNeedTCao = calculateTotalCaoNeedSimple(
         latestAnalysis.ph,
         parcel.soil_type || 'S', // Default na střední půdu, pokud není zadán typ
-        landUse
+        parcel.culture,
+        parcel.id
       )
 
       // Critical: pH < 5.0

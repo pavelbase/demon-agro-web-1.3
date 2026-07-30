@@ -14,6 +14,12 @@
  */
 
 import type { SoilType } from './soil-categories'
+import { categorizeNutrient, type NutrientCategory } from './soil-categories'
+import {
+  applyKMgCorrection,
+  calculateKMgRatio,
+  getKMgRatioRecommendation,
+} from './calculations'
 
 // =====================================================
 // ENV (EFFECTIVE NEUTRALIZING VALUE) - VARIANT A
@@ -44,7 +50,7 @@ function getENV(caoContent: number, mgoContent: number): number {
 // =====================================================
 
 type SoilDetailType = 'piscita' | 'hlinitopiscita' | 'piscitohlinita' | 'hlinita' | 'jilovitohlinita'
-type LandUse = 'orna' | 'ttp'
+type LandUse = 'orna' | 'ttp' | 'chmelnice'
 
 export interface LimingInput {
   currentPh: number
@@ -182,6 +188,73 @@ const LIMING_NEED_CAO_TTP: Record<SoilDetailType, Record<string, number>> = {
   }
 }
 
+// Tabulka 7: Chmelnice (t CaO/ha/rok)
+// Zdroj: ÚKZÚZ Metodický pokyn č. 01/AZZP, tab. 7 (viz zadani-chmelnice-engine.md)
+// POZOR: pásmo "do 4,5" se neextrapoluje výše (plochá hodnota první kotvy = klíč '4.5').
+// U lehké půdy mají kotvy 6,5 a 6,9 shodnou hodnotu (0,20) - interpolace mezi nimi
+// proto přirozeně vyjde plochá, u střední a těžké půdy mezi nimi lineárně klesá.
+const LIMING_NEED_CAO_CHMELNICE: Record<SoilDetailType, Record<string, number>> = {
+  'piscita': { // LEHKÁ - L
+    '<4.5': 0.60, '4.5': 0.60, '5.0': 0.45, '5.5': 0.30, '6.5': 0.20, '6.9': 0.20, '7.0': 0
+  },
+  'hlinitopiscita': { // LEHKÁ - L
+    '<4.5': 0.60, '4.5': 0.60, '5.0': 0.45, '5.5': 0.30, '6.5': 0.20, '6.9': 0.20, '7.0': 0
+  },
+  'piscitohlinita': { // STŘEDNÍ - S
+    '<4.5': 1.00, '4.5': 1.00, '5.0': 0.70, '5.5': 0.50, '6.5': 0.30, '6.9': 0.20, '7.0': 0
+  },
+  'hlinita': { // STŘEDNÍ - S
+    '<4.5': 1.00, '4.5': 1.00, '5.0': 0.70, '5.5': 0.50, '6.5': 0.30, '6.9': 0.20, '7.0': 0
+  },
+  'jilovitohlinita': { // TĚŽKÁ - T
+    '<4.5': 1.30, '4.5': 1.30, '5.0': 0.90, '5.5': 0.60, '6.5': 0.40, '6.9': 0.20, '7.0': 0
+  }
+}
+
+/**
+ * Obecná (datově řízená) lineární interpolace mezi kotvami pH -> hodnota.
+ * Kotva leží na horní hranici pásma. Pod první kotvou i nad poslední kotvou
+ * se hodnota nepřepočítává (plochá hranice), pouze se interpoluje mezi nimi.
+ */
+function interpolateAnchorTable(ph: number, row: Record<string, number>): number {
+  if (ph < 4.5) return row['<4.5'] ?? 0
+
+  const anchors = Object.keys(row)
+    .filter((k) => k !== '<4.5')
+    .map((k) => [Number(k), row[k]] as [number, number])
+    .sort((a, b) => a[0] - b[0])
+
+  if (anchors.length === 0) return 0
+
+  const [firstPh, firstValue] = anchors[0]
+  if (ph <= firstPh) return firstValue
+
+  const [lastPh, lastValue] = anchors[anchors.length - 1]
+  if (ph >= lastPh) return lastValue
+
+  for (let i = 0; i < anchors.length - 1; i++) {
+    const [lowerPh, lowerValue] = anchors[i]
+    const [upperPh, upperValue] = anchors[i + 1]
+    if (ph >= lowerPh && ph <= upperPh) {
+      const ratio = (ph - lowerPh) / (upperPh - lowerPh)
+      return lowerValue + (upperValue - lowerValue) * ratio
+    }
+  }
+
+  return 0
+}
+
+function lookupCaoNeedChmelnice(ph: number, soilDetailType: SoilDetailType): number {
+  const row = LIMING_NEED_CAO_CHMELNICE[soilDetailType]
+  if (!row) {
+    console.error('❌ lookupCaoNeedChmelnice: Neplatný soilDetailType:', soilDetailType)
+    return 0
+  }
+  // Nezaokrouhlovat zde - zaokrouhlení až na finální 4letou potřebu
+  // (viz calculateTotalCaoNeedSimple), jinak vznikne chyba zaokrouhlení x4.
+  return interpolateAnchorTable(ph, row)
+}
+
 // =====================================================
 // MAXIMÁLNÍ JEDNORÁZOVÁ DÁVKA (t CaO/ha)
 // =====================================================
@@ -217,6 +290,24 @@ function getSoilDetailType(soilType: SoilType | null | undefined): SoilDetailTyp
 }
 
 // =====================================================
+// NORMALIZACE KULTURY (fallback na ORNA + warning)
+// =====================================================
+// Chybějící nebo neznámá kultura se v datech dřív tiše degradovala na ORNA,
+// což je přesně chyba popsaná v zadani-chmelnice-engine.md. Zde je fallback
+// stále na ORNA (zpětná kompatibilita), ale nahlas se zaloguje warning.
+
+function normalizeCulture(landUse: unknown, parcelId?: string): LandUse {
+  if (landUse === 'orna' || landUse === 'ttp' || landUse === 'chmelnice') {
+    return landUse
+  }
+  console.warn(
+    `⚠️ Neznámá nebo chybějící kultura pozemku${parcelId ? ` (${parcelId})` : ''}: "${String(landUse)}". ` +
+    `Použit fallback na ORNA - zkontrolujte zdrojová data (import z LPIS / formulář pozemku).`
+  )
+  return 'orna'
+}
+
+// =====================================================
 // JEDNODUCHÝ VÝPOČET CELKOVÉ POTŘEBY CaO (PRO TABULKOVÝ PŘEHLED)
 // =====================================================
 
@@ -229,8 +320,11 @@ function getSoilDetailType(soilType: SoilType | null | undefined): SoilDetailTyp
 export function calculateTotalCaoNeedSimple(
   currentPh: number,
   soilType: SoilType | null | undefined,
-  landUse: LandUse = 'orna'
+  landUse: LandUse = 'orna',
+  parcelId?: string
 ): number {
+  landUse = normalizeCulture(landUse, parcelId)
+
   // Pokud není zadán typ půdy, použijeme defaultní (střední)
   if (!soilType) {
     soilType = 'S' // Default: střední půda
@@ -245,7 +339,13 @@ export function calculateTotalCaoNeedSimple(
   // Celková potřeba za 4leté období (konzistence s veřejnou kalkulačkou)
   const rokyDoCyklu = 4
   const totalCaoNeedPerHa = rocniPotrebaCaoPerHa * rokyDoCyklu
-  
+
+  // Chmelnice: zaokrouhlit až finální 4letou hodnotu na 2 des. místa (dle
+  // zadani-chmelnice-engine.md, bod 2). Orná/TTP beze změny (regresní zámek).
+  if (landUse === 'chmelnice') {
+    return Math.round(totalCaoNeedPerHa * 100) / 100
+  }
+
   return totalCaoNeedPerHa
 }
 
@@ -258,6 +358,14 @@ function lookupCaoNeed(
   soilDetailType: SoilDetailType,
   landUse: LandUse
 ): number {
+  // Chmelnice mají vlastní tabulku (tab. 7) a vlastní pravidla interpolace
+  // (kotva na horní hranici pásma, nula až od pH 7,0) - viz zadani-chmelnice-engine.md.
+  // Řešeno samostatnou funkcí, aby zůstala beze změny stávající (a mírně
+  // odlišná) logika pro ornou půdu a TTP níže - regresní test to vyžaduje.
+  if (landUse === 'chmelnice') {
+    return lookupCaoNeedChmelnice(ph, soilDetailType)
+  }
+
   const table = landUse === 'ttp' ? LIMING_NEED_CAO_TTP : LIMING_NEED_CAO_ORNA
   const row = table[soilDetailType]
   
@@ -417,7 +525,7 @@ export function vypoctiPhPoAcidifikaci(
 // VÝPOČET ZMĚNY Mg PO APLIKACI MgO
 // =====================================================
 
-function calculateMgChange(
+export function calculateMgChange(
   mgoAmount: number, // t MgO/ha
   soilType: SoilType
 ): number {
@@ -448,6 +556,210 @@ function calculateMgChange(
   
   // Zaokrouhlení na 1 des. místo
   return Math.round(effectiveIncrease * 10) / 10
+}
+
+// =====================================================
+// JEDNORÁZOVÝ ROZPIS DÁVKY: DOLOMIT (Mg) + VÁPENEC (CaO)
+// =====================================================
+// AGRONOMICKÁ LOGIKA (dle požadavku zákazníka):
+// - Vápenec mletý je vždy levnější než Dolomit → použít ho na CaO, kde to jde
+// - Pokud je Mg nízké/vyhovující: spočítat jednorázové množství DOLOMITU
+//   potřebné k doplnění Mg na cílovou hodnotu (dle typu půdy). Dolomit navíc
+//   dodá i část CaO. Zbytek CaO potřeby dorovnáme LEVNĚJŠÍM vápencem.
+// - Pokud je Mg dobré/vysoké/velmi vysoké: dolomit se nepoužije vůbec,
+//   celá potřeba CaO se pokryje čistým vápencem.
+// - Navíc zohledníme poměr K/Mg a doporučíme dopočet doplnění draslíku
+//   (draslík není součástí vápenných produktů, jde o informativní údaj).
+
+// Cílová hodnota Mg (mg/kg) po jednorázové aplikaci dolomitu – o něco nad
+// hranicí kategorie "vyhovující" (viz soil-categories.ts), abychom se
+// jednou aplikací bezpečně dostali do pásma "dobrý".
+const MG_TARGET_BY_SOIL: Record<'L' | 'S' | 'T', number> = {
+  L: 155, // hranice "vyhovující" je 135
+  S: 180, // hranice "vyhovující" je 160
+  T: 240, // hranice "vyhovující" je 220
+}
+
+// Chmelnice: cíl dosycení = dolní mez kategorie "dobrý" dle ÚKZÚZ tab. 13
+// (viz zadani-chmelnice-engine.md, bod 4) - přísnější kritéria než orná půda.
+const MG_TARGET_BY_SOIL_CHMELNICE: Record<'L' | 'S' | 'T', number> = {
+  L: 211,
+  S: 251,
+  T: 301,
+}
+
+function getMgTarget(soilType: SoilType, culture: LandUse = 'orna'): number {
+  const type: 'L' | 'S' | 'T' = soilType || 'S'
+  if (culture === 'chmelnice') return MG_TARGET_BY_SOIL_CHMELNICE[type]
+  return MG_TARGET_BY_SOIL[type]
+}
+
+// Základní doporučená dávka K2O (kg/ha) podle kategorie zásobenosti draslíkem
+// (dle stejné metodiky jako zbytek portálu - viz calculations.ts BASE_FERTILIZATION.K,
+// zde správně navázáno na kategorie 'nizky'/'vyhovujici'/'dobry'/'vysoky'/'velmi_vysoky')
+const K2O_BASE_NEED_BY_CATEGORY: Record<NonNullable<NutrientCategory>, number> = {
+  nizky: 120,
+  vyhovujici: 90,
+  dobry: 60,
+  vysoky: 30,
+  velmi_vysoky: 0,
+}
+
+export interface OneTimeProductSplitInput {
+  currentPh: number
+  currentMg: number // mg/kg
+  currentK: number // mg/kg
+  soilType: SoilType
+  landUse: LandUse
+  area: number // ha
+}
+
+export interface OneTimeProductSplitResult {
+  // Celková potřeba dle ÚKZÚZ metodiky (stejná jako zbytek portálu)
+  totalCaoNeedTHa: number
+  totalCaoNeedCelkem: number
+
+  // Rozpis na produkty
+  dolomitTHa: number
+  dolomitCelkem: number
+  vapenecTHa: number
+  vapenecCelkem: number
+  produktCelkemTHa: number
+  produktCelkemTun: number
+
+  // Hořčík
+  mgCategory: NutrientCategory
+  mgTarget: number
+  doplneniMgoTHa: number
+
+  // Draslík (informativní - není součástí vápenných produktů)
+  kMgRatio: number | null
+  kMgPoznamka: string
+  doplnitK2OKgHa: number | null
+
+  warnings: string[]
+}
+
+/**
+ * Vypočítá jednorázové (jednorázově potřebné) množství produktů Dolomit
+ * a Vápenec k nápravě pH na optimum, s ohledem na aktuální stav Mg a K.
+ *
+ * Používá STEJNOU ÚKZÚZ metodiku pro celkovou potřebu CaO jako zbytek
+ * portálu (calculateTotalCaoNeedSimple), pouze ji navíc "rozpočítá" mezi
+ * dva produkty podle agronomických pravidel popsaných výše.
+ */
+export function calculateOneTimeProductSplit(
+  input: OneTimeProductSplitInput,
+  dolomitProduct: LimeProduct | null,
+  vapenecProduct: LimeProduct | null,
+  parcelId?: string
+): OneTimeProductSplitResult {
+  const warnings: string[] = []
+  const soilType: SoilType = input.soilType || 'S'
+  const soilDetailType = getSoilDetailType(soilType)
+  const culture = normalizeCulture(input.landUse, parcelId)
+
+  // 1. Celková potřeba CaO (t/ha) - sjednocená ÚKZÚZ metodika, 4leté období
+  const totalCaoNeedTHa = calculateTotalCaoNeedSimple(input.currentPh, soilType, culture)
+
+  if (totalCaoNeedTHa <= 0) {
+    return {
+      totalCaoNeedTHa: 0,
+      totalCaoNeedCelkem: 0,
+      dolomitTHa: 0,
+      dolomitCelkem: 0,
+      vapenecTHa: 0,
+      vapenecCelkem: 0,
+      produktCelkemTHa: 0,
+      produktCelkemTun: 0,
+      mgCategory: categorizeNutrient('Mg', input.currentMg, soilType, culture),
+      mgTarget: getMgTarget(soilType, culture),
+      doplneniMgoTHa: 0,
+      kMgRatio: input.currentMg > 0 ? calculateKMgRatio(input.currentK, input.currentMg) : null,
+      kMgPoznamka: '',
+      doplnitK2OKgHa: null,
+      warnings: [],
+    }
+  }
+
+  // 2. Kategorie hořčíku (dle kultury - chmelnice mají přísnější kritéria, tab. 13)
+  const mgCategory = categorizeNutrient('Mg', input.currentMg, soilType, culture)
+  const mgDeficient = mgCategory === 'nizky' || mgCategory === 'vyhovujici'
+
+  // 3. Dolomit - pouze tolik, kolik je potřeba na doplnění Mg
+  let dolomitTHa = 0
+  let doplneniMgoTHa = 0
+  let caoSuppliedByDolomit = 0
+
+  if (mgDeficient && dolomitProduct && dolomitProduct.mgoContent > 0) {
+    const mgTarget = getMgTarget(soilType, culture)
+    const deltaMg = Math.max(0, mgTarget - input.currentMg)
+    const mgIncreasePerTonMgo = calculateMgChange(1, soilType) // mg/kg nárůst na 1 t MgO/ha
+
+    doplneniMgoTHa = mgIncreasePerTonMgo > 0 ? deltaMg / mgIncreasePerTonMgo : 0
+    dolomitTHa = doplneniMgoTHa / (dolomitProduct.mgoContent / 100)
+    caoSuppliedByDolomit = dolomitTHa * (dolomitProduct.caoContent / 100)
+  } else if (mgDeficient && !dolomitProduct) {
+    warnings.push('Hořčík je nízký/vyhovující, ale v systému chybí aktivní dolomitický produkt pro jeho doplnění.')
+  }
+
+  // 4. Zbytek potřeby CaO dorovnáme levnějším vápencem
+  const remainingCaoTHa = Math.max(0, totalCaoNeedTHa - caoSuppliedByDolomit)
+  let vapenecTHa = 0
+
+  if (remainingCaoTHa > 0.01) {
+    if (vapenecProduct && vapenecProduct.caoContent > 0) {
+      vapenecTHa = remainingCaoTHa / (vapenecProduct.caoContent / 100)
+    } else {
+      warnings.push('Chybí aktivní vápenatý produkt pro doplnění zbývající potřeby CaO.')
+    }
+  } else if (dolomitTHa > 0) {
+    warnings.push('Dávka dolomitu potřebná k doplnění hořčíku už sama pokrývá potřebu CaO pro úpravu pH - vápenec navíc není potřeba.')
+  }
+
+  // 5. Kontrola vůči maximální jednorázové dávce (agronomický/legislativní limit)
+  const maxSingleDoseCao = MAX_SINGLE_DOSE_CAO[soilDetailType]
+  if (totalCaoNeedTHa > maxSingleDoseCao) {
+    warnings.push(
+      `Celková potřeba CaO (${totalCaoNeedTHa.toFixed(2)} t/ha) přesahuje maximální jednorázovou dávku ` +
+      `pro tento typ půdy (${maxSingleDoseCao.toFixed(1)} t CaO/ha). Doporučujeme rozdělit aplikaci do více let ` +
+      `(viz Plán vápnění pozemku).`
+    )
+  }
+
+  // 6. Draslík - informativní doplnění s ohledem na poměr K/Mg
+  // (draslík není součástí vápenných produktů - jde čistě o doporučující údaj)
+  const kMgRatio = input.currentMg > 0 ? calculateKMgRatio(input.currentK, input.currentMg) : null
+  const kMgPoznamka = kMgRatio !== null ? getKMgRatioRecommendation(kMgRatio) : ''
+  const kCategory = categorizeNutrient('K', input.currentK, soilType, culture)
+
+  let doplnitK2OKgHa: number | null = null
+  if (kCategory) {
+    const baseNeed = K2O_BASE_NEED_BY_CATEGORY[kCategory]
+    // Travní porosty (TTP) mají vyšší potřebu K
+    const adjustedBase = culture === 'ttp' ? baseNeed * 1.3 : baseNeed
+    doplnitK2OKgHa = kMgRatio !== null
+      ? applyKMgCorrection({ K: adjustedBase, Mg: 0 }, kMgRatio).K
+      : Math.round(adjustedBase)
+  }
+
+  return {
+    totalCaoNeedTHa,
+    totalCaoNeedCelkem: totalCaoNeedTHa * input.area,
+    dolomitTHa,
+    dolomitCelkem: dolomitTHa * input.area,
+    vapenecTHa,
+    vapenecCelkem: vapenecTHa * input.area,
+    produktCelkemTHa: dolomitTHa + vapenecTHa,
+    produktCelkemTun: (dolomitTHa + vapenecTHa) * input.area,
+    mgCategory,
+    mgTarget: getMgTarget(soilType, culture),
+    doplneniMgoTHa,
+    kMgRatio,
+    kMgPoznamka,
+    doplnitK2OKgHa,
+    warnings,
+  }
 }
 
 // =====================================================
@@ -508,6 +820,8 @@ export function generateLimingPlan(
     warnings.push('Typ půdy není zadán - použit default (S - střední)')
     input.soilType = 'S'
   }
+
+  input.landUse = normalizeCulture(input.landUse)
   
   // Kontrola Mg saturace
   if (input.currentMg !== undefined && input.currentMg !== null) {

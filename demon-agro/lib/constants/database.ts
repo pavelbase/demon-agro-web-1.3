@@ -35,14 +35,16 @@ export const SOIL_TYPES: SoilType[] = ['L', 'S', 'T']
 export const CULTURE_LABELS: Record<Culture, string> = {
   orna: 'Orná půda',
   ttp: 'Travní trvalý porost',
+  chmelnice: 'Chmelnice',
 }
 
 export const CULTURE_DESCRIPTIONS: Record<Culture, string> = {
   orna: 'Půda určená pro pěstování plodin',
   ttp: 'Trvalé travní porosty',
+  chmelnice: 'Chmelnice (ÚKZÚZ tab. 7 a 13)',
 }
 
-export const CULTURES: Culture[] = ['orna', 'ttp']
+export const CULTURES: Culture[] = ['orna', 'ttp', 'chmelnice']
 
 // ============================================================================
 // NUTRIENT CATEGORY (Kategorie živiny)

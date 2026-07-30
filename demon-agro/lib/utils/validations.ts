@@ -66,7 +66,7 @@ export const parcelSchema = z.object({
     required_error: 'Vyberte typ půdy',
     invalid_type_error: 'Neplatný typ půdy',
   }),
-  culture: z.enum(['orna', 'ttp'] as const, {
+  culture: z.enum(['orna', 'ttp', 'chmelnice'] as const, {
     required_error: 'Vyberte kulturu',
     invalid_type_error: 'Neplatná kultura',
   }),

@@ -53,6 +53,7 @@ function getCultureLabel(culture: Culture): string {
   const labels: Record<Culture, string> = {
     orna: 'Orná půda',
     ttp: 'TTP',
+    chmelnice: 'Chmelnice',
   }
   return labels[culture] || culture
 }

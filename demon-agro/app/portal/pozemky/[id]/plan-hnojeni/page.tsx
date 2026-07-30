@@ -22,7 +22,7 @@ import {
   estimateFertilizerCost,
 } from '@/lib/utils/fertilization-plan'
 import { detectUserType } from '@/lib/utils/calculations'
-import { FertilizationPlanChart } from '@/components/portal/FertilizationPlanChart'
+import FertilizationPlanChart from '@/components/portal/FertilizationPlanChartLazy'
 import { PlanRecommendationsTable } from '@/components/portal/PlanRecommendationsTable'
 import { PlanDecisionAssistant } from '@/components/portal/PlanDecisionAssistant'
 import { ExportPlanPDFButton } from '@/components/portal/ExportPlanPDFButton'
@@ -119,7 +119,7 @@ export default async function PlanHnojeniPage({ params }: PlanHnojeniPageProps) 
     .order('analysis_date', { ascending: false })
 
   // Group and average analyses by date (AZZP methodology)
-  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type)
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type, parcel.culture)
   const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
   // If no analysis, show empty state

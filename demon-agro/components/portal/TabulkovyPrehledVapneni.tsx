@@ -4,17 +4,18 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Eye, ArrowUpDown, Download } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { calculateTotalCaoNeedSimple } from '@/lib/utils/liming-calculator'
-import { selectLimeType } from '@/lib/utils/calculations'
-import type { SoilAnalysis, SoilType, Culture, LimeType, NutrientCategory } from '@/lib/types/database'
-import {
-  exportLimingRecommendationsPDF,
-  downloadLimingPDF,
-  generateLimingFilename,
-  type LimingPDFData,
-  type LimingTableRow,
-} from '@/lib/utils/liming-pdf-export-v2'
+import { calculateOneTimeProductSplit, type OneTimeProductSplitResult, type LimeProduct as EngineLimeProduct } from '@/lib/utils/liming-calculator'
+import type { SoilAnalysis, SoilType, Culture, NutrientCategory } from '@/lib/types/database'
+import type { LimingPDFData, LimingTableRow } from '@/lib/utils/liming-pdf-export-v2'
 import { categorizeNutrient } from '@/lib/utils/soil-categories'
+
+// Krátké popisky kultury pro tabulku/PDF (na rozdíl od CULTURE_LABELS v
+// lib/constants/database.ts, které jsou plné - "Orná půda", "Travní trvalý porost")
+const KULTURA_SHORT_LABEL: Record<Culture, string> = {
+  orna: 'Orná',
+  ttp: 'TTP',
+  chmelnice: 'Chmelnice',
+}
 
 interface ParcelWithAnalysis {
   id: string
@@ -33,6 +34,7 @@ interface LimingProduct {
   cao_content: number
   mgo_content: number
   type: 'calcitic' | 'dolomite' | 'both'
+  price_per_ton?: number | null
 }
 
 interface TabulkovyPrehledVapneniProps {
@@ -50,8 +52,7 @@ interface TableRow {
   analysis: SoilAnalysis | null
   potrebaCaoTHa: number
   potrebaCaoCelkem: number
-  doporucenyProdukt: LimingProduct | null
-  davkaProdukt: number
+  produktSplit: OneTimeProductSplitResult | null
   stav: {
     status: 'ok' | 'udrzba' | 'doporuceno' | 'urgentni' | 'chybi_rozbor'
     color: string
@@ -167,36 +168,20 @@ export default function TabulkovyPrehledVapneni({
   }
 
   // ============================================================
-  // FUNKCE PRO DOPORUČENÍ PRODUKTU
+  // ENGINE: JEDNORÁZOVÝ ROZPIS DOLOMIT/VÁPENEC DLE STAVU Mg A K/Mg
   // ============================================================
-  
-  function getDoporucenyProdukt(analysis: SoilAnalysis | null, potrebaCao: number): LimingProduct | null {
-    if (!analysis || potrebaCao === 0) return null
-    
-    const recommendedType: LimeType = selectLimeType(analysis)
-    
-    // Najít nejvhodnější produkt
-    let filteredProducts = limingProducts
-    
-    if (recommendedType === 'calcitic') {
-      filteredProducts = limingProducts.filter(p => p.type === 'calcitic' || p.type === 'both')
-    } else if (recommendedType === 'dolomite') {
-      filteredProducts = limingProducts.filter(p => p.type === 'dolomite' || p.type === 'both')
-    }
-    
-    // Priorita: nejvyšší reaktivita (= mletý vápenec/dolomit)
-    // Pokud urgentní (pH < 5.0) -> pálené vápno (pokud existuje)
-    // Jinak první produkt z filtrovaného seznamu
-    
-    if (analysis.ph < 5.0) {
-      // Urgentní - hledat pálené vápno (nebo vysokoreaktivní)
-      const paleneVapno = filteredProducts.find(p => p.name.toLowerCase().includes('pálen'))
-      if (paleneVapno) return paleneVapno
-    }
-    
-    // Doporučit první (primární) produkt z filtrovaného seznamu
-    return filteredProducts[0] || limingProducts[0] || null
-  }
+  // Najdeme aktivní produkty "Dolomit mletý" a "Vápenec mletý" (resp. první
+  // aktivní produkt daného typu, pokud jich je v systému víc)
+
+  const dolomitProduct: EngineLimeProduct | null = useMemo(() => {
+    const p = limingProducts.find(p => p.type === 'dolomite')
+    return p ? { id: p.id, name: p.name, type: p.type, caoContent: p.cao_content, mgoContent: p.mgo_content } : null
+  }, [limingProducts])
+
+  const vapenecProduct: EngineLimeProduct | null = useMemo(() => {
+    const p = limingProducts.find(p => p.type === 'calcitic' || p.type === 'both')
+    return p ? { id: p.id, name: p.name, type: p.type, caoContent: p.cao_content, mgoContent: p.mgo_content } : null
+  }, [limingProducts])
 
   // ============================================================
   // PŘÍPRAVA DAT PRO TABULKU
@@ -205,31 +190,29 @@ export default function TabulkovyPrehledVapneni({
   const tableData: TableRow[] = useMemo(() => {
     return parcels.map(parcel => {
       const analysis = parcel.latest_analysis
-      
-      // Vypočítat potřebu CaO podle ÚKZÚZ metodiky
-      let potrebaCaoTHa = 0
-      if (analysis) {
-        // NOVÁ METODIKA (4.1.2026 - sjednocení): 
-        // Používáme ÚKZÚZ roční normativy × 4 roky (konzistence s veřejnou kalkulačkou)
-        // Funkce přímo vrací t CaO/ha za 4leté období
-        const landUse = parcel.culture === 'orna' ? 'orna' : 'ttp'
-        potrebaCaoTHa = calculateTotalCaoNeedSimple(
-          analysis.ph,
-          parcel.soil_type,
-          landUse
-        )
-      }
-      
-      const potrebaCaoCelkem = potrebaCaoTHa * parcel.area
-      
-      // Doporučený produkt
-      const doporucenyProdukt = getDoporucenyProdukt(analysis, potrebaCaoTHa)
-      
-      // Dávka produktu (přepočet z CaO)
-      let davkaProdukt = 0
-      if (doporucenyProdukt && potrebaCaoTHa > 0) {
-        davkaProdukt = potrebaCaoTHa / (doporucenyProdukt.cao_content / 100)
-      }
+      // Kultura pozemku (orná/TTP/chmelnice) - engine si sám ověří a případně
+      // zaloguje warning, pokud by hodnota chyběla nebo byla neznámá.
+      const landUse = parcel.culture
+
+      // Jednorázový rozpis dle našeho enginu (Dolomit na Mg, Vápenec na zbytek CaO)
+      const produktSplit = analysis
+        ? calculateOneTimeProductSplit(
+            {
+              currentPh: analysis.ph,
+              currentMg: analysis.mg,
+              currentK: analysis.k,
+              soilType: parcel.soil_type,
+              landUse,
+              area: parcel.area,
+            },
+            dolomitProduct,
+            vapenecProduct,
+            parcel.id
+          )
+        : null
+
+      const potrebaCaoTHa = produktSplit?.totalCaoNeedTHa || 0
+      const potrebaCaoCelkem = produktSplit?.totalCaoNeedCelkem || 0
       
       // Stav pozemku
       const stav = getStavPozemku(parcel, analysis, potrebaCaoTHa)
@@ -244,13 +227,12 @@ export default function TabulkovyPrehledVapneni({
         analysis,
         potrebaCaoTHa,
         potrebaCaoCelkem,
-        doporucenyProdukt,
-        davkaProdukt,
+        produktSplit,
         stav,
         kMgRatio,
       }
     })
-  }, [parcels, limingProducts])
+  }, [parcels, dolomitProduct, vapenecProduct])
 
   // ============================================================
   // FILTROVÁNÍ
@@ -334,6 +316,9 @@ export default function TabulkovyPrehledVapneni({
     const celkovaPotrebaCao = filteredData.reduce((sum, row) => sum + row.potrebaCaoCelkem, 0)
     const pozemkuKVapneni = filteredData.filter(row => row.potrebaCaoTHa > 0).length
     const pozemkuOk = filteredData.filter(row => row.stav.status === 'ok').length
+    const celkemDolomitTun = filteredData.reduce((sum, row) => sum + (row.produktSplit?.dolomitCelkem || 0), 0)
+    const celkemVapenecTun = filteredData.reduce((sum, row) => sum + (row.produktSplit?.vapenecCelkem || 0), 0)
+    const celkemProduktuTun = celkemDolomitTun + celkemVapenecTun
     
     return {
       celkemPozemku,
@@ -342,6 +327,9 @@ export default function TabulkovyPrehledVapneni({
       celkovaPotrebaCao,
       pozemkuKVapneni,
       pozemkuOk,
+      celkemDolomitTun,
+      celkemVapenecTun,
+      celkemProduktuTun,
     }
   }, [filteredData])
 
@@ -353,9 +341,13 @@ export default function TabulkovyPrehledVapneni({
     try {
       toast.loading('Generuji PDF...', { id: 'pdf-export' })
 
+      // Načteno dynamicky – jspdf je těžká knihovna, nemá smysl ji stahovat, dokud uživatel export nevyžádá
+      const { exportLimingRecommendationsPDF, downloadLimingPDF, generateLimingFilename } =
+        await import('@/lib/utils/liming-pdf-export-v2')
+
       // Připravit data pro PDF (s českými znaky - V2 je podporuje!)
       const pdfRows: LimingTableRow[] = sortedData.map(row => ({
-        kultura: row.parcel.culture === 'orna' ? 'Orná' : 'TTP',
+        kultura: KULTURA_SHORT_LABEL[row.parcel.culture] || row.parcel.culture,
         pozemek: row.parcel.name,
         kodPozemku: row.parcel.code || undefined,
         vymera: row.parcel.area.toFixed(2),
@@ -370,6 +362,10 @@ export default function TabulkovyPrehledVapneni({
         kMgRatio: row.kMgRatio.formatted + (row.kMgRatio.note ? ` (${row.kMgRatio.note})` : ''),
         potrebaCaoTHa: row.potrebaCaoTHa > 0 ? row.potrebaCaoTHa.toFixed(2) : '-',
         potrebaCaoCelkem: row.potrebaCaoCelkem > 0 ? row.potrebaCaoCelkem.toFixed(2) : '-',
+        dolomit: row.produktSplit && row.produktSplit.dolomitCelkem > 0.01 ? row.produktSplit.dolomitCelkem.toFixed(1) : '-',
+        vapenec: row.produktSplit && row.produktSplit.vapenecCelkem > 0.01 ? row.produktSplit.vapenecCelkem.toFixed(1) : '-',
+        produktCelkem: row.produktSplit && row.produktSplit.produktCelkemTun > 0.01 ? row.produktSplit.produktCelkemTun.toFixed(1) : '-',
+        doplnitK2O: row.produktSplit?.doplnitK2OKgHa ? row.produktSplit.doplnitK2OKgHa.toFixed(0) : '-',
         stav: row.stav.label, // ✅ Zachovat české znaky!
       }))
 
@@ -381,6 +377,11 @@ export default function TabulkovyPrehledVapneni({
         totalCaoNeed: stats.celkovaPotrebaCao,
         parcelsToLime: stats.pozemkuKVapneni,
         parcelsOk: stats.pozemkuOk,
+        totalDolomit: stats.celkemDolomitTun,
+        totalVapenec: stats.celkemVapenecTun,
+        totalProdukt: stats.celkemProduktuTun,
+        dolomitProductName: dolomitProduct?.name,
+        vapenecProductName: vapenecProduct?.name,
         rows: pdfRows,
       }
 
@@ -523,6 +524,10 @@ export default function TabulkovyPrehledVapneni({
                     </div>
                   </th>
                   <th className="px-3 py-3 text-right font-semibold text-gray-700 bg-gray-100 whitespace-nowrap">CaO<br/>celkem (t)</th>
+                  <th className="px-3 py-3 text-right font-semibold text-gray-700 bg-blue-50 whitespace-nowrap" title="Jednorázové množství Dolomitu mletého potřebné k doplnění hořčíku">Dolomit<br/>(t)</th>
+                  <th className="px-3 py-3 text-right font-semibold text-gray-700 bg-blue-50 whitespace-nowrap" title="Jednorázové množství Vápence mletého k doplnění zbývající potřeby CaO">Vápenec<br/>(t)</th>
+                  <th className="px-3 py-3 text-right font-semibold text-gray-700 bg-blue-100 whitespace-nowrap" title="Celkové jednorázové množství produktu (Dolomit + Vápenec) k nápravě pH do optima">Produkt<br/>celkem (t)</th>
+                  <th className="px-3 py-3 text-right font-semibold text-gray-700 bg-gray-100 whitespace-nowrap" title="Informativní doporučení doplnění draslíku s ohledem na poměr K/Mg (mimo vápenné produkty)">Doplnit K₂O<br/>(kg/ha)</th>
                   <th className="px-3 py-3 text-center font-semibold text-gray-700 bg-gray-100 whitespace-nowrap">Stav</th>
                   <th className="px-3 py-3 text-center font-semibold text-gray-700 bg-gray-100 whitespace-nowrap">Akce</th>
               </tr>
@@ -530,7 +535,7 @@ export default function TabulkovyPrehledVapneni({
             <tbody>
               {sortedData.length === 0 ? (
                 <tr>
-                  <td colSpan={17} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={21} className="px-4 py-12 text-center text-gray-500">
                     {filterPouzeVapneni || filterPudniDruh !== 'all' || filterStav !== 'all' 
                       ? 'Žádné pozemky neodpovídají filtru'
                       : 'Zatím nemáte žádné pozemky'}
@@ -543,7 +548,7 @@ export default function TabulkovyPrehledVapneni({
                     className={`border-b border-gray-200 liming-table-row ${idx % 2 === 0 ? 'liming-row-even' : 'liming-row-odd'}`}
                   >
                     <td className={`liming-sticky-col liming-sticky-col-1 px-3 py-3 text-gray-700 border-r border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      {row.parcel.culture === 'orna' ? 'Orná' : 'TTP'}
+                      {KULTURA_SHORT_LABEL[row.parcel.culture] || row.parcel.culture}
                     </td>
                     <td className={`liming-sticky-col liming-sticky-col-2 px-3 py-3 border-r border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                       <Link 
@@ -583,7 +588,7 @@ export default function TabulkovyPrehledVapneni({
                     </td>
                     <td className="px-3 py-3 text-right">
                       {row.analysis?.mg ? (
-                        <span className={`font-semibold ${getNutrientTextColor(categorizeNutrient('Mg', row.analysis.mg, row.parcel.soil_type))}`}>
+                        <span className={`font-semibold ${getNutrientTextColor(categorizeNutrient('Mg', row.analysis.mg, row.parcel.soil_type, row.parcel.culture))}`}>
                           {row.analysis.mg.toFixed(0)}
                         </span>
                       ) : (
@@ -592,7 +597,7 @@ export default function TabulkovyPrehledVapneni({
                     </td>
                     <td className="px-3 py-3 text-right">
                       {row.analysis?.k ? (
-                        <span className={`font-semibold ${getNutrientTextColor(categorizeNutrient('K', row.analysis.k, row.parcel.soil_type))}`}>
+                        <span className={`font-semibold ${getNutrientTextColor(categorizeNutrient('K', row.analysis.k, row.parcel.soil_type, row.parcel.culture))}`}>
                           {row.analysis.k.toFixed(0)}
                         </span>
                       ) : (
@@ -601,7 +606,7 @@ export default function TabulkovyPrehledVapneni({
                     </td>
                     <td className="px-3 py-3 text-right">
                       {row.analysis?.p ? (
-                        <span className={`font-semibold ${getNutrientTextColor(categorizeNutrient('P', row.analysis.p, row.parcel.soil_type))}`}>
+                        <span className={`font-semibold ${getNutrientTextColor(categorizeNutrient('P', row.analysis.p, row.parcel.soil_type, row.parcel.culture))}`}>
                           {row.analysis.p.toFixed(0)}
                         </span>
                       ) : (
@@ -631,6 +636,26 @@ export default function TabulkovyPrehledVapneni({
                     <td className="px-3 py-3 text-right text-gray-700 font-medium">
                       {row.potrebaCaoCelkem > 0 ? row.potrebaCaoCelkem.toFixed(2) : '-'}
                     </td>
+                    <td className="px-3 py-3 text-right text-gray-700 bg-blue-50/50">
+                      {row.produktSplit && row.produktSplit.dolomitCelkem > 0.01
+                        ? row.produktSplit.dolomitCelkem.toFixed(1)
+                        : <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-3 py-3 text-right text-gray-700 bg-blue-50/50">
+                      {row.produktSplit && row.produktSplit.vapenecCelkem > 0.01
+                        ? row.produktSplit.vapenecCelkem.toFixed(1)
+                        : <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-3 py-3 text-right text-gray-900 font-semibold bg-blue-50">
+                      {row.produktSplit && row.produktSplit.produktCelkemTun > 0.01
+                        ? row.produktSplit.produktCelkemTun.toFixed(1)
+                        : <span className="text-gray-400 font-normal">-</span>}
+                    </td>
+                    <td className="px-3 py-3 text-right text-gray-700">
+                      {row.produktSplit?.doplnitK2OKgHa
+                        ? row.produktSplit.doplnitK2OKgHa.toFixed(0)
+                        : <span className="text-gray-400">-</span>}
+                    </td>
                     <td className="px-3 py-3 text-center">
                       <span className={`inline-flex items-center gap-1 ${row.stav.color} font-medium whitespace-nowrap`}>
                         <span>{row.stav.icon}</span>
@@ -658,7 +683,7 @@ export default function TabulkovyPrehledVapneni({
 
       {/* Souhrn pod tabulkou */}
       {sortedData.length > 0 && (
-        <div className="bg-gray-100 rounded-lg p-6 border-t-4 border-gray-400">
+        <div className="bg-gray-100 rounded-lg p-6 border-t-4 border-gray-400 space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             <div>
               <p className="text-sm text-gray-600 mb-1">Celkem pozemků</p>
@@ -686,6 +711,37 @@ export default function TabulkovyPrehledVapneni({
               <p className="text-sm text-gray-600 mb-1">Pozemků OK</p>
               <p className="text-2xl font-bold text-green-600">{stats.pozemkuOk}</p>
             </div>
+          </div>
+
+          {/* Jednorázové množství produktu k nápravě pH do optima */}
+          <div className="pt-4 border-t border-gray-300">
+            <p className="text-sm font-semibold text-gray-700 mb-3">
+              Celkové jednorázové množství k nápravě pH do optima (dle typu půdy a stavu Mg)
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">
+                  {dolomitProduct?.name || 'Dolomit'} (na doplnění Mg)
+                </p>
+                <p className="text-2xl font-bold text-blue-700">{stats.celkemDolomitTun.toFixed(1)} t</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">
+                  {vapenecProduct?.name || 'Vápenec'} (na zbytek CaO)
+                </p>
+                <p className="text-2xl font-bold text-blue-700">{stats.celkemVapenecTun.toFixed(1)} t</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Produkt celkem</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.celkemProduktuTun.toFixed(1)} t</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Pokud je hořčík nízký/vyhovující, engine spočítá jednorázové množství {dolomitProduct?.name.toLowerCase() || 'dolomitu'} potřebné
+              k doplnění Mg a zbytek potřeby CaO dorovná levnějším {vapenecProduct?.name.toLowerCase() || 'vápencem'}. Pokud je hořčík dobrý/vysoký,
+              použije se pouze {vapenecProduct?.name.toLowerCase() || 'vápenec'}. Sloupec &quot;Doplnit K₂O&quot; je informativní doporučení
+              s ohledem na poměr K/Mg (draslík není součástí vápenných produktů).
+            </p>
           </div>
         </div>
       )}

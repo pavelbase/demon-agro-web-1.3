@@ -56,7 +56,8 @@ async function recalculateCategories() {
       parcel_id,
       parcels!inner(
         id,
-        soil_type
+        soil_type,
+        culture
       )
     `)
   
@@ -81,12 +82,14 @@ async function recalculateCategories() {
     try {
       // @ts-ignore - parcels structure from join
       const soilType = (analysis.parcels?.soil_type || 'S') as SoilType
+      // @ts-ignore - parcels structure from join
+      const culture = analysis.parcels?.culture
       
-      // Přepočítat kategorie podle NOVÝCH funkcí
+      // Přepočítat kategorie podle NOVÝCH funkcí (dle kultury - chmelnice mají vlastní kritéria)
       const new_ph_category = categorizePh(analysis.ph)
-      const new_p_category = categorizeNutrient('P', analysis.p, soilType)
-      const new_k_category = categorizeNutrient('K', analysis.k, soilType)
-      const new_mg_category = categorizeNutrient('Mg', analysis.mg, soilType)
+      const new_p_category = categorizeNutrient('P', analysis.p, soilType, culture)
+      const new_k_category = categorizeNutrient('K', analysis.k, soilType, culture)
+      const new_mg_category = categorizeNutrient('Mg', analysis.mg, soilType, culture)
       // @ts-ignore - ca může být null
       const new_ca_category = analysis.ca ? categorizeNutrient('Ca', analysis.ca, soilType) : null
       // @ts-ignore - s může být null nebo undefined

@@ -64,7 +64,7 @@ export default async function LimingPlanPage({
     .order('analysis_date', { ascending: false })
   
   // Průměrovat rozbory podle data (AZZP metodika)
-  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type)
+  const groupedAnalyses = groupAndAverageAnalyses(analyses || [], parcel.soil_type, parcel.culture)
   const latestAnalysis = groupedAnalyses.length > 0 ? groupedAnalyses[0] : null
 
   // -------------------------------------------------

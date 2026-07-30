@@ -55,6 +55,10 @@ export interface LimingTableRow {
   kMgRatio: string
   potrebaCaoTHa: string
   potrebaCaoCelkem: string
+  dolomit?: string
+  vapenec?: string
+  produktCelkem?: string
+  doplnitK2O?: string
   stav?: string
 }
 
@@ -66,6 +70,11 @@ export interface LimingPDFData {
   totalCaoNeed: number
   parcelsToLime: number
   parcelsOk: number
+  totalDolomit?: number
+  totalVapenec?: number
+  totalProdukt?: number
+  dolomitProductName?: string
+  vapenecProductName?: string
   rows: LimingTableRow[]
 }
 
@@ -134,6 +143,18 @@ function getNutrientColorRGB(category: NutrientCategory | null): [number, number
 }
 
 /**
+ * Odvození světlého pozadí buňky ze stejné barvy, jakou má text v buňce
+ * (stejný princip jako u kritického pH - jen zesvětlené o cca 80% směrem k bílé)
+ */
+function getLightBackgroundRGB(rgb: [number, number, number], factor: number = 0.18): [number, number, number] {
+  return [
+    Math.round(255 - (255 - rgb[0]) * factor),
+    Math.round(255 - (255 - rgb[1]) * factor),
+    Math.round(255 - (255 - rgb[2]) * factor),
+  ]
+}
+
+/**
  * Převod řetězce půdního typu na SoilType enum
  * 'Lehká' | 'Střední' | 'Těžká' -> 'L' | 'S' | 'T'
  */
@@ -147,6 +168,19 @@ function parseSoilType(soilTypeStr: string): SoilType {
     return soilTypeStr as SoilType
   }
   return 'S' // Default to střední
+}
+
+/**
+ * Převod textu kultury (sloupec "Kultura" v tabulce) na kulturu pro categorizeNutrient
+ * - chmelnice mají vlastní, přísnější kritéria zásobenosti (ÚKZÚZ tab. 13)
+ */
+function parseCulture(kulturaStr: string | undefined | null): 'orna' | 'ttp' | 'chmelnice' | undefined {
+  if (!kulturaStr) return undefined
+  const normalized = kulturaStr.toLowerCase()
+  if (normalized.includes('chmel')) return 'chmelnice'
+  if (normalized.includes('ttp') || normalized.includes('trvalý') || normalized.includes('trvaly')) return 'ttp'
+  if (normalized.includes('orná') || normalized.includes('orna')) return 'orna'
+  return undefined
 }
 
 /**
@@ -582,6 +616,10 @@ export async function exportLimingRecommendationsPDF(
     sanitizeText(row.kMgRatio),
     row.potrebaCaoTHa || '-',
     row.potrebaCaoCelkem || '-',
+    row.dolomit || '-',
+    row.vapenec || '-',
+    row.produktCelkem || '-',
+    row.doplnitK2O || '-',
   ])
 
   autoTable(doc, {
@@ -602,6 +640,10 @@ export async function exportLimingRecommendationsPDF(
       sanitizeText('Poměr\nK/Mg'),
       'CaO\n(t/ha)',
       'CaO\ncelkem (t)',
+      sanitizeText('Dolomit\n(t)'),
+      sanitizeText('Vápenec\n(t)'),
+      sanitizeText('Produkt\ncelkem (t)'),
+      sanitizeText('Doplnit\nK2O (kg/ha)'),
     ]],
     body: tableData,
     theme: 'grid',
@@ -642,6 +684,10 @@ export async function exportLimingRecommendationsPDF(
       12: { cellWidth: 12, halign: 'center' },
       13: { cellWidth: 11, halign: 'right', fontStyle: 'bold' },
       14: { cellWidth: 13, halign: 'right', fontStyle: 'bold' },
+      15: { cellWidth: 12, halign: 'right' },
+      16: { cellWidth: 13, halign: 'right' },
+      17: { cellWidth: 13, halign: 'right', fontStyle: 'bold', fillColor: [239, 246, 255] },
+      18: { cellWidth: 14, halign: 'right' },
     },
     margin: { left: margin, right: margin },
     didParseCell: function (data) {
@@ -651,27 +697,31 @@ export async function exportLimingRecommendationsPDF(
         if (phText && phText !== '-') {
           const ph = parseFloat(phText.replace(',', '.'))
           if (!isNaN(ph)) {
+            let phColorRgb: [number, number, number]
             if (ph < 5.0) {
-              // Critical pH - light red background with dark red text
-              data.cell.styles.fillColor = [255, 235, 235] // Very light red
-              data.cell.styles.textColor = [220, 38, 38] // Dark red
+              // Kritické pH - tmavě červená
+              phColorRgb = [220, 38, 38]
               data.cell.styles.fontStyle = 'bold'
             } else if (ph < 5.5) {
-              data.cell.styles.textColor = [239, 68, 68] // Red
+              phColorRgb = [239, 68, 68] // Red
             } else if (ph < 6.0) {
-              data.cell.styles.textColor = [245, 158, 11] // Orange
+              phColorRgb = [245, 158, 11] // Orange
             } else {
-              data.cell.styles.textColor = [16, 185, 129] // Green
+              phColorRgb = [16, 185, 129] // Green
             }
+            data.cell.styles.textColor = phColorRgb
+            data.cell.styles.fillColor = getLightBackgroundRGB(phColorRgb)
           }
         }
       }
 
-      // Get soil type from row data for nutrient categorization
+      // Get soil type + kultura from row data for nutrient categorization
+      // (chmelnice mají vlastní, přísnější kritéria zásobenosti - ÚKZÚZ tab. 13)
       const rowIndex = data.row.index
       const rowData = data.rows?.[rowIndex] || tableData[rowIndex]
       const soilTypeStr = rowData?.[4] || 'S' // Column 4 is 'Druh půdy'
       const soilType = parseSoilType(soilTypeStr)
+      const culture = parseCulture(rowData?.[0]) // Column 0 is 'Kultura'
 
       // ============================================================
       // Color-code Ca (mg/kg) - Column 7
@@ -684,6 +734,7 @@ export async function exportLimingRecommendationsPDF(
             const category = categorizeNutrient('Ca', ca, soilType)
             const color = getNutrientColorRGB(category)
             data.cell.styles.textColor = color
+            data.cell.styles.fillColor = getLightBackgroundRGB(color)
             if (category === 'nizky') {
               data.cell.styles.fontStyle = 'bold'
             }
@@ -699,9 +750,10 @@ export async function exportLimingRecommendationsPDF(
         if (mgText && mgText !== '-') {
           const mg = parseFloat(mgText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(mg)) {
-            const category = categorizeNutrient('Mg', mg, soilType)
+            const category = categorizeNutrient('Mg', mg, soilType, culture)
             const color = getNutrientColorRGB(category)
             data.cell.styles.textColor = color
+            data.cell.styles.fillColor = getLightBackgroundRGB(color)
             if (category === 'nizky') {
               data.cell.styles.fontStyle = 'bold'
             }
@@ -717,9 +769,10 @@ export async function exportLimingRecommendationsPDF(
         if (kText && kText !== '-') {
           const k = parseFloat(kText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(k)) {
-            const category = categorizeNutrient('K', k, soilType)
+            const category = categorizeNutrient('K', k, soilType, culture)
             const color = getNutrientColorRGB(category)
             data.cell.styles.textColor = color
+            data.cell.styles.fillColor = getLightBackgroundRGB(color)
             if (category === 'nizky') {
               data.cell.styles.fontStyle = 'bold'
             }
@@ -735,9 +788,10 @@ export async function exportLimingRecommendationsPDF(
         if (pText && pText !== '-') {
           const p = parseFloat(pText.replace(',', '.').replace(/\s/g, ''))
           if (!isNaN(p)) {
-            const category = categorizeNutrient('P', p, soilType)
+            const category = categorizeNutrient('P', p, soilType, culture)
             const color = getNutrientColorRGB(category)
             data.cell.styles.textColor = color
+            data.cell.styles.fillColor = getLightBackgroundRGB(color)
             if (category === 'nizky') {
               data.cell.styles.fontStyle = 'bold'
             }
@@ -756,6 +810,7 @@ export async function exportLimingRecommendationsPDF(
             const category = categorizeNutrient('S', s, soilType)
             const color = getNutrientColorRGB(category)
             data.cell.styles.textColor = color
+            data.cell.styles.fillColor = getLightBackgroundRGB(color)
             if (category === 'nizky') {
               data.cell.styles.fontStyle = 'bold'
             }
@@ -774,17 +829,20 @@ export async function exportLimingRecommendationsPDF(
           if (ratioMatch) {
             const ratio = parseFloat(ratioMatch[1].replace(',', '.'))
             if (!isNaN(ratio)) {
+              let ratioColorRgb: [number, number, number]
               if (ratio >= 1.5 && ratio <= 2.5) {
                 // Optimální rozsah: 1.5 - 2.5
-                data.cell.styles.textColor = [34, 197, 94] // Green-500 - optimální
+                ratioColorRgb = [34, 197, 94] // Green-500 - optimální
               } else if ((ratio >= 1.2 && ratio < 1.5) || (ratio > 2.5 && ratio <= 3.5)) {
                 // Suboptimální: 1.2-1.5 (+ K) nebo 2.5-3.5 (+ Mg)
-                data.cell.styles.textColor = [234, 179, 8] // Yellow-600 - suboptimální (+ K nebo + Mg)
+                ratioColorRgb = [234, 179, 8] // Yellow-600 - suboptimální (+ K nebo + Mg)
               } else {
                 // Kritický nepoměr: < 1.2 nebo > 3.5
-                data.cell.styles.textColor = [220, 38, 38] // Red-600 - kritický
+                ratioColorRgb = [220, 38, 38] // Red-600 - kritický
                 data.cell.styles.fontStyle = 'bold'
               }
+              data.cell.styles.textColor = ratioColorRgb
+              data.cell.styles.fillColor = getLightBackgroundRGB(ratioColorRgb)
             }
           }
         }
@@ -878,7 +936,35 @@ export async function exportLimingRecommendationsPDF(
   const percentOk = Math.round((data.parcelsOk / data.totalParcels) * 100)
   doc.text(sanitizeText(`${percentOk}% pozemku`), boxX + boxWidth / 2, currentY + 19, { align: 'center' })
 
-  currentY += boxHeight + 10
+  currentY += boxHeight + 6
+
+  // Product totals (Dolomit / Vápenec / Produkt celkem) - jednorázová dávka k nápravě pH
+  if (data.totalProdukt !== undefined && data.totalProdukt > 0) {
+    doc.setFillColor(239, 246, 255) // Light blue background
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 12, 2, 2, 'F')
+
+    doc.setFontSize(FONTS.small)
+    doc.setFont(getFontName(), 'bold')
+    doc.setTextColor(COLORS.primaryDark)
+    doc.text(
+      sanitizeText('Celkové jednorázové množství produktu k nápravě pH do optima:'),
+      margin + 5,
+      currentY + 7
+    )
+
+    doc.setFont(getFontName(), 'normal')
+    doc.setTextColor(COLORS.text)
+    const productSummary = sanitizeText(
+      `${data.dolomitProductName || 'Dolomit'}: ${formatNumber(data.totalDolomit || 0, 1)} t   |   ` +
+      `${data.vapenecProductName || 'Vápenec'}: ${formatNumber(data.totalVapenec || 0, 1)} t   |   ` +
+      `Celkem: ${formatNumber(data.totalProdukt, 1)} t`
+    )
+    doc.text(productSummary, pageWidth - margin - 5, currentY + 7, { align: 'right' })
+
+    currentY += 16
+  } else {
+    currentY += 4
+  }
 
   // Priority actions
   if (recommendations.priorityActions.length > 0) {
@@ -931,13 +1017,17 @@ export async function exportLimingRecommendationsPDF(
     '1) Poměr K/Mg (draslík ku hořčíku) ukazuje vyváženost těchto prvků. Optimální rozmezí je 1,1:1 až 1,6:1.',
     '   Označení "+ Mg" nebo "+ K" indikuje potřebu doplnění daného prvku.',
     '',
-    '2) Doporučený produkt je zvolen na základě stavu hořčíku:',
-    '   • Dolomit mletý: při nízkém Mg (pod 120 mg/kg)',
-    '   • Vápenec mletý: při vyhovujícím Mg',
-    '   • Pálené vápno: při urgentní potřebě rychlého zvýšení pH',
+    '2) Rozpis produktů (sloupce Dolomit / Vápenec / Produkt celkem) je počítán agronomickým enginem:',
+    '   • Je-li Mg nízké nebo vyhovující, spočítá se jednorázové množství Dolomitu mletého',
+    '     potřebné k doplnění hořčíku na optimum (dle typu půdy). Dolomit dodá i část CaO.',
+    '   • Zbývající potřeba CaO se dorovná levnějším Vápencem mletým.',
+    '   • Je-li Mg dobré až velmi vysoké, použije se výhradně Vápenec mletý.',
+    '   • Sloupec "Doplnit K2O" je informativní doporučení s ohledem na poměr K/Mg',
+    '     (draslík není součástí vápenných produktů).',
     '',
-    '3) Navržené dávky jsou orientační pro půdní profil do 20 cm.',
-    '   Maximální roční dávka by neměla překročit 3 t CaO/ha.',
+    '3) Uvedené jednorázové množství odpovídá celkové 4leté potřebě CaO. Pokud přesahuje',
+    '   maximální jednorázovou dávku pro daný typ půdy, doporučujeme rozdělit aplikaci',
+    '   do více let (viz Plán vápnění pozemku v portálu).',
     '',
     '4) Doporučujeme provádět kontrolní rozbor půdy 1 rok po každé aplikaci',
     '   a pravidelně každé 4 roky.',

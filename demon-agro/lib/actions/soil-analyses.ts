@@ -40,7 +40,7 @@ export async function createSoilAnalysis(data: CreateSoilAnalysisData): Promise<
     // Verify parcel ownership
     const { data: parcel } = await supabase
       .from('parcels')
-      .select('id, user_id, name')
+      .select('id, user_id, name, culture')
       .eq('id', data.parcelId)
       .eq('user_id', user.id)
       .single()
@@ -52,11 +52,11 @@ export async function createSoilAnalysis(data: CreateSoilAnalysisData): Promise<
       }
     }
 
-    // Categorize values
+    // Categorize values (dle kultury pozemku - chmelnice mají vlastní kritéria, tab. 13)
     const phCategory = categorizePh(data.ph)
-    const pCategory = categorizeNutrient('P', data.p, data.soilType)
-    const kCategory = categorizeNutrient('K', data.k, data.soilType)
-    const mgCategory = categorizeNutrient('Mg', data.mg, data.soilType)
+    const pCategory = categorizeNutrient('P', data.p, data.soilType, parcel.culture)
+    const kCategory = categorizeNutrient('K', data.k, data.soilType, parcel.culture)
+    const mgCategory = categorizeNutrient('Mg', data.mg, data.soilType, parcel.culture)
     const caCategory = data.ca ? categorizeNutrient('Ca', data.ca, data.soilType) : null
     const sCategory = data.s ? categorizeNutrient('S', data.s, data.soilType) : null
 

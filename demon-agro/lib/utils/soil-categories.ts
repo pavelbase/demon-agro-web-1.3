@@ -7,6 +7,40 @@ export type SoilType = 'L' | 'S' | 'T' | null
 export type PhCategory = 'extremne_kysela' | 'silne_kysela' | 'slabe_kysela' | 'neutralni' | 'slabe_alkalicka' | 'alkalicka' | null
 export type NutrientCategory = 'nizky' | 'vyhovujici' | 'dobry' | 'vysoky' | 'velmi_vysoky' | null
 
+// Kultura pozemku ovlivňující kritéria zásobenosti živinami (ÚKZÚZ tab. 10/11/13).
+// Zapsáno lokálně (bez importu z lib/types/database) - orná a ttp zachovávají
+// přesně stávající chování, chmelnice má vlastní, přísnější kritéria (tab. 13).
+export type NutrientCulture = 'orna' | 'ttp' | 'chmelnice' | string | null | undefined
+
+/**
+ * Kritéria zásobenosti P, K, Mg pro CHMELNICE (ÚKZÚZ Metodický pokyn 01/AZZP, tab. 13)
+ * Meze v mg/kg (Mehlich 3). Fosfor nezávisí na půdním druhu.
+ */
+const CHMELNICE_P = { nizky: 155, vyhovujici: 220, dobry: 290, vysoky: 390 }
+
+const CHMELNICE_K: Record<'L' | 'S' | 'T', { nizky: number; vyhovujici: number; dobry: number; vysoky: number }> = {
+  L: { nizky: 170, vyhovujici: 275, dobry: 400, vysoky: 560 },
+  S: { nizky: 220, vyhovujici: 370, dobry: 515, vysoky: 650 },
+  T: { nizky: 290, vyhovujici: 400, dobry: 570, vysoky: 680 },
+}
+
+const CHMELNICE_MG: Record<'L' | 'S' | 'T', { nizky: number; vyhovujici: number; dobry: number; vysoky: number }> = {
+  L: { nizky: 135, vyhovujici: 210, dobry: 300, vysoky: 400 },
+  S: { nizky: 160, vyhovujici: 250, dobry: 350, vysoky: 460 },
+  T: { nizky: 210, vyhovujici: 300, dobry: 395, vysoky: 530 },
+}
+
+function categorizeFromLimits(
+  value: number,
+  limits: { nizky: number; vyhovujici: number; dobry: number; vysoky: number }
+): NonNullable<NutrientCategory> {
+  if (value <= limits.nizky) return 'nizky'
+  if (value <= limits.vyhovujici) return 'vyhovujici'
+  if (value <= limits.dobry) return 'dobry'
+  if (value <= limits.vysoky) return 'vysoky'
+  return 'velmi_vysoky'
+}
+
 /**
  * Kategorizace pH (stejná pro všechny půdy)
  * 
@@ -33,9 +67,18 @@ export function categorizePh(ph: number): PhCategory {
 export function categorizeNutrient(
   nutrient: 'P' | 'K' | 'Mg' | 'Ca' | 'S',
   value: number,
-  soilType: SoilType
+  soilType: SoilType,
+  culture?: NutrientCulture
 ): NutrientCategory {
   const type = soilType || 'S'
+
+  // Chmelnice mají dle ÚKZÚZ tab. 13 vlastní, přísnější kritéria zásobenosti P, K, Mg.
+  // Vápník (Ca) a síra (S) jsou dle zadání sdílené napříč kulturami - beze změny.
+  if (culture === 'chmelnice') {
+    if (nutrient === 'P') return categorizeFromLimits(value, CHMELNICE_P)
+    if (nutrient === 'K') return categorizeFromLimits(value, CHMELNICE_K[type])
+    if (nutrient === 'Mg') return categorizeFromLimits(value, CHMELNICE_MG[type])
+  }
   
   switch (nutrient) {
     case 'P':
@@ -235,7 +278,7 @@ export function getCategoryColor(category: PhCategory | NutrientCategory): strin
 export function evaluatePhForSoilType(
   ph: number, 
   soilType: SoilType,
-  landUse: 'orna' | 'ttp' = 'orna'
+  landUse: NutrientCulture = 'orna'
 ): {
   category: PhCategory
   isOptimal: boolean
@@ -260,7 +303,10 @@ export function evaluatePhForSoilType(
   }
   
   const type = soilType || 'S'
-  const targetPh = targets[landUse][type]
+  // Chmelnice (a jiné zatím nepodporované kultury) - dokud nemá tato funkce vlastní
+  // cílové hodnoty, bezpečně použij ornou půdu (viz zadani-chmelnice-engine.md, mimo rozsah).
+  const targetUse: 'orna' | 'ttp' = landUse === 'ttp' ? 'ttp' : 'orna'
+  const targetPh = targets[targetUse][type]
   
   // Tolerance ±0.3 pH jednotky
   const isOptimal = Math.abs(ph - targetPh) <= 0.3

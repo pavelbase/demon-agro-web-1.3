@@ -80,9 +80,9 @@ export async function createParcel(data: CreateParcelWithAnalysisData): Promise<
     // If soil analysis data is provided, create it
     if (hasAnalysis && ph !== undefined && p !== undefined && k !== undefined && mg !== undefined) {
       const phCategory = categorizePh(ph)
-      const pCategory = categorizeNutrient('P', p, parcelData.soil_type || 'S')
-      const kCategory = categorizeNutrient('K', k, parcelData.soil_type || 'S')
-      const mgCategory = categorizeNutrient('Mg', mg, parcelData.soil_type || 'S')
+      const pCategory = categorizeNutrient('P', p, parcelData.soil_type || 'S', parcelData.culture)
+      const kCategory = categorizeNutrient('K', k, parcelData.soil_type || 'S', parcelData.culture)
+      const mgCategory = categorizeNutrient('Mg', mg, parcelData.soil_type || 'S', parcelData.culture)
       const caCategory = ca ? categorizeNutrient('Ca', ca, parcelData.soil_type || 'S') : null
       const sCategory = s ? categorizeNutrient('S', s, parcelData.soil_type || 'S') : null
 

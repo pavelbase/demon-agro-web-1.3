@@ -10,7 +10,7 @@ interface AnalysisInput {
   parcelArea?: number
   parcelCode?: string // LPIS kód nebo lab označení (např. "0701/27")
   parcelSoilType?: 'L' | 'S' | 'T'
-  parcelCulture?: 'orna' | 'ttp'
+  parcelCulture?: 'orna' | 'ttp' | 'chmelnice'
   
   // Analysis data
   analysis_date: string
@@ -171,10 +171,10 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Verify parcel ownership and get soil type
+        // Verify parcel ownership and get soil type + kultura
         const { data: parcel, error: parcelCheckError } = await supabase
           .from('parcels')
-          .select('id, soil_type')
+          .select('id, soil_type, culture')
           .eq('id', parcelId)
           .eq('user_id', userId)
           .single()
@@ -184,12 +184,14 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Kategorize živiny podle druhu půdy
+        // Kategorize živiny podle druhu půdy a kultury (chmelnice mají vlastní
+        // kritéria zásobenosti - viz zadani-chmelnice-engine.md)
         const soilType = parcel.soil_type
+        const culture = parcel.culture
         const ph_category = categorizePh(analysis.ph)
-        const p_category = categorizeNutrient('P', analysis.phosphorus, soilType)
-        const k_category = categorizeNutrient('K', analysis.potassium, soilType)
-        const mg_category = categorizeNutrient('Mg', analysis.magnesium, soilType)
+        const p_category = categorizeNutrient('P', analysis.phosphorus, soilType, culture)
+        const k_category = categorizeNutrient('K', analysis.potassium, soilType, culture)
+        const mg_category = categorizeNutrient('Mg', analysis.magnesium, soilType, culture)
         const s_category = analysis.sulfur ? categorizeNutrient('S', analysis.sulfur, soilType) : null
 
         // Vypočti K:Mg ratio
