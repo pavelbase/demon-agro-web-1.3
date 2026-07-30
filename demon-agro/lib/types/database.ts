@@ -28,6 +28,10 @@ export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'on_order'
 export type ApplicationItemKind = 'hnojivo' | 'por' | 'pomocna'
 export type ApplicationMode = 'skutecnost' | 'plan'
 export type ApplicationCheckStatus = 'unchecked' | 'ok' | 'info' | 'warning' | 'error'
+/** Kde záznam vznikl – 'pole' je rychlý zápis z provozu */
+export type ApplicationSource = 'manual' | 'import' | 'pole'
+/** Zápis z pole se do evidenční knihy počítá až po schválení */
+export type ApplicationRecordStatus = 'ceka' | 'schvaleno'
 
 // Akční program nitrátové směrnice – skupiny hnojiv podle uvolnitelnosti dusíku
 export type NitrogenGroup = 'mineralni' | 'rychle' | 'pomalu' | 'bez_dusiku'
@@ -1526,7 +1530,10 @@ export interface Database {
           method: string | null
           is_tankmix: boolean
           notes: string | null
-          source: 'manual' | 'import'
+          source: ApplicationSource
+          record_status: ApplicationRecordStatus
+          submitted_at: string | null
+          approved_at: string | null
           check_status: ApplicationCheckStatus
           check_findings: Json
           checked_at: string | null
@@ -1544,7 +1551,10 @@ export interface Database {
           method?: string | null
           is_tankmix?: boolean
           notes?: string | null
-          source?: 'manual' | 'import'
+          source?: ApplicationSource
+          record_status?: ApplicationRecordStatus
+          submitted_at?: string | null
+          approved_at?: string | null
           check_status?: ApplicationCheckStatus
           check_findings?: Json
           checked_at?: string | null

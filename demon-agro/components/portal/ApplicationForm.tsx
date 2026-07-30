@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { Loader2, Plus, Save } from 'lucide-react'
+import { CheckCircle2, Loader2, Plus, Save } from 'lucide-react'
 import { getUsageHint, type ProductSearchResult } from '@/lib/actions/application-products'
 import { saveApplication, type SaveApplicationPayload } from '@/lib/actions/applications'
 import type { CheckFinding } from '@/lib/utils/application-checks'
@@ -57,6 +57,8 @@ export interface FormApplication {
 interface ApplicationFormProps {
   parcels: FormParcel[]
   application?: FormApplication
+  /** Upravovaný záznam je zápis z pole čekající na schválení */
+  pendingFieldLog?: boolean
 }
 
 /**
@@ -67,7 +69,11 @@ interface ApplicationFormProps {
  * povoluje – cílové organismy, rozmezí dávek a ochrannou lhůtu –, takže
  * uživatel vidí omezení při zápisu, ne až po uložení.
  */
-export function ApplicationForm({ parcels, application }: ApplicationFormProps) {
+export function ApplicationForm({
+  parcels,
+  application,
+  pendingFieldLog = false,
+}: ApplicationFormProps) {
   const router = useRouter()
   const [isSaving, startSaving] = useTransition()
 
@@ -155,11 +161,11 @@ export function ApplicationForm({ parcels, application }: ApplicationFormProps) 
     loadHint(key, product.porItemId, parcelCrop?.cropName ?? null)
   }
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault()
-
+  /** @param approve u zápisu z pole rovnou propíše záznam do evidence */
+  const submit = (approve: boolean) => {
     const payload: SaveApplicationPayload = {
       id: application?.id,
+      recordStatus: approve ? 'schvaleno' : undefined,
       cropParcelId: parcelId,
       parcelCropId: parcelCropId || null,
       applicationDate,
@@ -190,6 +196,12 @@ export function ApplicationForm({ parcels, application }: ApplicationFormProps) 
 
       setFindings(result.findings ?? [])
 
+      if (approve) {
+        toast.success('Zápis schválen a propsán do evidence')
+        router.push('/portal/hnojiva-por/schvaleni')
+        return
+      }
+
       const errors = (result.findings ?? []).filter((finding) => finding.severity === 'error').length
       if (errors > 0) {
         toast.success(`Aplikace uložena, kontrola našla ${errors} chyb – zkontrolujte zjištění`, {
@@ -203,8 +215,24 @@ export function ApplicationForm({ parcels, application }: ApplicationFormProps) 
     })
   }
 
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault()
+    submit(false)
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {pendingFieldLog && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <p className="text-sm text-amber-900">
+            <strong className="font-semibold">Zápis z pole čeká na schválení.</strong> Doplňte, co
+            se v provozu nezadávalo – osev, cílový organismus, způsob aplikace – a schválením ho
+            propíšete do evidence.
+          </p>
+        </div>
+      )}
+
       {/* Parcela, osev, datum */}
       <div className="rounded-lg bg-white p-5 shadow-md">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -387,22 +415,45 @@ export function ApplicationForm({ parcels, application }: ApplicationFormProps) 
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           type="button"
-          onClick={() => router.push('/portal/hnojiva-por/evidence')}
+          onClick={() =>
+            router.push(
+              pendingFieldLog ? '/portal/hnojiva-por/schvaleni' : '/portal/hnojiva-por/evidence'
+            )
+          }
           className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
-          Zpět na evidenci
+          {pendingFieldLog ? 'Zpět na schvalování' : 'Zpět na evidenci'}
         </button>
         <button
           type="submit"
           disabled={isSaving}
-          className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-60"
+          className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+            pendingFieldLog
+              ? 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              : 'bg-amber-600 text-white hover:bg-amber-700'
+          }`}
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {application ? 'Uložit změny' : 'Uložit aplikaci'}
         </button>
+        {pendingFieldLog && (
+          <button
+            type="button"
+            onClick={() => submit(true)}
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-60"
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            Uložit a schválit
+          </button>
+        )}
       </div>
     </form>
   )

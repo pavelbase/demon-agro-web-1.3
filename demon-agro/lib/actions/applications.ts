@@ -55,6 +55,10 @@ const applicationSchema = z.object({
   method: z.string().max(200).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
   items: z.array(itemSchema).min(1, 'Přidejte alespoň jedno hnojivo nebo přípravek'),
+  // Zápis z pole vzniká ve stavu 'ceka'; u úpravy se stav bez uvedení nemění,
+  // aby se schválený záznam nevrátil zpět do fronty
+  recordStatus: z.enum(['ceka', 'schvaleno']).optional(),
+  source: z.enum(['manual', 'pole']).optional(),
 })
 
 export type SaveApplicationPayload = z.input<typeof applicationSchema>
@@ -185,7 +189,15 @@ export async function saveApplication(
     if (applicationId) {
       const { error } = await supabase
         .from('applications')
-        .update(record)
+        .update(
+          input.recordStatus
+            ? {
+                ...record,
+                record_status: input.recordStatus,
+                approved_at: input.recordStatus === 'schvaleno' ? new Date().toISOString() : null,
+              }
+            : record
+        )
         .eq('id', applicationId)
         .eq('user_id', user.id)
 
@@ -200,9 +212,18 @@ export async function saveApplication(
         .eq('application_id', applicationId)
         .eq('user_id', user.id)
     } else {
+      const recordStatus = input.recordStatus ?? 'schvaleno'
+      const now = new Date().toISOString()
+
       const { data, error } = await supabase
         .from('applications')
-        .insert({ ...record, source: 'manual' })
+        .insert({
+          ...record,
+          source: input.source ?? 'manual',
+          record_status: recordStatus,
+          submitted_at: recordStatus === 'ceka' ? now : null,
+          approved_at: recordStatus === 'schvaleno' ? now : null,
+        })
         .select('id')
         .single()
 
@@ -249,6 +270,7 @@ export async function saveApplication(
     const checked = await runChecksForApplications(supabase, user.id, [applicationId!])
 
     revalidatePath('/portal/hnojiva-por/evidence')
+    revalidatePath('/portal/hnojiva-por/schvaleni')
 
     return {
       success: true,
@@ -474,6 +496,7 @@ export async function deleteApplication(id: string): Promise<{ success: boolean;
     }
 
     revalidatePath('/portal/hnojiva-por/evidence')
+    revalidatePath('/portal/hnojiva-por/schvaleni')
     return { success: true }
   } catch (error) {
     console.error('Neočekávaná chyba mazání aplikace:', error)

@@ -46,22 +46,26 @@ export default async function UpravitAplikaciPage({
     })),
   }
 
+  const isPending = application.record_status === 'ceka'
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6">
         <Link
-          href="/portal/hnojiva-por/evidence"
+          href={isPending ? '/portal/hnojiva-por/schvaleni' : '/portal/hnojiva-por/evidence'}
           className="mb-3 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
         >
           <ArrowLeft className="h-4 w-4" />
-          Evidence aplikací
+          {isPending ? 'Zápisy ke schválení' : 'Evidence aplikací'}
         </Link>
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-amber-100 p-2">
             <Pencil className="h-6 w-6 text-amber-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Úprava aplikace</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isPending ? 'Doplnění zápisu z pole' : 'Úprava aplikace'}
+            </h1>
             <p className="mt-1 text-gray-600">
               {application.parcel?.name} ·{' '}
               {new Date(application.application_date).toLocaleDateString('cs-CZ')}
@@ -71,7 +75,11 @@ export default async function UpravitAplikaciPage({
         </div>
       </div>
 
-      <ApplicationForm parcels={parcels} application={formApplication} />
+      <ApplicationForm
+        parcels={parcels}
+        application={formApplication}
+        pendingFieldLog={isPending}
+      />
     </div>
   )
 }

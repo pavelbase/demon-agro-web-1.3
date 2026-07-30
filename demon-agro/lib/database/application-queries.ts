@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import type {
   Application,
   ApplicationCheckStatus,
+  ApplicationItemKind,
   ApplicationWithDetails,
   ApplicationsSummary,
   Crop,
@@ -21,6 +22,12 @@ export interface ApplicationFilters {
   status?: ApplicationCheckStatus
   /** Hledání podle názvu parcely, plodiny nebo produktu */
   query?: string
+  /**
+   * Evidenční kniha zobrazuje jen schválené záznamy – zápisy z pole do ní
+   * patří až po schválení. 'vse' se hodí jen tam, kde se pracuje s oběma
+   * stavy najednou (např. počet aplikací u parcely před smazáním).
+   */
+  recordStatus?: 'ceka' | 'schvaleno' | 'vse'
 }
 
 const APPLICATION_SELECT = `
@@ -47,6 +54,8 @@ export async function getApplications(
     .eq('user_id', user.id)
     .order('application_date', { ascending: false })
 
+  const recordStatus = filters.recordStatus ?? 'schvaleno'
+  if (recordStatus !== 'vse') query = query.eq('record_status', recordStatus)
   if (filters.parcelId) query = query.eq('crop_parcel_id', filters.parcelId)
   if (filters.status) query = query.eq('check_status', filters.status)
 
@@ -228,7 +237,8 @@ export async function getCropParcelsOverview(): Promise<CropParcelOverview[]> {
     supabase
       .from('applications')
       .select('crop_parcel_id, parcel_crop_id')
-      .eq('user_id', user.id),
+      .eq('user_id', user.id)
+      .eq('record_status', 'schvaleno'),
   ])
 
   const byParcel = new Map<string, number>()
@@ -261,6 +271,118 @@ export async function getCropParcelsOverview(): Promise<CropParcelOverview[]> {
       applicationCount: byCrop.get(crop.id) ?? 0,
     })),
   }))
+}
+
+// ============================================================================
+// ZÁPISY Z POLE ČEKAJÍCÍ NA SCHVÁLENÍ
+// ============================================================================
+
+/** Zápisy z provozu, které ještě nejsou v evidenční knize – nejnovější první. */
+export async function getPendingFieldLogs(): Promise<ApplicationWithDetails[]> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('applications')
+    .select(APPLICATION_SELECT)
+    .eq('user_id', user.id)
+    .eq('record_status', 'ceka')
+    .order('application_date', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Chyba při načítání zápisů z pole:', error)
+    return []
+  }
+
+  const applications = (data ?? []) as unknown as ApplicationWithDetails[]
+  applications.forEach((application) => {
+    application.items.sort((a, b) => a.position - b.position)
+  })
+
+  return applications
+}
+
+/** Počet čekajících zápisů pro upozornění v evidenci a v navigaci. */
+export async function countPendingFieldLogs(): Promise<number> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return 0
+
+  const { count, error } = await supabase
+    .from('applications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('record_status', 'ceka')
+
+  if (error) {
+    console.error('Chyba při počítání zápisů z pole:', error)
+    return 0
+  }
+
+  return count ?? 0
+}
+
+export interface RecentProduct {
+  kind: ApplicationItemKind
+  productName: string
+  porItemId: number | null
+  fertEvidenceNumber: string | null
+  dose: number
+  unit: string
+}
+
+/**
+ * Produkty z posledních aplikací uživatele.
+ *
+ * Na poli je vyhledávání v registru na mobilu to nejpomalejší – hospodář ale
+ * obvykle jezdí pár týdnů dokola s toutéž kombinací. Poslední použití proto
+ * nabídneme jedním klepnutím i s dávkou, kterou tehdy zapsal.
+ */
+export async function getRecentProducts(limit = 8): Promise<RecentProduct[]> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('application_items')
+    .select('kind, product_name, por_item_id, fert_evidence_number, dose, unit, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(120)
+
+  if (error) {
+    console.error('Chyba při načítání naposledy použitých produktů:', error)
+    return []
+  }
+
+  const seen = new Map<string, RecentProduct>()
+
+  for (const item of data ?? []) {
+    if (seen.size >= limit) break
+    if (seen.has(item.product_name)) continue
+
+    seen.set(item.product_name, {
+      kind: item.kind,
+      productName: item.product_name,
+      porItemId: item.por_item_id,
+      fertEvidenceNumber: item.fert_evidence_number,
+      dose: Number(item.dose),
+      unit: item.unit,
+    })
+  }
+
+  return Array.from(seen.values())
 }
 
 /** Číselník plodin. */

@@ -14,6 +14,7 @@ import {
   FileText,
   BarChart3,
   ClipboardList,
+  ClipboardCheck,
   LogOut,
   X,
   Shield,
@@ -110,6 +111,7 @@ const services: {
     homeHref: '/portal/hnojiva-por/evidence',
     items: [
       { href: '/portal/hnojiva-por/evidence', label: 'Evidence aplikací', icon: ClipboardList },
+      { href: '/portal/hnojiva-por/schvaleni', label: 'Zápisy ke schválení', icon: ClipboardCheck },
       { href: '/portal/hnojiva-por/nitratova-smernice', label: 'Nitrátová směrnice', icon: Droplets },
       { href: '/portal/hnojiva-por/parcely', label: 'Parcely a osevy', icon: Layers },
       { href: '/portal/hnojiva-por/pozemky', label: 'Pozemky (DPB)', icon: Map },
@@ -217,6 +219,18 @@ export function Sidebar({ isAdmin, onClose, isMobile }: SidebarProps) {
             )
           })}
         </div>
+
+        {/* Zkratka do provozního režimu – z pole se zapisuje na jedno klepnutí */}
+        {activeService === 'hnojiva-por' && (
+          <Link
+            href="/portal/hnojiva-por/zapis"
+            onClick={onClose}
+            className="mt-2 flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-3 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-amber-700"
+          >
+            <Tractor className="h-5 w-5 flex-shrink-0" />
+            <span>Zápis z pole</span>
+          </Link>
+        )}
       </div>
 
       {/* Navigation */}

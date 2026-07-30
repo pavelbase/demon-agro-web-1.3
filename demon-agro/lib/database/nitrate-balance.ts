@@ -130,7 +130,9 @@ export async function getNitrateBalance(
          parcel:crop_parcels(id, name, area, land_block:land_blocks(dpb_code, nitrate_vulnerable_zone, application_zone, climatic_region, yield_level)),
          parcel_crop:parcel_crops(id, crop_name, crop_id, season)`
       )
-      .eq('user_id', userId),
+      .eq('user_id', userId)
+      // Neschválený zápis z pole ještě není evidence, do bilance se nezapočítává
+      .eq('record_status', 'schvaleno'),
     supabase.from('land_blocks').select('area, nitrate_vulnerable_zone').eq('user_id', userId),
     loadNitrateDirectiveCatalog(supabase),
     loadCropLimitKeys(supabase),

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {
   AlertTriangle,
+  ClipboardCheck,
   ClipboardList,
   Layers,
   Map,
@@ -8,10 +9,12 @@ import {
   Ruler,
   ShieldCheck,
   Sprout,
+  Tractor,
   XCircle,
 } from 'lucide-react'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
 import {
+  countPendingFieldLogs,
   getApplications,
   getCropParcels,
   getEvidenceSeasons,
@@ -34,10 +37,11 @@ export default async function EvidencePage({
 }) {
   await requireAuth()
 
-  const [applications, parcels, seasons] = await Promise.all([
+  const [applications, parcels, seasons, pendingCount] = await Promise.all([
     getApplications(),
     getCropParcels(),
     getEvidenceSeasons(),
+    countPendingFieldLogs(),
   ])
 
   const summary = summarizeApplications(applications)
@@ -59,6 +63,13 @@ export default async function EvidencePage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/portal/hnojiva-por/zapis"
+            className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+          >
+            <Tractor className="h-4 w-4" />
+            Zápis z pole
+          </Link>
           <Link
             href="/portal/hnojiva-por/parcely"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
@@ -82,6 +93,24 @@ export default async function EvidencePage({
           </Link>
         </div>
       </div>
+
+      {pendingCount > 0 && (
+        <Link
+          href="/portal/hnojiva-por/schvaleni"
+          className="mb-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 transition-colors hover:bg-amber-100"
+        >
+          <ClipboardCheck className="h-5 w-5 shrink-0 text-amber-600" />
+          <p className="min-w-0 flex-1 text-sm text-amber-900">
+            <strong className="font-semibold">
+              {pendingCount === 1
+                ? '1 zápis z pole čeká na schválení'
+                : `${pendingCount} zápisů z pole čeká na schválení`}
+            </strong>{' '}
+            – do evidence níže se propíšou až po schválení.
+          </p>
+          <span className="shrink-0 text-sm font-medium text-amber-700">Zkontrolovat →</span>
+        </Link>
+      )}
 
       {applications.length === 0 ? (
         <div className="rounded-lg bg-white p-12 text-center shadow-md">

@@ -34,6 +34,7 @@ const pageTitles: Record<string, string> = {
   '/portal/hnojiva-por/evidence': 'Evidence aplikací',
   '/portal/hnojiva-por/evidence/nova': 'Nová aplikace',
   '/portal/hnojiva-por/evidence/hromadne': 'Souhrnné zadání',
+  '/portal/hnojiva-por/schvaleni': 'Zápisy ke schválení',
   '/portal/hnojiva-por/parcely': 'Parcely a osevy',
   '/portal/hnojiva-por/pripravky': 'Katalog přípravků',
   '/portal/hnojiva-por/hnojiva': 'Katalog hnojiv',
@@ -47,6 +48,36 @@ const pageTitles: Record<string, string> = {
   '/portal/admin/obrazky-portalu': 'Obrázky portálu',
   '/portal/admin/audit-log': 'Audit log',
   '/portal/admin/statistiky': 'Statistiky',
+}
+
+/**
+ * Provozní režim – stránky, které běží přes celou obrazovku bez navigace.
+ *
+ * Zápis z pole obsluhuje zemědělec na telefonu v kabině; sidebar, hlavička ani
+ * košík vápnění tam nemají co dělat a jen by mu překážely v cestě.
+ */
+const fullscreenRoutes = ['/portal/hnojiva-por/zapis']
+
+const toastOptions = {
+  duration: 3000,
+  style: {
+    background: '#363636',
+    color: '#fff',
+  },
+  success: {
+    duration: 3000,
+    iconTheme: {
+      primary: '#4ade80',
+      secondary: '#fff',
+    },
+  },
+  error: {
+    duration: 4000,
+    iconTheme: {
+      primary: '#ef4444',
+      secondary: '#fff',
+    },
+  },
 }
 
 export function PortalLayoutClient({ user, isAdmin, children }: PortalLayoutClientProps) {
@@ -75,6 +106,15 @@ export function PortalLayoutClient({ user, isAdmin, children }: PortalLayoutClie
   }
 
   const pageTitle = getPageTitle()
+
+  if (fullscreenRoutes.some((route) => pathname.startsWith(route))) {
+    return (
+      <>
+        {children}
+        <Toaster position="top-center" toastOptions={toastOptions} />
+      </>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -126,30 +166,7 @@ export function PortalLayoutClient({ user, isAdmin, children }: PortalLayoutClie
       <LimingCartButton />
       
       {/* Toast notifications */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#4ade80',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 4000,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+      <Toaster position="top-right" toastOptions={toastOptions} />
     </div>
   )
 }
