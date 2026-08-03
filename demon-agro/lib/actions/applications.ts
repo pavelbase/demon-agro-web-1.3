@@ -301,6 +301,8 @@ const batchSchema = z.object({
   notes: z.string().max(1000).nullable().optional(),
   items: z.array(itemSchema).min(1, 'Přidejte alespoň jedno hnojivo nebo přípravek'),
   targets: z.array(batchTargetSchema).min(1, 'Vyberte alespoň jednu parcelu'),
+  recordStatus: z.enum(['ceka', 'schvaleno']).optional(),
+  source: z.enum(['manual', 'pole']).optional(),
 })
 
 export type SaveApplicationsBatchPayload = z.input<typeof batchSchema>
@@ -378,6 +380,9 @@ export async function saveApplicationsBatch(
     // ID se generují dopředu, aby položky šly vložit jednou dávkou
     const prepared = targets.map((target) => ({ id: crypto.randomUUID(), target }))
 
+    const recordStatus = input.recordStatus ?? 'schvaleno'
+    const now = new Date().toISOString()
+
     const { error: applicationsError } = await supabase.from('applications').insert(
       prepared.map(({ id, target }) => ({
         id,
@@ -390,7 +395,10 @@ export async function saveApplicationsBatch(
         method: input.method ?? null,
         is_tankmix: input.items.length > 1,
         notes: input.notes ?? null,
-        source: 'manual',
+        source: input.source ?? 'manual',
+        record_status: recordStatus,
+        submitted_at: recordStatus === 'ceka' ? now : null,
+        approved_at: recordStatus === 'schvaleno' ? now : null,
       }))
     )
 
@@ -461,6 +469,7 @@ export async function saveApplicationsBatch(
       .sort((a, b) => a.parcelName.localeCompare(b.parcelName, 'cs'))
 
     revalidatePath('/portal/hnojiva-por/evidence')
+    revalidatePath('/portal/hnojiva-por/schvaleni')
 
     return {
       success: true,

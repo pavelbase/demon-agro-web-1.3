@@ -3,18 +3,23 @@
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { saveApplication, type SaveApplicationResult } from '@/lib/actions/applications'
+import { saveApplicationsBatch } from '@/lib/actions/applications'
 
 /**
  * Zápis aplikace přímo z provozu a jeho schválení
  *
- * Obsluha na poli zadává jen to, co bezpečně ví: parcelu, datum, produkt a
- * dávku. Ošetřená výměra se bere z parcely a osev z nejnovější sezóny, protože
- * na telefonu v traktoru se tyhle údaje dohledávají špatně a v drtivé většině
- * případů jsou správně – schvalovatel je stejně vidí a může je opravit.
+ * Obsluha na poli zadává jen to, co bezpečně ví: co aplikovala, v jaké dávce
+ * a na kterých pozemcích. Ošetřená výměra se bere z parcely a osev z nejnovější
+ * sezóny, protože na telefonu v traktoru se tyhle údaje dohledávají špatně a
+ * v drtivé většině případů jsou správně – schvalovatel je stejně vidí a může
+ * je opravit.
  *
- * Záznam se ukládá do stejné tabulky jako evidence, ale ve stavu 'ceka'.
- * Do evidenční knihy, bilancí a výkazů se dostane až schválením.
+ * Jedna namíchaná nádrž nebo naplněné rozmetadlo se obvykle vyveze na několik
+ * pozemků, takže zápis míří na víc parcel najednou. Evidenční kniha vede každou
+ * parcelu zvlášť, takže vzniká jeden záznam na parcelu s vlastní výměrou.
+ *
+ * Záznamy se ukládají do stejné tabulky jako evidence, ale ve stavu 'ceka'.
+ * Do evidenční knihy, bilancí a výkazů se dostanou až schválením.
  */
 
 const fieldItemSchema = z.object({
@@ -26,18 +31,29 @@ const fieldItemSchema = z.object({
   unit: z.string().min(1).max(20),
 })
 
-const fieldLogSchema = z.object({
-  cropParcelId: z.string().uuid('Vyberte parcelu'),
-  applicationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Zadejte datum aplikace'),
-  /** Bez zadání se použije výměra parcely */
+const fieldParcelSchema = z.object({
+  cropParcelId: z.string().uuid(),
+  /** Bez zadání se použije celá výměra parcely */
   appliedArea: z.number().positive().max(100_000).nullable().optional(),
+})
+
+const fieldLogSchema = z.object({
+  parcels: z.array(fieldParcelSchema).min(1, 'Vyberte alespoň jeden pozemek'),
+  applicationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Zadejte datum aplikace'),
   notes: z.string().max(1000).nullable().optional(),
   items: z.array(fieldItemSchema).min(1, 'Přidejte alespoň jedno hnojivo nebo přípravek'),
 })
 
 export type SaveFieldLogPayload = z.input<typeof fieldLogSchema>
 
-export async function saveFieldLog(payload: SaveFieldLogPayload): Promise<SaveApplicationResult> {
+export interface SaveFieldLogResult {
+  success: boolean
+  error?: string
+  /** Kolik záznamů evidence z jednoho zápisu vzniklo – jeden na pozemek */
+  created?: number
+}
+
+export async function saveFieldLog(payload: SaveFieldLogPayload): Promise<SaveFieldLogResult> {
   const parsed = fieldLogSchema.safeParse(payload)
 
   if (!parsed.success) {
@@ -54,33 +70,54 @@ export async function saveFieldLog(payload: SaveFieldLogPayload): Promise<SaveAp
 
     if (!user) return { success: false, error: 'Uživatel není přihlášen' }
 
-    const { data: parcel } = await supabase
+    const { data: parcels } = await supabase
       .from('crop_parcels')
       .select('id, area, crops:parcel_crops(id, season)')
-      .eq('id', input.cropParcelId)
       .eq('user_id', user.id)
-      .maybeSingle()
+      .in(
+        'id',
+        input.parcels.map((parcel) => parcel.cropParcelId)
+      )
 
-    if (!parcel) return { success: false, error: 'Parcela nebyla nalezena' }
+    if (!parcels || parcels.length === 0) {
+      return { success: false, error: 'Pozemky nebyly nalezeny' }
+    }
 
-    // Osev poslední sezóny – na poli se plodina nevybírá, ale kontroly
-    // (registrované použití, ochranná lhůta) ji potřebují
-    const parcelCropId =
-      [...((parcel.crops ?? []) as { id: string; season: number }[])].sort(
-        (a, b) => b.season - a.season
-      )[0]?.id ?? null
+    const byId = new Map(parcels.map((parcel) => [parcel.id, parcel]))
 
-    return await saveApplication({
-      cropParcelId: input.cropParcelId,
-      parcelCropId,
+    const targets = input.parcels.flatMap((selected) => {
+      const parcel = byId.get(selected.cropParcelId)
+      if (!parcel) return []
+
+      // Osev poslední sezóny – na poli se plodina nevybírá, ale kontroly
+      // (registrované použití, ochranná lhůta) ji potřebují
+      const parcelCropId =
+        [...((parcel.crops ?? []) as { id: string; season: number }[])].sort(
+          (a, b) => b.season - a.season
+        )[0]?.id ?? null
+
+      return [
+        {
+          cropParcelId: parcel.id,
+          parcelCropId,
+          appliedArea: selected.appliedArea ?? Number(parcel.area),
+        },
+      ]
+    })
+
+    if (targets.length === 0) return { success: false, error: 'Pozemky nebyly nalezeny' }
+
+    const result = await saveApplicationsBatch({
       applicationDate: input.applicationDate,
-      appliedArea: input.appliedArea ?? Number(parcel.area),
       mode: 'skutecnost',
       notes: input.notes ?? null,
       items: input.items,
+      targets,
       recordStatus: 'ceka',
       source: 'pole',
     })
+
+    return { success: result.success, error: result.error, created: result.created }
   } catch (error) {
     console.error('Neočekávaná chyba zápisu z pole:', error)
     return { success: false, error: 'Zápis se nepodařilo uložit' }

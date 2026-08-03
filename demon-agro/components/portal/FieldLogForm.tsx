@@ -28,9 +28,12 @@ import type { ApplicationItemKind } from '@/lib/types/database'
  * Zápis aplikace přímo z pole
  *
  * Ovládá se jedním palcem v kabině: každý krok je jedna otázka a jedna
- * obrazovka velkých tlačítek, žádné vedlejší funkce portálu. Zapisuje se jen
- * parcela, produkt a dávka – zbytek (výměra, osev) se doplní z parcely a
- * schvalovatel to v klidu zkontroluje.
+ * obrazovka velkých tlačítek, žádné vedlejší funkce portálu.
+ *
+ * Pořadí kroků kopíruje práci, ne evidenci: nejdřív se namíchá nádrž nebo
+ * naplní rozmetadlo (co a v jaké dávce), teprve pak se objíždějí pozemky.
+ * Pozemků se proto vybírá víc najednou a z jednoho zápisu vznikne jeden
+ * záznam evidence na každý z nich.
  */
 
 export interface FieldParcel {
@@ -51,7 +54,7 @@ interface FieldItem {
   unit: string
 }
 
-type Step = 'parcela' | 'produkt' | 'davka' | 'souhrn' | 'hotovo'
+type Step = 'produkt' | 'davka' | 'pozemky' | 'souhrn' | 'hotovo'
 
 const UNITS = ['l/ha', 'kg/ha', 'g/ha', 'ml/ha', 't/ha']
 
@@ -76,6 +79,10 @@ function defaultUnit(kind: ApplicationItemKind, isLiquid: boolean): string {
   return isLiquid ? 'l/ha' : 'kg/ha'
 }
 
+function formatNumber(value: number, digits = 2): string {
+  return value.toLocaleString('cs-CZ', { maximumFractionDigits: digits })
+}
+
 export function FieldLogForm({
   parcels,
   recentProducts,
@@ -86,33 +93,41 @@ export function FieldLogForm({
   const router = useRouter()
   const [isSaving, startSaving] = useTransition()
 
-  const [step, setStep] = useState<Step>('parcela')
-  const [parcelId, setParcelId] = useState('')
-  const [date, setDate] = useState(today())
+  const [step, setStep] = useState<Step>('produkt')
   const [items, setItems] = useState<FieldItem[]>([])
   const [draft, setDraft] = useState<FieldItem | null>(null)
-  const [appliedArea, setAppliedArea] = useState('')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  // Výměra se mění jen tam, kde se nejelo přes celý pozemek
+  const [areaOverrides, setAreaOverrides] = useState<Record<string, string>>({})
+  const [date, setDate] = useState(today())
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [savedCount, setSavedCount] = useState(0)
+  const [lastSaved, setLastSaved] = useState(0)
 
-  const parcel = parcels.find((candidate) => candidate.id === parcelId) ?? null
+  const selectedParcels = selectedIds
+    .map((id) => parcels.find((parcel) => parcel.id === id))
+    .filter((parcel): parcel is FieldParcel => !!parcel)
 
-  const resetForNextEntry = () => {
-    setStep('parcela')
-    setParcelId('')
-    setDate(today())
-    setItems([])
-    setDraft(null)
-    setAppliedArea('')
-    setNotes('')
-    setError(null)
+  /** Co je v poli výměry – rozepsaná hodnota se nesmí přepisovat pod rukama */
+  const areaInputOf = (parcel: FieldParcel) => areaOverrides[parcel.id] ?? String(parcel.area)
+
+  /** Výměra pro výpočty a uložení; rozepsané nebo nesmyslné zadání padá na celý pozemek */
+  const areaOf = (parcel: FieldParcel) => {
+    const value = Number(areaOverrides[parcel.id] ?? parcel.area)
+    return Number.isFinite(value) && value > 0 ? value : parcel.area
   }
 
-  const handleSelectParcel = (selected: FieldParcel) => {
-    setParcelId(selected.id)
-    setAppliedArea(String(selected.area))
+  const totalArea = selectedParcels.reduce((sum, parcel) => sum + areaOf(parcel), 0)
+
+  const resetForNextEntry = () => {
     setStep('produkt')
+    setItems([])
+    setDraft(null)
+    setSelectedIds([])
+    setAreaOverrides({})
+    setDate(today())
+    setNotes('')
+    setError(null)
   }
 
   const handleSelectProduct = (product: {
@@ -137,21 +152,34 @@ export function FieldLogForm({
 
   const handleConfirmDose = () => {
     if (!draft || Number(draft.dose) <= 0) return
-    setItems((current) => [...current.filter((item) => item.key !== draft.key), draft])
+    setItems((current) => {
+      const exists = current.some((item) => item.key === draft.key)
+      return exists
+        ? current.map((item) => (item.key === draft.key ? draft : item))
+        : [...current, draft]
+    })
     setDraft(null)
-    setStep('souhrn')
+    setStep('pozemky')
+  }
+
+  const handleRemoveItem = (key: string) => {
+    const next = items.filter((item) => item.key !== key)
+    setItems(next)
+    if (next.length === 0) setStep('produkt')
   }
 
   const handleSave = () => {
-    if (!parcel || items.length === 0) return
+    if (selectedParcels.length === 0 || items.length === 0) return
     setError(null)
 
     startSaving(async () => {
       const result = await saveFieldLog({
-        cropParcelId: parcel.id,
         applicationDate: date,
-        appliedArea: Number(appliedArea) > 0 ? Number(appliedArea) : null,
         notes: notes.trim() || null,
+        parcels: selectedParcels.map((parcel) => ({
+          cropParcelId: parcel.id,
+          appliedArea: areaOf(parcel),
+        })),
         items: items.map((item) => ({
           kind: item.kind,
           productName: item.productName,
@@ -167,7 +195,7 @@ export function FieldLogForm({
         return
       }
 
-      setSavedCount((count) => count + 1)
+      setLastSaved(result.created ?? selectedParcels.length)
       setStep('hotovo')
       router.refresh()
     })
@@ -178,10 +206,10 @@ export function FieldLogForm({
       <Shell title="Zápis z pole" onClose={() => router.push('/portal/hnojiva-por/evidence')}>
         <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
           <MapPin className="mx-auto mb-3 h-10 w-10 text-gray-300" />
-          <h2 className="text-lg font-semibold text-gray-900">Nemáte založené parcely</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Nemáte založené pozemky</h2>
           <p className="mt-2 text-sm text-gray-600">
             Zápis z pole se vede na parcelách. Založte je v kanceláři, pak už stačí na poli jen
-            vybrat parcelu a produkt.
+            vybrat produkt a pozemky.
           </p>
           <button
             type="button"
@@ -195,63 +223,89 @@ export function FieldLogForm({
     )
   }
 
+  const subtitle =
+    step === 'hotovo'
+      ? undefined
+      : selectedParcels.length > 0
+        ? `${items.length} ${items.length === 1 ? 'produkt' : 'produkty'} · ${selectedParcels.length} ${selectedParcels.length === 1 ? 'pozemek' : 'pozemků'} · ${formatNumber(totalArea, 1)} ha`
+        : items.length > 0
+          ? items.map((item) => item.productName).join(' + ')
+          : undefined
+
   return (
     <Shell
       title={step === 'hotovo' ? 'Uloženo' : 'Zápis z pole'}
-      subtitle={parcel && step !== 'hotovo' ? parcel.name : undefined}
+      subtitle={subtitle}
       onClose={() => router.push('/portal/hnojiva-por/evidence')}
       onBack={
-        step === 'produkt'
-          ? () => setStep('parcela')
-          : step === 'davka'
-            ? () => {
-                setDraft(null)
-                setStep(items.length > 0 ? 'souhrn' : 'produkt')
-              }
+        step === 'davka'
+          ? () => {
+              setDraft(null)
+              setStep(items.length > 0 ? 'pozemky' : 'produkt')
+            }
+          : step === 'pozemky'
+            ? () => setStep('produkt')
             : step === 'souhrn'
-              ? () => setStep('produkt')
+              ? () => setStep('pozemky')
               : undefined
       }
     >
-      {step === 'parcela' && <ParcelStep parcels={parcels} onSelect={handleSelectParcel} />}
-
       {step === 'produkt' && (
         <ProductStep
           recentProducts={recentProducts}
           onSelect={handleSelectProduct}
-          onCancel={items.length > 0 ? () => setStep('souhrn') : undefined}
+          onCancel={items.length > 0 ? () => setStep('pozemky') : undefined}
         />
       )}
 
       {step === 'davka' && draft && (
         <DoseStep
           item={draft}
-          area={Number(appliedArea) || parcel?.area || 0}
           onChange={(patch) => setDraft({ ...draft, ...patch })}
           onConfirm={handleConfirmDose}
         />
       )}
 
-      {step === 'souhrn' && parcel && (
-        <SummaryStep
-          parcel={parcel}
-          date={date}
-          onDateChange={setDate}
+      {step === 'pozemky' && (
+        <ParcelStep
+          parcels={parcels}
           items={items}
-          appliedArea={appliedArea}
-          onAppliedAreaChange={setAppliedArea}
-          notes={notes}
-          onNotesChange={setNotes}
-          onRemoveItem={(key) => {
-            const next = items.filter((item) => item.key !== key)
-            setItems(next)
-            if (next.length === 0) setStep('produkt')
-          }}
+          selectedIds={selectedIds}
+          totalArea={totalArea}
+          onToggle={(id) =>
+            setSelectedIds((current) =>
+              current.includes(id) ? current.filter((value) => value !== id) : [...current, id]
+            )
+          }
+          onToggleAll={() =>
+            setSelectedIds((current) =>
+              current.length === parcels.length ? [] : parcels.map((parcel) => parcel.id)
+            )
+          }
+          onAddItem={() => setStep('produkt')}
           onEditItem={(item) => {
             setDraft(item)
             setStep('davka')
           }}
-          onAddItem={() => setStep('produkt')}
+          onRemoveItem={handleRemoveItem}
+          onContinue={() => setStep('souhrn')}
+        />
+      )}
+
+      {step === 'souhrn' && (
+        <SummaryStep
+          items={items}
+          parcels={selectedParcels}
+          areaOf={areaOf}
+          areaInputOf={areaInputOf}
+          onAreaChange={(id, value) =>
+            setAreaOverrides((current) => ({ ...current, [id]: value }))
+          }
+          totalArea={totalArea}
+          date={date}
+          onDateChange={setDate}
+          notes={notes}
+          onNotesChange={setNotes}
           onSave={handleSave}
           isSaving={isSaving}
           error={error}
@@ -259,7 +313,11 @@ export function FieldLogForm({
       )}
 
       {step === 'hotovo' && (
-        <DoneStep savedCount={savedCount} onNext={resetForNextEntry} onClose={() => router.push('/portal/hnojiva-por/schvaleni')} />
+        <DoneStep
+          created={lastSaved}
+          onNext={resetForNextEntry}
+          onClose={() => router.push('/portal/hnojiva-por/schvaleni')}
+        />
       )}
     </Shell>
   )
@@ -322,77 +380,20 @@ function StepTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="mb-3 px-1 text-lg font-semibold text-gray-900">{children}</h2>
 }
 
-// ============================================================================
-// KROK 1 – PARCELA
-// ============================================================================
-
-function ParcelStep({
-  parcels,
-  onSelect,
-}: {
-  parcels: FieldParcel[]
-  onSelect: (parcel: FieldParcel) => void
-}) {
-  const [search, setSearch] = useState('')
-
-  const needle = search.trim().toLowerCase()
-  const visible = needle
-    ? parcels.filter((parcel) =>
-        [parcel.name, parcel.blockCode, parcel.cropName].some((value) =>
-          value?.toLowerCase().includes(needle)
-        )
-      )
-    : parcels
-
-  return (
-    <>
-      <StepTitle>Kde jste?</StepTitle>
-
-      {parcels.length > 6 && (
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Hledat parcelu"
-            className="w-full rounded-xl border border-gray-300 bg-white py-4 pl-11 pr-4 text-base focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-          />
-        </div>
-      )}
-
-      <div className="space-y-2">
-        {visible.map((parcel) => (
-          <button
-            key={parcel.id}
-            type="button"
-            onClick={() => onSelect(parcel)}
-            className="flex w-full items-center gap-3 rounded-xl bg-white p-4 text-left shadow-sm active:bg-amber-50"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-semibold text-gray-900">{parcel.name}</p>
-              <p className="truncate text-sm text-gray-500">
-                {parcel.area.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} ha
-                {parcel.cropName ? ` · ${parcel.cropName}` : ''}
-                {parcel.blockCode ? ` · DPB ${parcel.blockCode}` : ''}
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" />
-          </button>
-        ))}
-
-        {visible.length === 0 && (
-          <p className="rounded-xl bg-white p-6 text-center text-sm text-gray-500">
-            Žádná parcela neodpovídá hledání.
-          </p>
-        )}
-      </div>
-    </>
+function KindIcon({ kind }: { kind: ApplicationItemKind }) {
+  return kind === 'hnojivo' ? (
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-green-100">
+      <Sprout className="h-6 w-6 text-green-700" />
+    </span>
+  ) : (
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+      <SprayCan className="h-6 w-6 text-blue-700" />
+    </span>
   )
 }
 
 // ============================================================================
-// KROK 2 – PRODUKT
+// KROK 1 – PRODUKT
 // ============================================================================
 
 function ProductStep({
@@ -438,7 +439,7 @@ function ProductStep({
 
   return (
     <>
-      <StepTitle>Co jste aplikoval?</StepTitle>
+      <StepTitle>Co aplikujete?</StepTitle>
 
       <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -482,7 +483,7 @@ function ProductStep({
                     {product.productName}
                   </p>
                   <p className="text-sm text-gray-500">
-                    naposledy {product.dose.toLocaleString('cs-CZ')} {product.unit}
+                    naposledy {formatNumber(product.dose, 3)} {product.unit}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" />
@@ -534,46 +535,31 @@ function ProductStep({
           onClick={onCancel}
           className="mt-4 w-full rounded-xl border border-gray-300 bg-white px-4 py-4 text-base font-medium text-gray-700"
         >
-          Zpět na souhrn
+          Zpět na výběr pozemků
         </button>
       )}
     </>
   )
 }
 
-function KindIcon({ kind }: { kind: ApplicationItemKind }) {
-  return kind === 'hnojivo' ? (
-    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-green-100">
-      <Sprout className="h-6 w-6 text-green-700" />
-    </span>
-  ) : (
-    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-100">
-      <SprayCan className="h-6 w-6 text-blue-700" />
-    </span>
-  )
-}
-
 // ============================================================================
-// KROK 3 – DÁVKA
+// KROK 2 – DÁVKA
 // ============================================================================
 
 function DoseStep({
   item,
-  area,
   onChange,
   onConfirm,
 }: {
   item: FieldItem
-  area: number
   onChange: (patch: Partial<FieldItem>) => void
   onConfirm: () => void
 }) {
   const dose = Number(item.dose)
-  const total = dose > 0 && area > 0 ? dose * area : null
 
   return (
     <>
-      <StepTitle>Jaká dávka?</StepTitle>
+      <StepTitle>Jaká dávka na hektar?</StepTitle>
 
       <div className="rounded-xl bg-white p-4 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
@@ -609,16 +595,6 @@ function DoseStep({
             </button>
           ))}
         </div>
-
-        {total !== null && (
-          <p className="mt-4 text-center text-sm text-gray-500">
-            Na {area.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} ha celkem{' '}
-            <strong className="font-semibold text-gray-800">
-              {total.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })}{' '}
-              {item.unit.replace('/ha', '')}
-            </strong>
-          </p>
-        )}
       </div>
 
       <button
@@ -635,63 +611,246 @@ function DoseStep({
 }
 
 // ============================================================================
+// KROK 3 – POZEMKY (VÍCE NAJEDNOU)
+// ============================================================================
+
+function ParcelStep({
+  parcels,
+  items,
+  selectedIds,
+  totalArea,
+  onToggle,
+  onToggleAll,
+  onAddItem,
+  onEditItem,
+  onRemoveItem,
+  onContinue,
+}: {
+  parcels: FieldParcel[]
+  items: FieldItem[]
+  selectedIds: string[]
+  totalArea: number
+  onToggle: (id: string) => void
+  onToggleAll: () => void
+  onAddItem: () => void
+  onEditItem: (item: FieldItem) => void
+  onRemoveItem: (key: string) => void
+  onContinue: () => void
+}) {
+  const [search, setSearch] = useState('')
+
+  const needle = search.trim().toLowerCase()
+  const visible = needle
+    ? parcels.filter((parcel) =>
+        [parcel.name, parcel.blockCode, parcel.cropName].some((value) =>
+          value?.toLowerCase().includes(needle)
+        )
+      )
+    : parcels
+
+  const allSelected = selectedIds.length === parcels.length && parcels.length > 0
+
+  return (
+    <>
+      {/* Namíchaná nádrž / naplněné rozmetadlo – zůstává na očích při objíždění */}
+      <div className="mb-4 rounded-xl bg-white p-3 shadow-sm">
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.key} className="flex items-center gap-2">
+              <KindIcon kind={item.kind} />
+              <button
+                type="button"
+                onClick={() => onEditItem(item)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <p className="truncate text-base font-semibold text-gray-900">
+                  {item.productName}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {formatNumber(Number(item.dose), 3)} {item.unit}
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => onRemoveItem(item.key)}
+                aria-label={`Odebrat ${item.productName}`}
+                className="rounded-lg p-3 text-gray-400 active:bg-red-50 active:text-red-600"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={onAddItem}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-600 active:bg-gray-50"
+        >
+          <Plus className="h-4 w-4" />
+          Přidat další produkt do směsi
+        </button>
+      </div>
+
+      <StepTitle>Na které pozemky?</StepTitle>
+
+      {parcels.length > 6 && (
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Hledat pozemek"
+            className="w-full rounded-xl border border-gray-300 bg-white py-4 pl-11 pr-4 text-base focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
+          />
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onToggleAll}
+        className="mb-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 active:bg-gray-50"
+      >
+        {allSelected ? 'Zrušit výběr všech' : 'Vybrat všechny pozemky'}
+      </button>
+
+      <div className="space-y-2 pb-24">
+        {visible.map((parcel) => {
+          const isSelected = selectedIds.includes(parcel.id)
+
+          return (
+            <button
+              key={parcel.id}
+              type="button"
+              onClick={() => onToggle(parcel.id)}
+              aria-pressed={isSelected}
+              className={`flex w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm transition-colors ${
+                isSelected ? 'bg-amber-50 ring-2 ring-amber-500' : 'bg-white'
+              }`}
+            >
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 ${
+                  isSelected ? 'border-amber-600 bg-amber-600' : 'border-gray-300 bg-white'
+                }`}
+              >
+                {isSelected && <Check className="h-5 w-5 text-white" />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold text-gray-900">{parcel.name}</p>
+                <p className="truncate text-sm text-gray-500">
+                  {formatNumber(parcel.area)} ha
+                  {parcel.cropName ? ` · ${parcel.cropName}` : ''}
+                  {parcel.blockCode ? ` · DPB ${parcel.blockCode}` : ''}
+                </p>
+              </div>
+            </button>
+          )
+        })}
+
+        {visible.length === 0 && (
+          <p className="rounded-xl bg-white p-6 text-center text-sm text-gray-500">
+            Žádný pozemek neodpovídá hledání.
+          </p>
+        )}
+      </div>
+
+      <div className="sticky bottom-0 -mx-3 border-t border-gray-200 bg-white p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+        <p className="mb-2 text-center text-sm text-gray-600">
+          {selectedIds.length === 0 ? (
+            'Vyberte alespoň jeden pozemek'
+          ) : (
+            <>
+              Vybráno {selectedIds.length}{' '}
+              {selectedIds.length === 1 ? 'pozemek' : selectedIds.length < 5 ? 'pozemky' : 'pozemků'}{' '}
+              · <strong className="font-semibold text-gray-900">{formatNumber(totalArea)} ha</strong>
+            </>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={onContinue}
+          disabled={selectedIds.length === 0}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-4 text-lg font-semibold text-white disabled:bg-gray-300"
+        >
+          Pokračovat
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ============================================================================
 // KROK 4 – SOUHRN A ODESLÁNÍ
 // ============================================================================
 
 function SummaryStep({
-  parcel,
+  items,
+  parcels,
+  areaOf,
+  areaInputOf,
+  onAreaChange,
+  totalArea,
   date,
   onDateChange,
-  items,
-  appliedArea,
-  onAppliedAreaChange,
   notes,
   onNotesChange,
-  onRemoveItem,
-  onEditItem,
-  onAddItem,
   onSave,
   isSaving,
   error,
 }: {
-  parcel: FieldParcel
+  items: FieldItem[]
+  parcels: FieldParcel[]
+  areaOf: (parcel: FieldParcel) => number
+  areaInputOf: (parcel: FieldParcel) => string
+  onAreaChange: (id: string, value: string) => void
+  totalArea: number
   date: string
   onDateChange: (value: string) => void
-  items: FieldItem[]
-  appliedArea: string
-  onAppliedAreaChange: (value: string) => void
   notes: string
   onNotesChange: (value: string) => void
-  onRemoveItem: (key: string) => void
-  onEditItem: (item: FieldItem) => void
-  onAddItem: () => void
   onSave: () => void
   isSaving: boolean
   error: string | null
 }) {
-  const [showDetails, setShowDetails] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
 
   return (
     <>
       <StepTitle>Zkontrolujte a odešlete</StepTitle>
 
+      {/* Celková spotřeba – kontrola proti tomu, co se skutečně namíchalo */}
       <div className="rounded-xl bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-100">
-            <MapPin className="h-6 w-6 text-amber-700" />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-gray-900">{parcel.name}</p>
-            <p className="truncate text-sm text-gray-500">
-              {Number(appliedArea || parcel.area).toLocaleString('cs-CZ', {
-                maximumFractionDigits: 2,
-              })}{' '}
-              ha{parcel.cropName ? ` · ${parcel.cropName}` : ''}
-            </p>
-          </div>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Spotřeba na {formatNumber(totalArea)} ha
+        </p>
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div key={item.key} className="flex items-center gap-3">
+              <KindIcon kind={item.kind} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold text-gray-900">
+                  {item.productName}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {formatNumber(Number(item.dose), 3)} {item.unit}
+                </p>
+              </div>
+              <p className="shrink-0 text-right text-base font-semibold tabular-nums text-gray-900">
+                {formatNumber(Number(item.dose) * totalArea)}{' '}
+                <span className="text-sm font-normal text-gray-500">
+                  {item.unit.replace('/ha', '')}
+                </span>
+              </p>
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
+      {/* Datum */}
+      <div className="mt-3 rounded-xl bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-3 gap-2">
           {[
             { label: 'Dnes', value: today() },
             { label: 'Včera', value: shiftDays(-1) },
@@ -711,7 +870,6 @@ function SummaryStep({
             </button>
           ))}
         </div>
-
         <input
           type="date"
           value={date}
@@ -720,70 +878,53 @@ function SummaryStep({
         />
       </div>
 
-      <div className="mt-3 space-y-2">
-        {items.map((item) => (
-          <div key={item.key} className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
-            <KindIcon kind={item.kind} />
-            <button
-              type="button"
-              onClick={() => onEditItem(item)}
-              className="min-w-0 flex-1 text-left"
-            >
-              <p className="truncate text-base font-semibold text-gray-900">{item.productName}</p>
-              <p className="text-sm text-gray-500">
-                {Number(item.dose).toLocaleString('cs-CZ')} {item.unit}
-              </p>
-            </button>
-            <button
-              type="button"
-              onClick={() => onRemoveItem(item.key)}
-              aria-label={`Odebrat ${item.productName}`}
-              className="rounded-lg p-3 text-gray-400 active:bg-red-50 active:text-red-600"
-            >
-              <Trash2 className="h-5 w-5" />
-            </button>
-          </div>
-        ))}
+      {/* Pozemky s ošetřenou výměrou */}
+      <div className="mt-3 rounded-xl bg-white p-4 shadow-sm">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Pozemky ({parcels.length}) – upravte výměru, pokud jste nejel celý
+        </p>
+        <div className="space-y-2">
+          {parcels.map((parcel) => {
+            const area = areaOf(parcel)
+            const partial = area < parcel.area - 0.01
+
+            return (
+              <div key={parcel.id} className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-medium text-gray-900">{parcel.name}</p>
+                  <p className="truncate text-xs text-gray-500">
+                    {partial ? `z ${formatNumber(parcel.area)} ha` : 'celý pozemek'}
+                    {parcel.cropName ? ` · ${parcel.cropName}` : ''}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    max={parcel.area}
+                    value={areaInputOf(parcel)}
+                    onChange={(event) => onAreaChange(parcel.id, event.target.value)}
+                    className="w-24 rounded-lg border border-gray-300 px-2 py-2 text-right text-base tabular-nums focus:border-amber-500 focus:outline-none"
+                  />
+                  <span className="text-sm text-gray-500">ha</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onAddItem}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-white px-4 py-4 text-base font-medium text-gray-600 active:bg-gray-50"
-      >
-        <Plus className="h-5 w-5" />
-        Přidat další produkt
-      </button>
-
-      {showDetails ? (
-        <div className="mt-3 space-y-3 rounded-xl bg-white p-4 shadow-sm">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-gray-700">
-              Ošetřená výměra (ha)
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              value={appliedArea}
-              onChange={(event) => onAppliedAreaChange(event.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base focus:border-amber-500 focus:outline-none"
-            />
-            {Number(appliedArea) > parcel.area + 0.01 && (
-              <span className="mt-1 block text-sm text-red-600">
-                Víc než výměra parcely ({parcel.area} ha)
-              </span>
-            )}
-          </label>
-
+      {showNotes ? (
+        <div className="mt-3 rounded-xl bg-white p-4 shadow-sm">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-gray-700">Poznámka</span>
             <input
               type="text"
               value={notes}
               onChange={(event) => onNotesChange(event.target.value)}
-              placeholder="Např. jen část pozemku, počasí…"
+              placeholder="Např. počasí, přerušená aplikace…"
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base focus:border-amber-500 focus:outline-none"
             />
           </label>
@@ -791,10 +932,10 @@ function SummaryStep({
       ) : (
         <button
           type="button"
-          onClick={() => setShowDetails(true)}
+          onClick={() => setShowNotes(true)}
           className="mt-3 w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-500 underline underline-offset-4"
         >
-          Upravit výměru nebo přidat poznámku
+          Přidat poznámku
         </button>
       )}
 
@@ -813,7 +954,8 @@ function SummaryStep({
       </button>
 
       <p className="mt-3 px-2 text-center text-xs text-gray-500">
-        Zápis se uloží a počká na schválení. Do evidence hnojiv a POR se propíše až po něm.
+        Vznikne {parcels.length} {parcels.length === 1 ? 'záznam' : parcels.length < 5 ? 'záznamy' : 'záznamů'}{' '}
+        evidence – jeden na každý pozemek. Do sekce Hnojiva a POR se propíšou až po schválení.
       </p>
     </>
   )
@@ -824,11 +966,11 @@ function SummaryStep({
 // ============================================================================
 
 function DoneStep({
-  savedCount,
+  created,
   onNext,
   onClose,
 }: {
-  savedCount: number
+  created: number
   onNext: () => void
   onClose: () => void
 }) {
@@ -837,13 +979,13 @@ function DoneStep({
       <span className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
         <Check className="h-10 w-10 text-green-700" />
       </span>
-      <h2 className="text-xl font-bold text-gray-900">Zápis uložen</h2>
+      <h2 className="text-xl font-bold text-gray-900">
+        {created === 1 ? 'Zápis uložen' : `Uloženo ${created} zápisů`}
+      </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm text-gray-600">
-        Čeká na schválení. Do evidence hnojiv a POR se propíše, až ho projdete v kanceláři.
+        {created === 1 ? 'Čeká' : 'Čekají'} na schválení. Do evidence hnojiv a POR se{' '}
+        {created === 1 ? 'propíše' : 'propíšou'}, až je projdete v kanceláři.
       </p>
-      {savedCount > 1 && (
-        <p className="mt-1 text-sm text-gray-500">Zápisů v tomto sezení: {savedCount}</p>
-      )}
 
       <button
         type="button"
