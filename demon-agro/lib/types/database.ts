@@ -785,7 +785,8 @@ export interface Database {
       audit_logs: {
         Row: {
           id: string
-          user_id: string
+          // NULL po smazání uživatele – záznam v auditu zůstává
+          user_id: string | null
           action: string
           table_name: string | null
           record_id: string | null

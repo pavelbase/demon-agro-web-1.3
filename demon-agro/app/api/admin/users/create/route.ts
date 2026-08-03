@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
       throw new Error('User not created')
     }
 
-    // Create profile
-    const { error: profileError } = await supabase
+    // Create profile (service-role klient, aby výsledek nezávisel na RLS)
+    const { error: profileError } = await adminClient
       .from('profiles')
       .insert({
         id: authData.user.id,
@@ -84,9 +84,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Log to audit_logs (admin action)
-    await supabase.from('audit_logs').insert({
+    await adminClient.from('audit_logs').insert({
       user_id: user.id,
-      action: `Admin vytvořil uživatele: ${email}`,
+      action: `[ADMIN] Vytvoření uživatele ${email}`,
       table_name: 'profiles',
       record_id: authData.user.id,
       new_data: { email, company_name, ico, district },

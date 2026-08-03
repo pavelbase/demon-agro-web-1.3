@@ -169,17 +169,40 @@ export function UsersTable({ users }: UsersTableProps) {
 
   const handleDeleteUser = async (user: User) => {
     if (!confirm(`VAROVÁNÍ: Opravdu chcete SMAZAT uživatele ${user.email}?\n\nTato akce je nevratná!`)) return
-    if (!confirm('Jste si opravdu jistí? Tato akce je nevratná!')) return
-    
+
     setActionLoading(user.id)
     try {
-      const response = await fetch('/api/admin/users/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      })
+      const requestDelete = async (confirmCascade: boolean) => {
+        const response = await fetch('/api/admin/users/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, confirmCascade }),
+        })
+        return { response, result: await response.json() }
+      }
 
-      const result = await response.json()
+      let { response, result } = await requestDelete(false)
+
+      // Uživatel má v portálu data – server chce výslovné potvrzení a posílá
+      // výčet toho, co se smaže spolu s ním.
+      if (response.status === 409 && result.requiresConfirmation) {
+        const items = (result.relatedData as { label: string; count: number }[])
+          .map((item) => `  • ${item.label}: ${item.count}`)
+          .join('\n')
+
+        const confirmed = confirm(
+          `Uživatel ${user.email} má v portálu uložená data.\n\n` +
+          `Spolu s účtem budou nevratně smazány:\n${items}\n\n` +
+          `Chcete uživatele smazat včetně všech těchto dat?`
+        )
+
+        if (!confirmed) {
+          setActionLoading(null)
+          return
+        }
+
+        ;({ response, result } = await requestDelete(true))
+      }
 
       if (!response.ok) {
         throw new Error(result.error || 'Nepodařilo se smazat uživatele')
@@ -404,16 +427,14 @@ export function UsersTable({ users }: UsersTableProps) {
                       >
                         <Power className="h-4 w-4" />
                       </button>
-                      {user.parcel_count === 0 && (
-                        <button
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={actionLoading === user.id}
-                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                          title="Smazat"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDeleteUser(user)}
+                        disabled={actionLoading === user.id}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        title="Smazat"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
