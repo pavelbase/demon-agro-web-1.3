@@ -13,14 +13,17 @@ import {
   XCircle,
 } from 'lucide-react'
 import { requireAuth } from '@/lib/supabase/auth-helpers'
+import { createClient } from '@/lib/supabase/server'
 import {
   countPendingFieldLogs,
   getApplications,
   getCropParcels,
   getEvidenceSeasons,
+  getEvidenceYears,
   summarizeApplications,
 } from '@/lib/database/application-queries'
 import { ApplicationsTable } from '@/components/portal/ApplicationsTable'
+import { ExportEphXmlButton } from '@/components/portal/ExportEphXmlButton'
 
 /**
  * Evidence použití hnojiv a přípravků na ochranu rostlin
@@ -35,13 +38,16 @@ export default async function EvidencePage({
 }: {
   searchParams: { parcela?: string }
 }) {
-  await requireAuth()
+  const user = await requireAuth()
+  const supabase = await createClient()
 
-  const [applications, parcels, seasons, pendingCount] = await Promise.all([
+  const [applications, parcels, seasons, years, pendingCount, profile] = await Promise.all([
     getApplications(),
     getCropParcels(),
     getEvidenceSeasons(),
+    getEvidenceYears(),
     countPendingFieldLogs(),
+    supabase.from('profiles').select('szr_id').eq('id', user.id).maybeSingle(),
   ])
 
   const summary = summarizeApplications(applications)
@@ -77,6 +83,7 @@ export default async function EvidencePage({
             <Map className="h-4 w-4" />
             Parcely a osevy
           </Link>
+          <ExportEphXmlButton defaultSzrId={profile.data?.szr_id ?? null} years={years} />
           <Link
             href="/portal/hnojiva-por/evidence/hromadne"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"

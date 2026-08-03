@@ -60,6 +60,8 @@ export interface Database {
           is_active: boolean
           must_change_password: boolean
           onboarding_completed: boolean
+          // Jednotný identifikátor subjektu ze SZR – povinný pro export do EPH
+          szr_id: string | null
           created_at: string
           updated_at: string
         }
@@ -75,6 +77,7 @@ export interface Database {
           is_active?: boolean
           must_change_password?: boolean
           onboarding_completed?: boolean
+          szr_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -90,6 +93,7 @@ export interface Database {
           is_active?: boolean
           must_change_password?: boolean
           onboarding_completed?: boolean
+          szr_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1394,6 +1398,8 @@ export interface Database {
           registry_aliases: string[]
           // Limit přívodu N podle přílohy 3 NV 262/2012 (nitrate_crop_limits)
           nitrate_limit_key: string | null
+          // ID plodiny z číselníku LPIS – povinné pro export evidence do EPH
+          lpis_crop_id: number | null
           is_active: boolean
           created_at: string
         }
@@ -1405,6 +1411,7 @@ export interface Database {
           season?: 'ozima' | 'jarni' | null
           registry_aliases?: string[]
           nitrate_limit_key?: string | null
+          lpis_crop_id?: number | null
           is_active?: boolean
           created_at?: string
         }

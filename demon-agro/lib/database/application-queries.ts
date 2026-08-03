@@ -403,6 +403,35 @@ export async function getCrops(): Promise<Crop[]> {
   return data ?? []
 }
 
+/**
+ * Kalendářní roky, ve kterých uživatel eviduje aplikace.
+ *
+ * Export do EPH se zadává obdobím od–do, ne sezónou – ozimy se hnojí přes
+ * přelom roku, takže sezóna a kalendářní rok se nekryjí.
+ */
+export async function getEvidenceYears(): Promise<number[]> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('applications')
+    .select('application_date')
+    .eq('user_id', user.id)
+    .eq('record_status', 'schvaleno')
+
+  if (error) {
+    console.error('Chyba při načítání roků evidence:', error)
+    return []
+  }
+
+  const years = new Set((data ?? []).map((row) => Number(row.application_date.slice(0, 4))))
+  return Array.from(years).sort((a, b) => b - a)
+}
+
 /** Sezóny, ve kterých uživatel má evidenci – pro přepínač v přehledu. */
 export async function getEvidenceSeasons(): Promise<number[]> {
   const supabase = await createClient()

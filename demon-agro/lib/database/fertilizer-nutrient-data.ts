@@ -23,20 +23,26 @@ import {
 type Client = SupabaseClient<any, 'public', any>
 
 const COLUMNS =
-  'evidence_number, name, name_key, unit_type, is_normative, is_excrement, nitrogen_category, product_kind, n_percent, p2o5_percent, k2o_percent, density_kg_l, valid_from'
+  'catalog_id, evidence_number, name, name_key, unit_type, is_normative, is_excrement, is_organic, nitrogen_category, product_kind, n_percent, p2o5_percent, k2o_percent, cao_percent, mgo_percent, s_percent, density_kg_l, valid_from'
 
 export interface FertilizerCatalogRow {
+  /** Identifikátor hnojiva v číselníku ÚKZÚZ – posílá se v exportu do EPH */
+  catalog_id: number
   evidence_number: string | null
   name: string
   name_key: string
   unit_type: string | null
   is_normative: boolean
   is_excrement: boolean
+  is_organic: boolean
   nitrogen_category: string | null
   product_kind: string | null
   n_percent: number | null
   p2o5_percent: number | null
   k2o_percent: number | null
+  cao_percent: number | null
+  mgo_percent: number | null
+  s_percent: number | null
   density_kg_l: number | null
   valid_from: string | null
 }
@@ -144,10 +150,10 @@ function densityIsUsable(row: FertilizerCatalogRow): boolean {
  * neuvádějí a u dávky v litrech je bez skutečné měrné hmotnosti přívod dusíku
  * podhodnocený. Přednost proto dostane úplnější záznam téhož hnojiva.
  */
-export function resolveNutrientContent(
+export function resolveCatalogRow(
   lookup: FertilizerNutrientLookup,
   item: { fertEvidenceNumber?: string | null; productName: string; unit?: string }
-): FertilizerNutrientContent | null {
+): FertilizerCatalogRow | null {
   const byEvidence = item.fertEvidenceNumber
     ? lookup.byEvidence.get(item.fertEvidenceNumber) ?? null
     : null
@@ -167,11 +173,17 @@ export function resolveNutrientContent(
     (byEvidence && row.evidence_number === byEvidence.evidence_number ? 2 : 0) +
     (row.is_normative ? 1 : 0)
 
-  const best = candidates.reduce((current, candidate) => {
+  return candidates.reduce((current, candidate) => {
     const difference = score(candidate) - score(current)
     if (difference !== 0) return difference > 0 ? candidate : current
     return (candidate.valid_from ?? '') > (current.valid_from ?? '') ? candidate : current
   })
+}
 
-  return toContent(best)
+export function resolveNutrientContent(
+  lookup: FertilizerNutrientLookup,
+  item: { fertEvidenceNumber?: string | null; productName: string; unit?: string }
+): FertilizerNutrientContent | null {
+  const row = resolveCatalogRow(lookup, item)
+  return row ? toContent(row) : null
 }
