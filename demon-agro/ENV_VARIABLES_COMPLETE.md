@@ -67,13 +67,13 @@ NEXT_PUBLIC_ADMIN_EMAIL=base@demonagro.cz
 **Soubor:** `demon-agro/app/api/portal/extract-soil-data/route.ts`  
 **Řádek 10:**
 ```typescript
-const GEMINI_API_KEY = "AIzaSyB1d6Iktd6p2Tr-o3adDbbjPR828tEW6Gc"
+const GEMINI_API_KEY = "<revoked-google-ai-key>"
 ```
 
 **Toto je BEZPEČNOSTNÍ RIZIKO!** Klíč je viditelný v kódu a pushnutý na GitHub.
 
 **✅ OPRAVA:**
-1. Přidejte klíč do `.env.local`: `GEMINI_API_KEY=AIzaSyB1d6Iktd6p2Tr-o3adDbbjPR828tEW6Gc`
+1. Přidejte klíč do `.env.local`: `GEMINI_API_KEY=<revoked-google-ai-key>`
 2. Změňte kód v `extract-soil-data/route.ts`:
 ```typescript
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""
@@ -132,7 +132,7 @@ Zkopírujte template výše a vyplňte hodnoty
 Upravte `demon-agro/app/api/portal/extract-soil-data/route.ts`:
 ```typescript
 // PŘED:
-const GEMINI_API_KEY = "AIzaSyB1d6Iktd6p2Tr-o3adDbbjPR828tEW6Gc"
+const GEMINI_API_KEY = "<revoked-google-ai-key>"
 
 // PO:
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""

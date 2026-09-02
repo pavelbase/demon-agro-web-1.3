@@ -10,7 +10,7 @@
 
 1. **Zrušit kompromitovaný klíč:**
    - Jít na: https://makersuite.google.com/app/apikey
-   - Najít klíč: `AIzaSyB1d6Iktd6p2Tr-o3adDbbjPR828tEW6Gc`
+   - Najít klíč: `<revoked-google-ai-key>`
    - **SMAZAT ho** (už je kompromitovaný)
 
 2. **Vygenerovat nový klíč:**

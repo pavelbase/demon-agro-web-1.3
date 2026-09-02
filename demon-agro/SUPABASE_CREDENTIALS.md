@@ -14,10 +14,13 @@ Soubor `.env.local` byl vytvořen s následující konfigurací:
 
 ```env
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://ppsldvsodvcbxecxjssf.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_n6hPY5tPwwV1WiuMWe1eMQ_UYcvGHg7
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_7jGi1dDwoDOE24C_jObZuA_Yssmi6t2
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable-key>
+SUPABASE_SERVICE_ROLE_KEY=<secret-key>
 ```
+
+> Skutečné hodnoty patří výhradně do `.env.local` a do nastavení Vercelu, nikdy
+> do repozitáře. Klíče najdete v dashboardu pod Settings → API Keys.
 
 ### Zbývající konfigurace
 
